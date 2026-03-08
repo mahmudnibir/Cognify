@@ -1113,9 +1113,11 @@
   function fmtHudTime(sec) {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
     if (h > 0 && m > 0) return `${h}h ${m}m`;
     if (h > 0) return `${h}h`;
-    return `${m}m`;
+    if (m > 0) return `${m}m ${s < 10 ? '0' + s : s}s`;
+    return `${s}s`;
   }
 
   /** Formats a minute-based limit to a human string ("2h", "1h 30m", "45m"). */
@@ -1151,7 +1153,7 @@
         alignItems: 'center',
         gap: '8px',
         height: '36px',
-        padding: '0 16px',
+        padding: '0 16px 0 20px',
         background: 'rgba(255,255,255,0.1)',
         borderRadius: '18px',
         fontFamily: 'Roboto,Arial,sans-serif',
