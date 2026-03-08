@@ -1128,61 +1128,75 @@
   }
 
   /**
-   * Renders (or updates) the live screen-time HUD in the top-right corner.
-   * Creates the element on first call; subsequent calls update text and bar only.
-   * @param {number} usedSec  - seconds watched today
-   * @param {number} limitMin - daily limit in minutes
+   * Renders (or updates) the screen-time HUD pill inside the YouTube header.
+   * On first call the element is created and injected before the #end buttons
+   * (right after the voice-search area). Subsequent calls update text + bar only.
+   * @param {number} usedSec  - seconds elapsed this session
+   * @param {number} limitMin - session limit in minutes
    */
   function renderTimeLimitHud(usedSec, limitMin) {
-    const limitSec   = limitMin * 60;
-    const remainSec  = Math.max(0, limitSec - usedSec);
-    const pct        = Math.min(100, Math.round((usedSec / limitSec) * 100));
-    const barColor   = pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
+    const limitSec  = limitMin * 60;
+    const remainSec = Math.max(0, limitSec - usedSec);
+    const pct       = Math.min(100, Math.round((usedSec / limitSec) * 100));
+    const barColor  = pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
 
     let hud = document.getElementById('yt-ext-time-hud');
     if (!hud) {
       hud = document.createElement('div');
       hud.id = 'yt-ext-time-hud';
       Object.assign(hud.style, {
-        position: 'fixed', top: '68px', right: '14px',
-        zIndex: '2147483646',
-        background: 'rgba(8,8,8,0.86)',
+        display: 'inline-flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: '4px',
+        background: 'rgba(255,255,255,0.06)',
         border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: '10px',
-        padding: '10px 14px',
-        minWidth: '162px',
+        borderRadius: '20px',
+        padding: '5px 13px',
         fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
         fontSize: '12px',
         color: '#f2f2f2',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
         userSelect: 'none',
-        lineHeight: '1',
-        pointerEvents: 'none',
+        cursor: 'default',
+        alignSelf: 'center',
+        flexShrink: '0',
+        marginRight: '4px',
+        whiteSpace: 'nowrap',
       });
       hud.innerHTML = `
-        <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px;opacity:.55">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
-          <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Screen Time · YT</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-          <span id="yt-ext-hud-used" style="font-size:15px;font-weight:700;"></span>
+          <span id="yt-ext-hud-used" style="font-size:12px;font-weight:600;"></span>
+          <span style="color:rgba(255,255,255,0.2);font-size:10px;">|</span>
           <span id="yt-ext-hud-remain" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
         </div>
-        <div style="height:3px;background:rgba(255,255,255,0.09);border-radius:99px;overflow:hidden;">
+        <div style="height:2px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden;">
           <div id="yt-ext-hud-bar" style="height:100%;border-radius:99px;transition:width .6s,background .6s;"></div>
         </div>
       `;
-      document.body.appendChild(hud);
+
+      // Inject into the YT header's #end section (right of search+voice area).
+      // Retries until the header is ready (SPA navigation may delay it).
+      const attach = () => {
+        const end = document.querySelector('ytd-masthead #end');
+        if (end) {
+          end.insertBefore(hud, end.firstChild);
+        } else {
+          setTimeout(attach, 400);
+        }
+      };
+      attach();
     }
 
-    hud.querySelector('#yt-ext-hud-used').textContent    = fmtHudTime(usedSec) + ' used';
-    hud.querySelector('#yt-ext-hud-remain').textContent  = remainSec > 0 ? fmtHudTime(remainSec) + ' left' : 'limit reached';
-    const bar = hud.querySelector('#yt-ext-hud-bar');
-    bar.style.width      = pct + '%';
-    bar.style.background = barColor;
+    document.getElementById('yt-ext-hud-used').textContent   = fmtHudTime(usedSec) + ' used';
+    document.getElementById('yt-ext-hud-remain').textContent = remainSec > 0
+      ? fmtHudTime(remainSec) + ' left'
+      : 'limit reached';
+    const bar = document.getElementById('yt-ext-hud-bar');
+    if (bar) { bar.style.width = pct + '%'; bar.style.background = barColor; }
   }
 
   function removeTimeLimitHud() {
