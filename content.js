@@ -20,6 +20,10 @@
   let sponsorSegments = [];
   let sponsorBlockEnabled = false;
 
+  // A→B Loop Segment — loop a section of the video
+  let loopAPoint = null;
+  let loopBPoint = null;
+
   // Time saved tracking
   let totalTimeSaved = 0;
   let lastUpdateTime = 0;
@@ -41,7 +45,10 @@
     increaseSpeed: '+',
     decreaseSpeed: '-',
     showHelp: 'Shift+?',
-    toggleTime: 'Alt+R'
+    toggleTime: 'Alt+R',
+    setLoopA: '[',
+    setLoopB: ']',
+    clearLoop: '\\'
   };
   
   // Load custom shortcuts
@@ -95,6 +102,7 @@
     setInterval(applySettings, 1000); // Adjust speed periodically
     setInterval(updateTimeSaved, 1000); // Track time saved
     setInterval(updateStatistics, 10000); // Update statistics every 10 seconds
+    setInterval(saveWatchedProgress, 5000); // Save watched-progress percentage for thumbnail tags
 
     // Fetch SponsorBlock segments for this video
     fetchSponsorSegments(videoId);
@@ -150,6 +158,15 @@
     video.addEventListener('ended', () => {
       trackWatchTime(videoId);
       trackVideoComplete(videoId);
+    });
+
+    // A→B loop enforcement — seek back to A whenever playback reaches B
+    video.addEventListener('timeupdate', () => {
+      if (loopAPoint !== null && loopBPoint !== null && loopAPoint < loopBPoint) {
+        if (video.currentTime >= loopBPoint) {
+          video.currentTime = loopAPoint;
+        }
+      }
     });
   };
   
@@ -358,6 +375,42 @@
       showTimeLimitOverlay(request.domain || 'YouTube');
       sendResponse({success: true});
     }
+
+    // A→B loop segment controls from popup
+    if (request.action === 'setLoopA') {
+      const v = document.querySelector('video');
+      if (v) {
+        loopAPoint = v.currentTime;
+        showBookmarkOverlay(`⟳ Loop A → ${formatTime(Math.floor(loopAPoint))}`);
+        updateLoopOverlay();
+        sendResponse({ success: true, loopAPoint });
+      } else {
+        sendResponse({ success: false });
+      }
+    }
+    if (request.action === 'setLoopB') {
+      const v = document.querySelector('video');
+      if (v) {
+        loopBPoint = v.currentTime;
+        showBookmarkOverlay(`⟳ Loop B → ${formatTime(Math.floor(loopBPoint))}`);
+        updateLoopOverlay();
+        sendResponse({ success: true, loopBPoint });
+      } else {
+        sendResponse({ success: false });
+      }
+    }
+    if (request.action === 'clearLoop') {
+      loopAPoint = null;
+      loopBPoint = null;
+      updateLoopOverlay();
+      showBookmarkOverlay('Loop cleared');
+      sendResponse({ success: true });
+    }
+    if (request.action === 'getLoopState') {
+      const v = document.querySelector('video');
+      sendResponse({ loopAPoint, loopBPoint, duration: v ? v.duration : null });
+    }
+
     return true;
   });
 
@@ -516,6 +569,31 @@
       if (overlay) {
         overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
       }
+      return;
+    }
+
+    // Set loop A point
+    if (matchesShortcut(e, shortcuts.setLoopA)) {
+      loopAPoint = video.currentTime;
+      showBookmarkOverlay(`⟳ Loop A → ${formatTime(Math.floor(loopAPoint))}`);
+      updateLoopOverlay();
+      return;
+    }
+
+    // Set loop B point
+    if (matchesShortcut(e, shortcuts.setLoopB)) {
+      loopBPoint = video.currentTime;
+      showBookmarkOverlay(`⟳ Loop B → ${formatTime(Math.floor(loopBPoint))}`);
+      updateLoopOverlay();
+      return;
+    }
+
+    // Clear A→B loop
+    if (matchesShortcut(e, shortcuts.clearLoop)) {
+      loopAPoint = null;
+      loopBPoint = null;
+      updateLoopOverlay();
+      showBookmarkOverlay('Loop cleared');
       return;
     }
   };
@@ -1792,9 +1870,43 @@
         });
       };
 
+      // Copy timestamp link (copies https://youtu.be/ID?t=N to clipboard)
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      `;
+      Object.assign(copyLinkBtn.style, {
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: 'none',
+        borderRadius: '6px',
+        padding: '6px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        transition: 'background 0.2s',
+      });
+      copyLinkBtn.title = 'Copy YouTube link at this timestamp';
+      copyLinkBtn.onmouseover = () => copyLinkBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+      copyLinkBtn.onmouseout = () => copyLinkBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      copyLinkBtn.onclick = (e) => {
+        e.stopPropagation();
+        const vidId = new URLSearchParams(window.location.search).get('v');
+        if (!vidId) { showBookmarkOverlay('Not on a video page'); return; }
+        const url = `https://youtu.be/${vidId}?t=${bm.time}`;
+        navigator.clipboard.writeText(url).then(() => {
+          showBookmarkOverlay('🔗 Link copied!');
+        }).catch(() => {
+          showBookmarkOverlay('Copy failed');
+        });
+      };
+
       topRow.appendChild(timeBadge);
       topRow.appendChild(labelInput);
       topRow.appendChild(jumpBtn);
+      topRow.appendChild(copyLinkBtn);
       topRow.appendChild(deleteBtn);
 
       item.appendChild(topRow);
@@ -2122,6 +2234,12 @@
         storageKey = null;
         deletedBookmarks = [];
         document.querySelectorAll(".yt-bookmark-marker").forEach(el => el.remove());
+
+        // Clear loop segment on navigation
+        loopAPoint = null;
+        loopBPoint = null;
+        const loopOverlay = document.getElementById('yt-loop-overlay');
+        if (loopOverlay) loopOverlay.remove();
         
         // Close bookmark panel if open
         const panel = document.getElementById('yt-bookmark-panel');
@@ -2247,6 +2365,122 @@
     }
   }
 
+  // ─── Loop Segment Overlay ─────────────────────────────────────────────────
+  /**
+   * Renders an amber highlight band on the progress bar between A and B points.
+   * Removes any previous overlay first. Safe to call when either point is null.
+   */
+  function updateLoopOverlay() {
+    const existing = document.getElementById('yt-loop-overlay');
+    if (existing) existing.remove();
+    if (loopAPoint === null || loopBPoint === null || loopAPoint >= loopBPoint) return;
+    const v   = document.querySelector('video');
+    const bar = document.querySelector('.ytp-progress-bar');
+    if (!v || !bar || !v.duration || isNaN(v.duration)) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'yt-loop-overlay';
+    const leftPct  = (loopAPoint              / v.duration) * 100;
+    const widthPct = ((loopBPoint - loopAPoint) / v.duration) * 100;
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      left: `${leftPct}%`,
+      width: `${widthPct}%`,
+      top: '0', bottom: '0',
+      background: 'rgba(255, 160, 0, 0.55)',
+      borderRadius: '2px',
+      pointerEvents: 'none',
+      zIndex: '50',
+    });
+    bar.appendChild(overlay);
+  }
+
+  // ─── Watched Progress Tag ──────────────────────────────────────────────────
+  /**
+   * Persists the current playback percentage (2–97 %) to local storage.
+   * Called every 5 s during active playback so thumbnails on browse pages
+   * can display a red progress bar showing how far the user got.
+   */
+  function saveWatchedProgress() {
+    const v = document.querySelector('video');
+    if (!v || v.paused || !v.duration || isNaN(v.duration)) return;
+    const videoId = new URLSearchParams(window.location.search).get('v');
+    if (!videoId) return;
+    const pct = Math.round((v.currentTime / v.duration) * 100);
+    // Skip near-start and near-end to avoid false "partial" tags
+    if (pct < 2 || pct > 97) return;
+    chrome.storage.local.set({ [`yt_progress_${videoId}`]: pct });
+  }
+
+  /**
+   * Scans all YouTube thumbnails on the current page and injects a slim red
+   * progress bar at the bottom of each one whose video has a saved percentage.
+   * Only processes un-tagged thumbnails (data-ytep attribute acts as guard).
+   * Feature is gated by the watchedProgress sync setting.
+   */
+  function injectThumbnailProgress() {
+    document.querySelectorAll('ytd-thumbnail:not([data-ytep])').forEach(thumb => {
+      thumb.setAttribute('data-ytep', '1');
+      const link = thumb.querySelector('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href') || '';
+      const match = href.match(/[?&]v=([^&]+)/);
+      if (!match) return;
+      const videoId = match[1];
+      chrome.storage.local.get([`yt_progress_${videoId}`], (res) => {
+        const pct = res[`yt_progress_${videoId}`];
+        if (!pct || pct < 2 || pct > 97) return;
+        const imgWrap = thumb.querySelector('#thumbnail');
+        if (!imgWrap || imgWrap.querySelector('.yt-watched-bar')) return;
+        // Ensure the container is positioned so the bar can be placed absolutely
+        if (getComputedStyle(imgWrap).position === 'static') {
+          imgWrap.style.position = 'relative';
+        }
+        const bar = document.createElement('div');
+        bar.className = 'yt-watched-bar';
+        Object.assign(bar.style, {
+          position: 'absolute',
+          bottom: '3px',
+          left: '4px',
+          right: '4px',
+          height: '3px',
+          background: 'rgba(0,0,0,0.45)',
+          borderRadius: '2px',
+          pointerEvents: 'none',
+          zIndex: '300',
+          overflow: 'hidden',
+        });
+        const fill = document.createElement('div');
+        Object.assign(fill.style, {
+          height: '100%',
+          width: `${pct}%`,
+          background: '#ff0000',
+          borderRadius: '2px',
+        });
+        bar.appendChild(fill);
+        imgWrap.appendChild(bar);
+      });
+    });
+  }
+
   init();
   observeUrlChange();
+
+  // ─── Watched Progress thumbnail MutationObserver ───────────────────────────
+  // Fires on every DOM mutation of the YT feed and injects progress bars on any
+  // newly rendered thumbnails. Throttled to max once every 1.5 s for performance.
+  let _thumbThrottle = null;
+  new MutationObserver(() => {
+    if (_thumbThrottle) return;
+    _thumbThrottle = setTimeout(() => {
+      _thumbThrottle = null;
+      chrome.storage.sync.get(['watchedProgress'], ({ watchedProgress }) => {
+        if (watchedProgress) injectThumbnailProgress();
+      });
+    }, 1500);
+  }).observe(document.body, { childList: true, subtree: true });
+
+  // Initial injection on page load
+  chrome.storage.sync.get(['watchedProgress'], ({ watchedProgress }) => {
+    if (watchedProgress) injectThumbnailProgress();
+  });
 })();

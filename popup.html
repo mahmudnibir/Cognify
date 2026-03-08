@@ -1694,6 +1694,29 @@
             </label>
           </div>
         </div>
+
+        <!-- Watched Progress Tags -->
+        <div class="setting-item setting-item-full">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="setting-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <div class="setting-content">
+              <div class="setting-title">Watched Progress Tags</div>
+              <div class="setting-desc">Show a red progress bar on thumbnails for partially-watched videos</div>
+            </div>
+          </div>
+          <div>
+            <input id="watchedProgress" type="checkbox" class="toggle-input">
+            <label for="watchedProgress" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
       </section>
       
       <!-- General Settings -->
@@ -1815,6 +1838,33 @@
               <div class="vm-option" data-value="robot">Robot</div>
               <div class="vm-option" data-value="echo">Echo</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Loop Segment A→B -->
+      <section>
+        <h2>Loop Segment</h2>
+        <div class="setting-item" style="flex-direction: column; align-items: stretch; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="setting-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 1l4 4-4 4"/>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                <path d="M7 23l-4-4 4-4"/>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+            </div>
+            <div class="setting-content">
+              <div class="setting-title">A→B Loop</div>
+              <div class="setting-desc">Loop a segment of the current video between two set points. Use [ and ] on the video page, or the buttons below.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <button id="setLoopA" style="flex:1;min-width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">Set A</button>
+            <button id="setLoopB" style="flex:1;min-width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">Set B</button>
+            <button id="clearLoopBtn" style="flex:1;min-width:60px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:rgba(239,68,68,0.9);border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(239,68,68,0.18)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">Clear</button>
+            <span id="loopDisplay" style="font-size:11px;color:rgba(255,255,255,0.45);padding:0 4px;min-width:90px;text-align:center;">— → —</span>
           </div>
         </div>
       </section>
@@ -2018,6 +2068,64 @@
           <div class="shortcut-actions">
             <div class="shortcut-input" data-action="toggleTime">Alt+R</div>
             <button class="shortcut-reset" data-action="toggleTime">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Loop Segment</h2>
+        <div class="setting-item setting-item-full">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="setting-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 1l4 4-4 4"/>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              </svg>
+            </div>
+            <div class="setting-content">
+              <div class="setting-title">Set Loop A</div>
+              <div class="setting-desc">Default: [</div>
+            </div>
+          </div>
+          <div class="shortcut-actions">
+            <div class="shortcut-input" data-action="setLoopA">[</div>
+            <button class="shortcut-reset" data-action="setLoopA">Reset</button>
+          </div>
+        </div>
+        <div class="setting-item setting-item-full">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="setting-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 23l-4-4 4-4"/>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+            </div>
+            <div class="setting-content">
+              <div class="setting-title">Set Loop B</div>
+              <div class="setting-desc">Default: ]</div>
+            </div>
+          </div>
+          <div class="shortcut-actions">
+            <div class="shortcut-input" data-action="setLoopB">]</div>
+            <button class="shortcut-reset" data-action="setLoopB">Reset</button>
+          </div>
+        </div>
+        <div class="setting-item setting-item-full">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="setting-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </div>
+            <div class="setting-content">
+              <div class="setting-title">Clear Loop</div>
+              <div class="setting-desc">Default: \</div>
+            </div>
+          </div>
+          <div class="shortcut-actions">
+            <div class="shortcut-input" data-action="clearLoop">\</div>
+            <button class="shortcut-reset" data-action="clearLoop">Reset</button>
           </div>
         </div>
       </section>

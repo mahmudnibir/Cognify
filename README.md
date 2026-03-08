@@ -29,6 +29,9 @@
 | Watch Statistics | Track total watch time and session history with a live graph (Y-axis labels, daily/weekly breakdown) across YouTube, Instagram, and Facebook; last-selected platform tab is remembered |
 | Social Download | One-click video download overlay on Instagram and Facebook posts |
 | Hide Messenger | Remove the Facebook Messenger chat bubble and chat panel with a single toggle; updates the page instantly without a reload |
+| Loop Segment (A→B) | Set A and B loop points with `[` / `]` keys; the video continuously repeats the marked section. Clear with `\` or the popup button |
+| Timestamp Share Links | Copy a shareable YouTube URL at the exact timestamp of any bookmark directly from the bookmarks panel; links open at that precise moment |
+| Watched Progress Tags | Automatic red progress bars on video thumbnails for partially-watched videos; progress is silently tracked every 5 seconds |
 | Keyboard Shortcuts | Fully customizable hotkeys for all controls |
 | Voice Modes | 8 real-time audio modes: Normal, Chipmunk, Pikachu, Naruto, Doraemon, Bass Boost, Robot, Echo |
 | Feature Guide | In-popup `?` button opens a scrollable guide listing all setting descriptions grouped by section |

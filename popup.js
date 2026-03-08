@@ -401,6 +401,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sleepTimerRow             = document.getElementById('sleepTimerRow');
   const sleepTimerMinutesInput    = document.getElementById('sleepTimerMinutes');
   const setSleepTimerBtn          = document.getElementById('setSleepTimerBtn');
+  const watchedProgressCheckbox   = document.getElementById('watchedProgress');
+  const setLoopABtn               = document.getElementById('setLoopA');
+  const setLoopBBtn               = document.getElementById('setLoopB');
+  const clearLoopBtnEl            = document.getElementById('clearLoopBtn');
+  const loopDisplayEl             = document.getElementById('loopDisplay');
 
   /**
    * Builds a select-like proxy object around the custom div dropdown.
@@ -486,6 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sleepTimerEnabled: false,
     sleepTimerMinutes: 30,
     hideFbMessenger: false,
+    watchedProgress: false,
   };
 
   // Update speed display with enhanced formatting + progress-bar fill
@@ -537,6 +543,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sleepTimerMinutesInput) sleepTimerMinutesInput.value = data.sleepTimerMinutes || 30;
     if (sleepTimerRow) sleepTimerRow.style.display = data.sleepTimerEnabled ? 'flex' : 'none';
 
+    // Watched progress tags
+    if (watchedProgressCheckbox) watchedProgressCheckbox.checked = data.watchedProgress || false;
+
     // Load universalSpeed from local storage (used by video-hover.js)
     chrome.storage.local.get(['universalSpeed'], (localData) => {
       universalSpeedCheckbox.checked = !!localData.universalSpeed;
@@ -572,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const focusMode = !!focusModeCheckbox.checked;
     const sponsorBlock = !!(sponsorBlockCheckbox && sponsorBlockCheckbox.checked);
     const hideFbMessenger = !!(hideFbMessengerCheckbox && hideFbMessengerCheckbox.checked);
+    const watchedProgress = !!(watchedProgressCheckbox && watchedProgressCheckbox.checked);
 
     // Save universalSpeed to local storage so video-hover.js can read it
     chrome.storage.local.set({ universalSpeed });
@@ -596,6 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
       focusMode,
       sponsorBlock,
       hideFbMessenger,
+      watchedProgress,
     }, () => {
       // Notify content script to apply changes and update speed immediately
       chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
@@ -650,6 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
   focusModeCheckbox.addEventListener('change', autoSave);
   if (sponsorBlockCheckbox) sponsorBlockCheckbox.addEventListener('change', autoSave);
   if (hideFbMessengerCheckbox) hideFbMessengerCheckbox.addEventListener('change', autoSave);
+  if (watchedProgressCheckbox) watchedProgressCheckbox.addEventListener('change', autoSave);
   if (sleepTimerEnabledCheckbox) sleepTimerEnabledCheckbox.addEventListener('change', () => {
     if (sleepTimerRow) sleepTimerRow.style.display = sleepTimerEnabledCheckbox.checked ? 'flex' : 'none';
     autoSave();
@@ -661,6 +673,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     chrome.storage.sync.set({ sleepTimerMinutes: mins, sleepTimerEnabled: true });
     if (sleepTimerEnabledCheckbox) sleepTimerEnabledCheckbox.checked = true;
+  });
+
+  // ── A→B Loop Segment buttons ─────────────────────────────────────────────
+
+  /**
+   * Formats seconds as M:SS or H:MM:SS for the loop display label.
+   * @param {number|null} s
+   */
+  function fmtLoopTime(s) {
+    if (s === null || s === undefined || isNaN(s)) return '—';
+    const h   = Math.floor(s / 3600);
+    const m   = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
+
+  /** Updates the A→B display line in the popup. */
+  function renderLoopDisplay(a, b) {
+    if (loopDisplayEl) {
+      loopDisplayEl.textContent = `${fmtLoopTime(a)} → ${fmtLoopTime(b)}`;
+    }
+  }
+
+  /** Sends a loop-action message to the active YouTube tab. */
+  function sendLoopAction(action, callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0] || !tabs[0].url || !tabs[0].url.includes('youtube.com')) return;
+      chrome.tabs.sendMessage(tabs[0].id, { action }, (response) => {
+        if (chrome.runtime.lastError || !response) return;
+        if (callback) callback(response);
+      });
+    });
+  }
+
+  if (setLoopABtn) {
+    setLoopABtn.addEventListener('click', () => {
+      sendLoopAction('setLoopA', (res) => {
+        if (res.success) {
+          // Fetch updated state to refresh display
+          sendLoopAction('getLoopState', (state) => renderLoopDisplay(state.loopAPoint, state.loopBPoint));
+        }
+      });
+    });
+  }
+
+  if (setLoopBBtn) {
+    setLoopBBtn.addEventListener('click', () => {
+      sendLoopAction('setLoopB', (res) => {
+        if (res.success) {
+          sendLoopAction('getLoopState', (state) => renderLoopDisplay(state.loopAPoint, state.loopBPoint));
+        }
+      });
+    });
+  }
+
+  if (clearLoopBtnEl) {
+    clearLoopBtnEl.addEventListener('click', () => {
+      sendLoopAction('clearLoop', () => renderLoopDisplay(null, null));
+    });
+  }
+
+  // Load current loop state when popup opens (only on YouTube tabs)
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0] && tabs[0].url && tabs[0].url.includes('youtube.com')) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'getLoopState' }, (response) => {
+        if (chrome.runtime.lastError || !response) return;
+        renderLoopDisplay(response.loopAPoint, response.loopBPoint);
+      });
+    }
   });
 
   // Speed tick labels (replaces preset buttons)
@@ -824,7 +906,10 @@ document.addEventListener('DOMContentLoaded', () => {
     increaseSpeed: '+',
     decreaseSpeed: '-',
     showHelp: 'Shift+?',
-    toggleTime: 'Alt+R'
+    toggleTime: 'Alt+R',
+    setLoopA: '[',
+    setLoopB: ']',
+    clearLoop: '\\'
   };
 
   // Load and apply custom shortcuts
