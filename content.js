@@ -27,7 +27,16 @@
   // Time saved tracking
   let totalTimeSaved = 0;
   let lastUpdateTime = 0;
-  
+
+  /**
+   * Returns false once the extension has been reloaded/updated while this tab
+   * is still open. Checked inside all recurring callbacks (setInterval,
+   * MutationObserver, onChanged) to prevent "Extension context invalidated" throws.
+   */
+  function isCtxValid() {
+    try { return !!chrome.runtime?.id; } catch { return false; }
+  }
+
   // Statistics tracking
   let sessionStartTime = Date.now();
   let currentVideoId = null;
@@ -101,10 +110,10 @@
     });
 
     document.addEventListener("keydown", handleKeyPress);
-    setInterval(applySettings, 1000); // Adjust speed periodically
-    setInterval(updateTimeSaved, 1000); // Track time saved
-    setInterval(updateStatistics, 10000); // Update statistics every 10 seconds
-    setInterval(saveWatchedProgress, 5000); // Save watched-progress percentage for thumbnail tags
+    setInterval(() => { if (!isCtxValid()) return; applySettings(); }, 1000); // Adjust speed periodically
+    setInterval(() => { if (!isCtxValid()) return; updateTimeSaved(); }, 1000); // Track time saved
+    setInterval(() => { if (!isCtxValid()) return; updateStatistics(); }, 10000); // Update statistics every 10 seconds
+    setInterval(() => { if (!isCtxValid()) return; saveWatchedProgress(); }, 5000); // Save watched-progress percentage for thumbnail tags
 
     // Fetch SponsorBlock segments for this video
     fetchSponsorSegments(videoId);
@@ -121,7 +130,7 @@
     applyContentControls();
     
     // Reapply content controls periodically for dynamic content
-    setInterval(applyContentControls, 2000);
+    setInterval(() => { if (!isCtxValid()) return; applyContentControls(); }, 2000);
     
     // Initialize statistics tracking
     initializeStatistics(videoId);
@@ -1200,6 +1209,7 @@
 
       // Background writes ytStats every 10 s — listen for live updates.
       chrome.storage.onChanged.addListener((changes, area) => {
+        if (!isCtxValid()) return;
         if (area !== 'local' || !changes.ytStats) return;
         const usedSec = ((changes.ytStats.newValue?.dailyData || {})[today] || {}).activeTime || 0;
         if (usedSec >= limitMin * 60) {
@@ -2591,19 +2601,25 @@
   // ─── Watched Progress thumbnail MutationObserver ───────────────────────────
   // Fires on every DOM mutation of the YT feed and injects progress bars on any
   // newly rendered thumbnails. Throttled to max once every 1.5 s for performance.
+  // Self-disconnects when the extension is reloaded to prevent context errors.
   let _thumbThrottle = null;
-  new MutationObserver(() => {
+  const _thumbObserver = new MutationObserver(() => {
+    if (!isCtxValid()) { _thumbObserver.disconnect(); return; }
     if (_thumbThrottle) return;
     _thumbThrottle = setTimeout(() => {
       _thumbThrottle = null;
+      if (!isCtxValid()) return;
       chrome.storage.sync.get(['watchedProgress'], ({ watchedProgress }) => {
         if (watchedProgress) injectThumbnailProgress();
       });
     }, 1500);
-  }).observe(document.body, { childList: true, subtree: true });
+  });
+  _thumbObserver.observe(document.body, { childList: true, subtree: true });
 
   // Initial injection on page load
-  chrome.storage.sync.get(['watchedProgress'], ({ watchedProgress }) => {
-    if (watchedProgress) injectThumbnailProgress();
-  });
+  if (isCtxValid()) {
+    chrome.storage.sync.get(['watchedProgress'], ({ watchedProgress }) => {
+      if (watchedProgress) injectThumbnailProgress();
+    });
+  }
 })();
