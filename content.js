@@ -1144,38 +1144,42 @@
     if (!hud) {
       hud = document.createElement('div');
       hud.id = 'yt-ext-time-hud';
+      // Match YouTube's native header button geometry exactly:
+      // height 36px · padding 0 16px · border-radius 18px · Roboto 14px 500
       Object.assign(hud.style, {
         display: 'inline-flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        gap: '4px',
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: '20px',
-        padding: '5px 13px',
-        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
-        fontSize: '12px',
-        color: '#f2f2f2',
+        alignItems: 'center',
+        gap: '8px',
+        height: '36px',
+        padding: '0 16px',
+        background: 'rgba(255,255,255,0.1)',
+        borderRadius: '18px',
+        fontFamily: 'Roboto,Arial,sans-serif',
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#fff',
         userSelect: 'none',
         cursor: 'default',
         alignSelf: 'center',
         flexShrink: '0',
-        marginRight: '4px',
+        marginRight: '8px',
         whiteSpace: 'nowrap',
+        position: 'relative',
+        overflow: 'hidden',
       });
       hud.innerHTML = `
-        <div style="display:flex;align-items:center;gap:6px;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)"
-            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span id="yt-ext-hud-used" style="font-size:12px;font-weight:600;"></span>
-          <span style="color:rgba(255,255,255,0.2);font-size:10px;">|</span>
-          <span id="yt-ext-hud-remain" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
-        </div>
-        <div style="height:2px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden;">
-          <div id="yt-ext-hud-bar" style="height:100%;border-radius:99px;transition:width .6s,background .6s;"></div>
-        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="rgba(255,255,255,0.55)" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span id="yt-ext-hud-used" style="font-weight:600;"></span>
+        <span style="color:rgba(255,255,255,0.25);font-size:12px;font-weight:400;">/</span>
+        <span id="yt-ext-hud-remain" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:400;"></span>
+        <div id="yt-ext-hud-bar" style="
+          position:absolute;bottom:0;left:0;height:2px;
+          transition:width .6s ease,background .6s ease;
+        "></div>
       `;
 
       // Inject into the YT header's #end section (right of search+voice area).
