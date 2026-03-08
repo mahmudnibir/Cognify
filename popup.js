@@ -1802,7 +1802,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (input) input.disabled = !on;
   }
 
-  /** Persists screen time limit values; briefly flashes the button green. */
+  /** Persists screen time limit values; resets active sessions; briefly flashes the button green. */
   function saveScreenTimeLimits() {
     const el = id => document.getElementById(id);
     chrome.storage.sync.set({
@@ -1813,6 +1813,12 @@ document.addEventListener('DOMContentLoaded', () => {
       fbLimitEnabled: !!el('fbLimitEnabled')?.checked,
       fbDailyLimit:    parseInt(el('fbDailyLimit')?.value,  10) || 60,
     }, () => {
+      // Reset all session state so the new limit takes effect immediately on active tabs.
+      chrome.storage.local.set({
+        ytSessionBlocked: false, ytSessionStart: null,
+        igSessionBlocked: false, igSessionStart: null,
+        fbSessionBlocked: false, fbSessionStart: null,
+      });
       const btn = el('saveLimitsBtn');
       if (!btn) return;
       btn.classList.add('saved');

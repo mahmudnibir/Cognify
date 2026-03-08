@@ -28,6 +28,9 @@
   let totalTimeSaved = 0;
   let lastUpdateTime = 0;
 
+  // Session-based screen-time timer handle — cleared when HUD is torn down.
+  let _ytSessionTimer = null;
+
   /**
    * Returns false once the extension has been reloaded/updated while this tab
    * is still open. Checked inside all recurring callbacks (setInterval,
@@ -1187,29 +1190,73 @@
   }
 
   /**
-   * Shows/hides the HUD and hard-block overlay based on current settings and stats.
-   * Re-evaluates whenever either the limit settings (sync) or the ytStats (local)
-   * change — so the HUD appears live when the user enables the limit in the popup
-   * while watching, without needing a page reload.
+   * Shared list of valid reasons a user may give to start a new session.
+   * Shown as pill buttons on the hard-block overlay.
+   */
+  const SESSION_REASONS = [
+    'Work / Professional task',
+    'Learning & Study',
+    'News & Current events',
+    'Research & Information',
+    'Creative project',
+    'Official communication',
+  ];
+
+  /**
+   * Starts (or restarts) the per-second session countdown timer for YouTube.
+   * Writes usedSec to renderTimeLimitHud on every tick; triggers hard-block
+   * and sets ytSessionBlocked:true when the session expires.
+   * @param {number} limitMin - session length in minutes
+   */
+  function _startYtSessionTimer(limitMin) {
+    if (_ytSessionTimer) clearInterval(_ytSessionTimer);
+    const limitSec = limitMin * 60;
+    _ytSessionTimer = setInterval(() => {
+      if (!isCtxValid()) { clearInterval(_ytSessionTimer); return; }
+      chrome.storage.local.get(['ytSessionStart', 'ytSessionBlocked'], (local) => {
+        if (local.ytSessionBlocked) { clearInterval(_ytSessionTimer); return; }
+        if (!local.ytSessionStart) return;
+        const usedSec = Math.round((Date.now() - local.ytSessionStart) / 1000);
+        if (usedSec >= limitSec) {
+          clearInterval(_ytSessionTimer);
+          removeTimeLimitHud();
+          chrome.storage.local.set({ ytSessionBlocked: true });
+          showTimeLimitOverlay(limitMin);
+        } else {
+          renderTimeLimitHud(usedSec, limitMin);
+        }
+      });
+    }, 1000);
+  }
+
+  /**
+   * Session-based screen time HUD controller for YouTube.
+   * Tracks time since the session started (ytSessionStart in local storage).
+   * Reacts live when the limit is toggled in the popup or a new session begins.
    */
   function initTimeLimitHud() {
-    const today = new Date().toDateString();
-
-    /** Core eval: read current settings + stats and update HUD/overlay. */
     function evalHud() {
       if (!isCtxValid()) return;
       chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit'], (syncData) => {
         if (!isCtxValid()) return;
-        if (!syncData.ytLimitEnabled) { removeTimeLimitHud(); return; }
+        if (!syncData.ytLimitEnabled) {
+          if (_ytSessionTimer) { clearInterval(_ytSessionTimer); _ytSessionTimer = null; }
+          removeTimeLimitHud();
+          return;
+        }
         const limitMin = parseInt(syncData.ytDailyLimit || 120, 10);
-        chrome.storage.local.get(['ytStats'], (localData) => {
+        chrome.storage.local.get(['ytSessionBlocked', 'ytSessionStart'], (local) => {
           if (!isCtxValid()) return;
-          const usedSec = ((localData.ytStats || {}).dailyData || {})[today]?.activeTime || 0;
-          if (usedSec >= limitMin * 60) {
+          if (local.ytSessionBlocked) {
             removeTimeLimitHud();
             showTimeLimitOverlay(limitMin);
+            return;
+          }
+          if (!local.ytSessionStart) {
+            // First visit — start the session clock now.
+            chrome.storage.local.set({ ytSessionStart: Date.now() }, () => _startYtSessionTimer(limitMin));
           } else {
-            renderTimeLimitHud(usedSec, limitMin);
+            _startYtSessionTimer(limitMin);
           }
         });
       });
@@ -1217,20 +1264,24 @@
 
     evalHud();
 
-    // React to both sync (limit toggled/changed in popup) and local (stats flushed).
     chrome.storage.onChanged.addListener((changes, area) => {
       if (!isCtxValid()) return;
-      if ((area === 'sync' && (changes.ytLimitEnabled !== undefined || changes.ytDailyLimit !== undefined)) ||
-          (area === 'local' && changes.ytStats)) {
+      // Limit toggled/changed in popup → re-eval immediately.
+      if (area === 'sync' && (changes.ytLimitEnabled !== undefined || changes.ytDailyLimit !== undefined)) {
+        evalHud();
+      }
+      // New session started from the block overlay → remove overlay + restart HUD.
+      if (area === 'local' && changes.ytSessionBlocked?.newValue === false) {
+        document.getElementById('yt-time-limit-overlay')?.remove();
         evalHud();
       }
     });
   }
 
   /**
-   * Shows a full-screen hard-block when the daily YouTube time limit is hit.
-   * No bypass — user must disable or increase the limit in extension settings.
-   * @param {number} [limitMin] - if omitted, fetched from chrome.storage.sync
+   * Full-screen session-ended overlay for YouTube.
+   * Offers a reason-picker to start a new session, or "Close Tab".
+   * @param {number} limitMin - session length in minutes
    */
   function showTimeLimitOverlay(limitMin) {
     if (document.getElementById('yt-time-limit-overlay')) return;
@@ -1238,44 +1289,96 @@
     const v = document.querySelector('video');
     if (v) v.pause();
 
-    const render = (min) => {
-      const overlay = document.createElement('div');
-      overlay.id = 'yt-time-limit-overlay';
-      Object.assign(overlay.style, {
-        position: 'fixed', inset: '0',
-        background: '#060606',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        zIndex: '2147483647',
-        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
-        color: '#fff', textAlign: 'center',
-        padding: '40px 24px',
-      });
-      overlay.innerHTML = `
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:28px">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:12px">Screen Time Reached</div>
-        <div style="font-size:15px;color:rgba(255,255,255,0.45);max-width:380px;line-height:1.7;margin-bottom:10px">
-          Your daily <strong style="color:rgba(255,255,255,0.72)">YouTube</strong> limit of
-          <strong style="color:rgba(255,255,255,0.72)">${fmtLimitMin(min)}</strong> has been reached.
-        </div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.28);max-width:360px;line-height:1.85;margin-bottom:36px">
-          To continue, open the <strong style="color:rgba(255,255,255,0.48)">YT Enhanced</strong> extension popup<br>
-          → <strong style="color:rgba(255,255,255,0.48)">Advanced → Screen Time Limits</strong><br>
-          and disable or increase your YouTube limit.
-        </div>
-        <button id="yt-time-limit-close" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);color:rgba(255,255,255,0.6);border-radius:8px;padding:11px 30px;font-size:13px;cursor:pointer;font-family:inherit">Close Tab</button>
-      `;
-      document.documentElement.appendChild(overlay);
-      document.getElementById('yt-time-limit-close').addEventListener('click', () => window.close());
-    };
+    const overlay = document.createElement('div');
+    overlay.id = 'yt-time-limit-overlay';
+    Object.assign(overlay.style, {
+      position: 'fixed', inset: '0',
+      background: '#060606',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: '2147483647',
+      fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+      color: '#fff', textAlign: 'center',
+      padding: '40px 24px',
+    });
 
-    if (typeof limitMin === 'number') {
-      render(limitMin);
-    } else {
-      chrome.storage.sync.get(['ytDailyLimit'], (d) => render(parseInt(d.ytDailyLimit || 120, 10)));
-    }
+    const reasonBtnsHtml = SESSION_REASONS.map(r =>
+      `<button class="yt-session-reason" data-r="${r}" style="
+        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+        color:rgba(255,255,255,0.6);border-radius:8px;padding:9px 18px;
+        font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;
+        white-space:nowrap;">${r}</button>`
+    ).join('');
+
+    overlay.innerHTML = `
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)"
+        stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:24px">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:10px">Session Ended</div>
+      <div style="font-size:15px;color:rgba(255,255,255,0.45);max-width:380px;line-height:1.7;margin-bottom:6px">
+        Your <strong style="color:rgba(255,255,255,0.72)">YouTube</strong> session of
+        <strong style="color:rgba(255,255,255,0.72)">${fmtLimitMin(limitMin)}</strong> has ended.
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:24px">
+        Select a valid reason to start a new session.
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:480px;margin-bottom:28px">
+        ${reasonBtnsHtml}
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <button id="yt-new-session-btn" disabled style="
+          background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+          color:rgba(255,255,255,0.3);border-radius:8px;padding:11px 28px;
+          font-size:13px;font-family:inherit;cursor:not-allowed;transition:all .2s;opacity:.45">
+          New Session
+        </button>
+        <button id="yt-time-limit-close" style="
+          background:transparent;border:1px solid rgba(255,255,255,0.1);
+          color:rgba(255,255,255,0.4);border-radius:8px;padding:11px 28px;
+          font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s">
+          Close Tab
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Reason pill selection
+    let selectedReason = null;
+    overlay.querySelectorAll('.yt-session-reason').forEach(btn => {
+      btn.addEventListener('mouseover', () => {
+        if (btn.dataset.r !== selectedReason) btn.style.background = 'rgba(255,255,255,0.09)';
+      });
+      btn.addEventListener('mouseout', () => {
+        if (btn.dataset.r !== selectedReason) btn.style.background = 'rgba(255,255,255,0.05)';
+      });
+      btn.addEventListener('click', () => {
+        overlay.querySelectorAll('.yt-session-reason').forEach(b => {
+          b.style.background = 'rgba(255,255,255,0.05)';
+          b.style.borderColor = 'rgba(255,255,255,0.1)';
+          b.style.color = 'rgba(255,255,255,0.6)';
+        });
+        btn.style.background = 'rgba(255,255,255,0.15)';
+        btn.style.borderColor = 'rgba(255,255,255,0.3)';
+        btn.style.color = '#fff';
+        selectedReason = btn.dataset.r;
+        const newBtn = document.getElementById('yt-new-session-btn');
+        newBtn.disabled = false;
+        newBtn.style.opacity = '1';
+        newBtn.style.cursor = 'pointer';
+        newBtn.style.color = '#fff';
+        newBtn.style.borderColor = 'rgba(255,255,255,0.28)';
+      });
+    });
+
+    // New Session: only enabled after a reason is picked
+    document.getElementById('yt-new-session-btn').addEventListener('click', () => {
+      if (!selectedReason) return;
+      chrome.storage.local.set({ ytSessionBlocked: false, ytSessionStart: Date.now() });
+      // Overlay removed via storage.onChanged → ytSessionBlocked = false in initTimeLimitHud
+    });
+
+    document.getElementById('yt-time-limit-close').addEventListener('click', () => window.close());
   }
 
   /**

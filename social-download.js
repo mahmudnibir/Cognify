@@ -101,6 +101,21 @@
     });
   }
 
+  // Session-based screen-time timer handle for FB/IG.
+  let _socialSessionTimer = null;
+
+  /**
+   * Shared list of valid reasons a user may give to start a new session.
+   */
+  const SESSION_REASONS = [
+    'Work / Professional task',
+    'Learning & Study',
+    'News & Current events',
+    'Research & Information',
+    'Creative project',
+    'Official communication',
+  ];
+
   const ITEM_ID    = 'yt-ext-dl-item';
   const TOAST_ID   = 'yt-ext-dl-toast';
   const LABEL      = isIG ? 'Download Reel' : 'Download Video';
@@ -822,91 +837,172 @@
   function initSocialTimeLimitHud(d, platformName, platformLabel) {
     const enabledKey = `${d}LimitEnabled`;
     const limitKey   = `${d}DailyLimit`;
-    const statsKey   = `${d}Stats`;
-    const today      = new Date().toDateString();
+    const sessionStartKey   = `${d}SessionStart`;
+    const sessionBlockedKey = `${d}SessionBlocked`;
 
-    /** Core eval: read current settings + stats and update HUD/overlay. */
-    function evalSocialHud() {
+    /**
+     * Starts (or restarts) the per-second session countdown timer for FB/IG.
+     */
+    function _startTimer(limitMin) {
+      if (_socialSessionTimer) clearInterval(_socialSessionTimer);
+      const limitSec = limitMin * 60;
+      _socialSessionTimer = setInterval(() => {
+        chrome.storage.local.get([sessionStartKey, sessionBlockedKey], (local) => {
+          if (local[sessionBlockedKey]) { clearInterval(_socialSessionTimer); return; }
+          if (!local[sessionStartKey]) return;
+          const usedSec = Math.round((Date.now() - local[sessionStartKey]) / 1000);
+          if (usedSec >= limitSec) {
+            clearInterval(_socialSessionTimer);
+            document.getElementById('yt-ext-social-time-hud')?.remove();
+            chrome.storage.local.set({ [sessionBlockedKey]: true });
+            showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin);
+          } else {
+            renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+          }
+        });
+      }, 1000);
+    }
+
+    function evalHud() {
       chrome.storage.sync.get([enabledKey, limitKey], (syncData) => {
         if (!syncData[enabledKey]) {
+          if (_socialSessionTimer) { clearInterval(_socialSessionTimer); _socialSessionTimer = null; }
           document.getElementById('yt-ext-social-time-hud')?.remove();
           return;
         }
         const limitMin = parseInt(syncData[limitKey] || 60, 10);
-        chrome.storage.local.get([statsKey], (localData) => {
-          const usedSec = ((localData[statsKey] || {}).dailyData || {})[today]?.activeTime || 0;
-          if (usedSec >= limitMin * 60) {
+        chrome.storage.local.get([sessionBlockedKey, sessionStartKey], (local) => {
+          if (local[sessionBlockedKey]) {
             document.getElementById('yt-ext-social-time-hud')?.remove();
-            showSocialTimeLimitOverlay(platformName, limitMin);
+            showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin);
+            return;
+          }
+          if (!local[sessionStartKey]) {
+            chrome.storage.local.set({ [sessionStartKey]: Date.now() }, () => _startTimer(limitMin));
           } else {
-            renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+            _startTimer(limitMin);
           }
         });
       });
     }
 
-    evalSocialHud();
+    evalHud();
 
-    // React to both sync (limit toggled/changed in popup) and local (stats flushed).
     chrome.storage.onChanged.addListener((changes, area) => {
-      if ((area === 'sync' && (changes[enabledKey] !== undefined || changes[limitKey] !== undefined)) ||
-          (area === 'local' && changes[statsKey])) {
-        evalSocialHud();
+      if (area === 'sync' && (changes[enabledKey] !== undefined || changes[limitKey] !== undefined)) {
+        evalHud();
+      }
+      if (area === 'local' && changes[sessionBlockedKey]?.newValue === false) {
+        document.getElementById('yt-ext-time-limit')?.remove();
+        evalHud();
       }
     });
   }
 
   /**
-   * Full-screen hard-block when the daily FB/IG time limit is reached.
-   * No bypass button — user must disable/increase the limit in extension settings.
-   * @param {string} platformName - 'Facebook' or 'Instagram'
-   * @param {number} [limitMin]   - if omitted, fetched from chrome.storage.sync
+   * Full-screen session-ended overlay for FB/IG.
+   * Offers a reason-picker to start a new session, or "Close Tab".
+   * @param {string} platformName  - 'Facebook' or 'Instagram'
+   * @param {string} platformLabel - 'FB' or 'IG'
+   * @param {string} d             - 'fb' or 'ig'
+   * @param {number} limitMin      - session length in minutes
    */
-  function showSocialTimeLimitOverlay(platformName, limitMin) {
+  function showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin) {
     if (document.getElementById('yt-ext-time-limit')) return;
 
-    // Pause all playing videos.
     document.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (_) {} });
 
-    const render = (min) => {
-      const overlay = document.createElement('div');
-      overlay.id = 'yt-ext-time-limit';
-      Object.assign(overlay.style, {
-        position: 'fixed', inset: '0',
-        background: '#060606',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        zIndex: '2147483647',
-        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
-        color: '#fff', textAlign: 'center',
-        padding: '40px 24px',
-      });
-      overlay.innerHTML = `
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:28px">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:12px">Screen Time Reached</div>
-        <div style="font-size:15px;color:rgba(255,255,255,0.45);max-width:380px;line-height:1.7;margin-bottom:10px">
-          Your daily <strong style="color:rgba(255,255,255,0.72)">${platformName}</strong> limit of
-          <strong style="color:rgba(255,255,255,0.72)">${fmtLimitMin(min)}</strong> has been reached.
-        </div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.28);max-width:360px;line-height:1.85;margin-bottom:36px">
-          To continue, open the <strong style="color:rgba(255,255,255,0.48)">YT Enhanced</strong> extension popup<br>
-          → <strong style="color:rgba(255,255,255,0.48)">Advanced → Screen Time Limits</strong><br>
-          and disable or increase your ${platformName} limit.
-        </div>
-        <button id="yt-ext-limit-close" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);color:rgba(255,255,255,0.6);border-radius:8px;padding:11px 30px;font-size:13px;cursor:pointer;font-family:inherit">Close Tab</button>
-      `;
-      document.documentElement.appendChild(overlay);
-      document.getElementById('yt-ext-limit-close').addEventListener('click', () => window.close());
-    };
+    const sessionBlockedKey = `${d}SessionBlocked`;
+    const sessionStartKey   = `${d}SessionStart`;
 
-    if (typeof limitMin === 'number') {
-      render(limitMin);
-    } else {
-      const key = domain === 'ig' ? 'igDailyLimit' : 'fbDailyLimit';
-      chrome.storage.sync.get([key], (d) => render(parseInt(d[key] || 60, 10)));
-    }
+    const overlay = document.createElement('div');
+    overlay.id = 'yt-ext-time-limit';
+    Object.assign(overlay.style, {
+      position: 'fixed', inset: '0',
+      background: '#060606',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: '2147483647',
+      fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+      color: '#fff', textAlign: 'center',
+      padding: '40px 24px',
+    });
+
+    const reasonBtnsHtml = SESSION_REASONS.map(r =>
+      `<button class="yt-session-reason" data-r="${r}" style="
+        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+        color:rgba(255,255,255,0.6);border-radius:8px;padding:9px 18px;
+        font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;
+        white-space:nowrap;">${r}</button>`
+    ).join('');
+
+    overlay.innerHTML = `
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)"
+        stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:24px">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:10px">Session Ended</div>
+      <div style="font-size:15px;color:rgba(255,255,255,0.45);max-width:380px;line-height:1.7;margin-bottom:6px">
+        Your <strong style="color:rgba(255,255,255,0.72)">${platformName}</strong> session of
+        <strong style="color:rgba(255,255,255,0.72)">${fmtLimitMin(limitMin)}</strong> has ended.
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:24px">
+        Select a valid reason to start a new session.
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:480px;margin-bottom:28px">
+        ${reasonBtnsHtml}
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <button id="yt-ext-new-session-btn" disabled style="
+          background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+          color:rgba(255,255,255,0.3);border-radius:8px;padding:11px 28px;
+          font-size:13px;font-family:inherit;cursor:not-allowed;transition:all .2s;opacity:.45">
+          New Session
+        </button>
+        <button id="yt-ext-limit-close" style="
+          background:transparent;border:1px solid rgba(255,255,255,0.1);
+          color:rgba(255,255,255,0.4);border-radius:8px;padding:11px 28px;
+          font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s">
+          Close Tab
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    let selectedReason = null;
+    overlay.querySelectorAll('.yt-session-reason').forEach(btn => {
+      btn.addEventListener('mouseover', () => {
+        if (btn.dataset.r !== selectedReason) btn.style.background = 'rgba(255,255,255,0.09)';
+      });
+      btn.addEventListener('mouseout', () => {
+        if (btn.dataset.r !== selectedReason) btn.style.background = 'rgba(255,255,255,0.05)';
+      });
+      btn.addEventListener('click', () => {
+        overlay.querySelectorAll('.yt-session-reason').forEach(b => {
+          b.style.background = 'rgba(255,255,255,0.05)';
+          b.style.borderColor = 'rgba(255,255,255,0.1)';
+          b.style.color = 'rgba(255,255,255,0.6)';
+        });
+        btn.style.background = 'rgba(255,255,255,0.15)';
+        btn.style.borderColor = 'rgba(255,255,255,0.3)';
+        btn.style.color = '#fff';
+        selectedReason = btn.dataset.r;
+        const newBtn = document.getElementById('yt-ext-new-session-btn');
+        newBtn.disabled = false;
+        newBtn.style.opacity = '1';
+        newBtn.style.cursor = 'pointer';
+        newBtn.style.color = '#fff';
+        newBtn.style.borderColor = 'rgba(255,255,255,0.28)';
+      });
+    });
+
+    document.getElementById('yt-ext-new-session-btn').addEventListener('click', () => {
+      if (!selectedReason) return;
+      chrome.storage.local.set({ [sessionBlockedKey]: false, [sessionStartKey]: Date.now() });
+      // Overlay removed via storage.onChanged → sessionBlocked = false in initSocialTimeLimitHud
+    });
+
+    document.getElementById('yt-ext-limit-close').addEventListener('click', () => window.close());
   }
 
   // Kick off HUD check once the page content has settled.
