@@ -1792,7 +1792,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Screen time limits ────────────────────────────────────────────────────
-  /** Persists the screen time limit values entered in the Advanced tab. */
+  /** Syncs the card border + input enabled-state when a toggle changes. */
+  function applyLimitCardState(prefix) {
+    const el    = id => document.getElementById(id);
+    const card  = el(`${prefix}LimitCard`);
+    const input = el(`${prefix}DailyLimit`);
+    const on    = !!el(`${prefix}LimitEnabled`)?.checked;
+    if (card)  card.classList.toggle('limit-active', on);
+    if (input) input.disabled = !on;
+  }
+
+  /** Persists screen time limit values; briefly flashes the button green. */
   function saveScreenTimeLimits() {
     const el = id => document.getElementById(id);
     chrome.storage.sync.set({
@@ -1803,19 +1813,32 @@ document.addEventListener('DOMContentLoaded', () => {
       fbLimitEnabled: !!el('fbLimitEnabled')?.checked,
       fbDailyLimit:    parseInt(el('fbDailyLimit')?.value,  10) || 60,
     }, () => {
-      showModal({ title: 'Saved', message: 'Screen time limits saved successfully!', buttons: [{ text: 'OK', type: 'primary' }] });
+      const btn = el('saveLimitsBtn');
+      if (!btn) return;
+      btn.classList.add('saved');
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved!`;
+      setTimeout(() => {
+        btn.classList.remove('saved');
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Save Limits`;
+      }, 1800);
     });
   }
 
   // Load screen time limit values on popup open
   chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit', 'igLimitEnabled', 'igDailyLimit', 'fbLimitEnabled', 'fbDailyLimit'], (d) => {
     const el = id => document.getElementById(id);
-    if (el('ytLimitEnabled')) el('ytLimitEnabled').checked = !!d.ytLimitEnabled;
+    if (el('ytLimitEnabled')) { el('ytLimitEnabled').checked = !!d.ytLimitEnabled; applyLimitCardState('yt'); }
     if (el('ytDailyLimit'))   el('ytDailyLimit').value    = d.ytDailyLimit  || 120;
-    if (el('igLimitEnabled')) el('igLimitEnabled').checked = !!d.igLimitEnabled;
+    if (el('igLimitEnabled')) { el('igLimitEnabled').checked = !!d.igLimitEnabled; applyLimitCardState('ig'); }
     if (el('igDailyLimit'))   el('igDailyLimit').value    = d.igDailyLimit  || 60;
-    if (el('fbLimitEnabled')) el('fbLimitEnabled').checked = !!d.fbLimitEnabled;
+    if (el('fbLimitEnabled')) { el('fbLimitEnabled').checked = !!d.fbLimitEnabled; applyLimitCardState('fb'); }
     if (el('fbDailyLimit'))   el('fbDailyLimit').value    = d.fbDailyLimit  || 60;
+  });
+
+  // Toggle-change: update card border and enable/disable the number input live.
+  ['yt', 'ig', 'fb'].forEach(prefix => {
+    document.getElementById(`${prefix}LimitEnabled`)
+      ?.addEventListener('change', () => applyLimitCardState(prefix));
   });
 
   // ── Additional feature event listeners ───────────────────────────────────

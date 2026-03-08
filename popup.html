@@ -1046,17 +1046,40 @@
     .loop-btn-clear:hover { background: rgba(239,68,68,0.18); }
 
     /* Screen time limit rows */
-    .limit-row {
+    /* Screen time limit cards */
+    .limit-card {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 0 6px;
-      font-size: 12px;
-      color: var(--text-secondary);
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      transition: border-color 0.2s;
     }
-    .limit-row .limit-name { flex: 1; font-weight: 500; color: var(--text-primary); }
-    .limit-row input[type=number] {
-      width: 64px;
+    .limit-card.limit-active { border-color: rgba(255,255,255,0.22); }
+    .limit-platform-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border-color);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .limit-platform-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .limit-time-input {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .limit-time-input input[type=number] {
+      width: 58px;
       background: rgba(255,255,255,0.06);
       border: 1px solid var(--border-color);
       border-radius: 7px;
@@ -1065,8 +1088,38 @@
       font-size: 12px;
       text-align: center;
       outline: none;
+      transition: border-color 0.2s;
     }
-    .limit-row .limit-unit { font-size: 10px; color: var(--text-secondary); flex-shrink:0; }
+    .limit-time-input input[type=number]:focus { border-color: rgba(255,255,255,0.32); }
+    .limit-time-input input[type=number]:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .limit-unit { font-size: 10px; color: var(--text-secondary); flex-shrink: 0; }
+    .btn-save-limits {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      margin-top: 10px;
+      padding: 9px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 9px;
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-save-limits:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22); }
+    .btn-save-limits.saved {
+      border-color: rgba(46,204,113,0.5);
+      color: #2ecc71;
+      background: rgba(46,204,113,0.07);
+    }
     
     /* Dashboard Cards */
     .dashboard-card {
@@ -2927,29 +2980,57 @@
       <!-- Screen Time Limits -->
       <section>
         <h2>Screen Time Limits</h2>
-        <div class="limit-row">
-          <input type="checkbox" id="ytLimitEnabled" class="toggle-input" style="width:auto;height:auto;margin:0;">
-          <span class="limit-name">YouTube</span>
-          <input type="number" id="ytDailyLimit" min="5" max="1440" value="120">
-          <span class="limit-unit">min/day</span>
+
+        <!-- YouTube -->
+        <div class="limit-card" id="ytLimitCard">
+          <div class="limit-platform-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <span class="limit-platform-name">YouTube</span>
+          <div class="limit-time-input">
+            <input type="number" id="ytDailyLimit" min="5" max="1440" value="120" disabled>
+            <span class="limit-unit">min/day</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="ytLimitEnabled" class="toggle-input">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="limit-row">
-          <input type="checkbox" id="igLimitEnabled" class="toggle-input" style="width:auto;height:auto;margin:0;">
-          <span class="limit-name">Instagram</span>
-          <input type="number" id="igDailyLimit" min="5" max="1440" value="60">
-          <span class="limit-unit">min/day</span>
+
+        <!-- Instagram -->
+        <div class="limit-card" id="igLimitCard">
+          <div class="limit-platform-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
+          </div>
+          <span class="limit-platform-name">Instagram</span>
+          <div class="limit-time-input">
+            <input type="number" id="igDailyLimit" min="5" max="1440" value="60" disabled>
+            <span class="limit-unit">min/day</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="igLimitEnabled" class="toggle-input">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="limit-row">
-          <input type="checkbox" id="fbLimitEnabled" class="toggle-input" style="width:auto;height:auto;margin:0;">
-          <span class="limit-name">Facebook</span>
-          <input type="number" id="fbDailyLimit" min="5" max="1440" value="60">
-          <span class="limit-unit">min/day</span>
+
+        <!-- Facebook -->
+        <div class="limit-card" id="fbLimitCard">
+          <div class="limit-platform-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+          </div>
+          <span class="limit-platform-name">Facebook</span>
+          <div class="limit-time-input">
+            <input type="number" id="fbDailyLimit" min="5" max="1440" value="60" disabled>
+            <span class="limit-unit">min/day</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="fbLimitEnabled" class="toggle-input">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <button class="btn-export" id="saveLimitsBtn" style="margin-top:10px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          </svg>
+
+        <button class="btn-save-limits" id="saveLimitsBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           Save Limits
         </button>
       </section>

@@ -571,7 +571,9 @@
     if (h.includes('instagram.com')) domain = 'ig';
     else if (h.includes('facebook.com') || h.includes('fb.com')) domain = 'fb';
     if (!domain) return;
-    chrome.runtime.sendMessage({ type: 'socialVideoPlay', domain });
+    chrome.runtime.sendMessage({ type: 'socialVideoPlay', domain }, () => {
+      void chrome.runtime.lastError; // consumed — SW may not be awake
+    });
   }
 
   function showOverlay(video) {

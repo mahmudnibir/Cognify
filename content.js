@@ -53,6 +53,7 @@
   
   // Load custom shortcuts
   chrome.runtime.sendMessage({ type: 'getShortcuts' }, (data) => {
+    void chrome.runtime.lastError; // consumed — SW may not be awake yet
     if (data && data.shortcuts) {
       shortcuts = { ...shortcuts, ...data.shortcuts };
     }
@@ -61,6 +62,7 @@
   // Get storage object based on cloudSync setting
   function getBookmarkStorage(callback) {
     chrome.runtime.sendMessage({ type: 'getCloudSync' }, (data) => {
+      void chrome.runtime.lastError; // consumed — SW may not be awake yet
       const useCloudSync = data && data.cloudSync !== false; // Default true
       callback(useCloudSync ? chrome.storage.sync : chrome.storage.local);
     });
