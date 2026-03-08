@@ -30,6 +30,9 @@
 
   // Session-based screen-time timer handle — cleared when HUD is torn down.
   let _ytSessionTimer = null;
+  // Saves video.currentTime before the session-block overlay is shown so it
+  // can be restored precisely when the user starts a new session.
+  let _ytSavedVideoTime = 0;
 
   /**
    * Returns false once the extension has been reloaded/updated while this tab
@@ -1293,6 +1296,13 @@
       // New session started from the block overlay → remove overlay + restart HUD.
       if (area === 'local' && changes.ytSessionBlocked?.newValue === false) {
         document.getElementById('yt-time-limit-overlay')?.remove();
+        // Restore video playback position to where it was before the block.
+        const v = document.querySelector('video');
+        if (v && _ytSavedVideoTime > 0) {
+          v.currentTime = _ytSavedVideoTime;
+          v.play().catch(() => {});
+          _ytSavedVideoTime = 0;
+        }
         evalHud();
       }
     });
@@ -1306,7 +1316,9 @@
   function showTimeLimitOverlay(limitMin) {
     if (document.getElementById('yt-time-limit-overlay')) return;
 
+    // Save playback position before pausing so we can restore it on new session.
     const v = document.querySelector('video');
+    _ytSavedVideoTime = v?.currentTime || 0;
     if (v) v.pause();
 
     const overlay = document.createElement('div');
@@ -1330,6 +1342,21 @@
         white-space:nowrap;">${r}</button>`
     ).join('');
 
+    // Time preset pills — user can change session duration before starting.
+    const TIME_PRESETS = [5, 10, 15, 20, 30, 60];
+    let selectedPreset = limitMin;
+    const presetBtnsHtml = TIME_PRESETS.map(m => {
+      const active = m === limitMin;
+      return `<button class="yt-session-preset" data-m="${m}" style="
+        background:${active ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)'};
+        border:1px solid ${active ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)'};
+        color:${active ? '#fff' : 'rgba(255,255,255,0.5)'};
+        border-radius:8px;padding:7px 16px;
+        font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;">
+        ${m < 60 ? m + 'm' : '1h'}
+      </button>`;
+    }).join('');
+
     overlay.innerHTML = `
       <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)"
         stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:24px">
@@ -1345,6 +1372,12 @@
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:480px;margin-bottom:28px">
         ${reasonBtnsHtml}
+      </div>
+      <div style="width:100%;max-width:480px;margin-bottom:28px">
+        <div style="font-size:11px;color:rgba(255,255,255,0.22);margin-bottom:10px;letter-spacing:.07em;text-transform:uppercase">Next session duration</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+          ${presetBtnsHtml}
+        </div>
       </div>
       <div style="display:flex;gap:12px;align-items:center">
         <button id="yt-new-session-btn" disabled style="
@@ -1391,11 +1424,30 @@
       });
     });
 
-    // New Session: only enabled after a reason is picked
+    // Preset pill selection — highlight chosen duration.
+    overlay.querySelectorAll('.yt-session-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        overlay.querySelectorAll('.yt-session-preset').forEach(b => {
+          b.style.background = 'rgba(255,255,255,0.05)';
+          b.style.borderColor = 'rgba(255,255,255,0.1)';
+          b.style.color = 'rgba(255,255,255,0.5)';
+        });
+        btn.style.background = 'rgba(255,255,255,0.18)';
+        btn.style.borderColor = 'rgba(255,255,255,0.35)';
+        btn.style.color = '#fff';
+        selectedPreset = parseInt(btn.dataset.m, 10);
+      });
+    });
+
+    // New Session: only enabled after a reason is picked.
+    // If the user chose a different preset, persist it to sync storage.
     document.getElementById('yt-new-session-btn').addEventListener('click', () => {
       if (!selectedReason) return;
+      if (selectedPreset !== limitMin) {
+        chrome.storage.sync.set({ ytDailyLimit: selectedPreset });
+      }
       chrome.storage.local.set({ ytSessionBlocked: false, ytSessionStart: Date.now() });
-      // Overlay removed via storage.onChanged → ytSessionBlocked = false in initTimeLimitHud
+      // Overlay removed + video resumed via storage.onChanged in initTimeLimitHud.
     });
 
     document.getElementById('yt-time-limit-close').addEventListener('click', () => window.close());
