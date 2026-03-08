@@ -1023,6 +1023,28 @@
     }
     .sleep-row .btn-sleep-set:hover { background: var(--bg-card-hover); }
 
+    /* Loop segment A/B buttons */
+    .loop-btn {
+      flex: 1; min-width: 60px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+    .loop-btn:hover { background: rgba(255,255,255,0.14); }
+    .loop-btn-clear {
+      background: rgba(239,68,68,0.10);
+      border-color: rgba(239,68,68,0.20);
+      color: rgba(239,68,68,0.9);
+    }
+    .loop-btn-clear:hover { background: rgba(239,68,68,0.18); }
+
     /* Screen time limit rows */
     .limit-row {
       display: flex;
@@ -1861,9 +1883,9 @@
             </div>
           </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            <button id="setLoopA" style="flex:1;min-width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">Set A</button>
-            <button id="setLoopB" style="flex:1;min-width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">Set B</button>
-            <button id="clearLoopBtn" style="flex:1;min-width:60px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:rgba(239,68,68,0.9);border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(239,68,68,0.18)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">Clear</button>
+            <button id="setLoopA" class="loop-btn">Set A</button>
+            <button id="setLoopB" class="loop-btn">Set B</button>
+            <button id="clearLoopBtn" class="loop-btn loop-btn-clear">Clear</button>
             <span id="loopDisplay" style="font-size:11px;color:rgba(255,255,255,0.45);padding:0 4px;min-width:90px;text-align:center;">— → —</span>
           </div>
         </div>
