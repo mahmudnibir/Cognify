@@ -370,9 +370,9 @@
       }
       sendResponse({success: true});
     }
-    // Screen time limit hit: show soft-block overlay
+    // Screen time limit hit: show hard-block overlay
     if (request.action === 'timeLimitHit') {
-      showTimeLimitOverlay(request.domain || 'YouTube');
+      showTimeLimitOverlay();
       sendResponse({success: true});
     }
 
@@ -1093,52 +1093,172 @@
     }, 1200);
   };
 
+  // ─── Screen Time HUD & Hard Block ──────────────────────────────────────────
+
+  /** Formats seconds → "Xh Ym" or "Zm". */
+  function fmtHudTime(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  }
+
+  /** Formats a minute-based limit to a human string ("2h", "1h 30m", "45m"). */
+  function fmtLimitMin(min) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  }
+
   /**
-   * Shows a full-page soft block when the user's daily time limit is hit.
-   * The user can dismiss and keep watching, but receives a clear warning.
-   * @param {string} domain - e.g. 'YouTube'
+   * Renders (or updates) the live screen-time HUD in the top-right corner.
+   * Creates the element on first call; subsequent calls update text and bar only.
+   * @param {number} usedSec  - seconds watched today
+   * @param {number} limitMin - daily limit in minutes
    */
-  function showTimeLimitOverlay(domain) {
-    const existing = document.getElementById('yt-time-limit-overlay');
-    if (existing) return;
+  function renderTimeLimitHud(usedSec, limitMin) {
+    const limitSec   = limitMin * 60;
+    const remainSec  = Math.max(0, limitSec - usedSec);
+    const pct        = Math.min(100, Math.round((usedSec / limitSec) * 100));
+    const barColor   = pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
+
+    let hud = document.getElementById('yt-ext-time-hud');
+    if (!hud) {
+      hud = document.createElement('div');
+      hud.id = 'yt-ext-time-hud';
+      Object.assign(hud.style, {
+        position: 'fixed', top: '68px', right: '14px',
+        zIndex: '2147483646',
+        background: 'rgba(8,8,8,0.86)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderRadius: '10px',
+        padding: '10px 14px',
+        minWidth: '162px',
+        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+        fontSize: '12px',
+        color: '#f2f2f2',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
+        userSelect: 'none',
+        lineHeight: '1',
+        pointerEvents: 'none',
+      });
+      hud.innerHTML = `
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px;opacity:.55">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Screen Time · YT</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <span id="yt-ext-hud-used" style="font-size:15px;font-weight:700;"></span>
+          <span id="yt-ext-hud-remain" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
+        </div>
+        <div style="height:3px;background:rgba(255,255,255,0.09);border-radius:99px;overflow:hidden;">
+          <div id="yt-ext-hud-bar" style="height:100%;border-radius:99px;transition:width .6s,background .6s;"></div>
+        </div>
+      `;
+      document.documentElement.appendChild(hud);
+    }
+
+    hud.querySelector('#yt-ext-hud-used').textContent    = fmtHudTime(usedSec) + ' used';
+    hud.querySelector('#yt-ext-hud-remain').textContent  = remainSec > 0 ? fmtHudTime(remainSec) + ' left' : 'limit reached';
+    const bar = hud.querySelector('#yt-ext-hud-bar');
+    bar.style.width      = pct + '%';
+    bar.style.background = barColor;
+  }
+
+  function removeTimeLimitHud() {
+    document.getElementById('yt-ext-time-hud')?.remove();
+  }
+
+  /**
+   * Checks today's YT active time and limit settings on page load.
+   * Shows the HUD if the limit is enabled and not yet exceeded.
+   * Shows the hard-block immediately if the limit is already exceeded.
+   * Subscribes to storage changes to keep the HUD live (background flushes every 10 s).
+   */
+  function initTimeLimitHud() {
+    const today = new Date().toDateString();
+    chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit'], (syncData) => {
+      if (!syncData.ytLimitEnabled) return;
+      const limitMin = parseInt(syncData.ytDailyLimit || 120, 10);
+
+      chrome.storage.local.get(['ytStats'], (localData) => {
+        const usedSec = ((localData.ytStats || {}).dailyData || {})[today]?.activeTime || 0;
+        if (usedSec >= limitMin * 60) {
+          showTimeLimitOverlay(limitMin);
+          return;
+        }
+        renderTimeLimitHud(usedSec, limitMin);
+      });
+
+      // Background writes ytStats every 10 s — listen for live updates.
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'local' || !changes.ytStats) return;
+        const usedSec = ((changes.ytStats.newValue?.dailyData || {})[today] || {}).activeTime || 0;
+        if (usedSec >= limitMin * 60) {
+          removeTimeLimitHud();
+          showTimeLimitOverlay(limitMin);
+        } else {
+          renderTimeLimitHud(usedSec, limitMin);
+        }
+      });
+    });
+  }
+
+  /**
+   * Shows a full-screen hard-block when the daily YouTube time limit is hit.
+   * No bypass — user must disable or increase the limit in extension settings.
+   * @param {number} [limitMin] - if omitted, fetched from chrome.storage.sync
+   */
+  function showTimeLimitOverlay(limitMin) {
+    if (document.getElementById('yt-time-limit-overlay')) return;
 
     const v = document.querySelector('video');
     if (v) v.pause();
 
-    const overlay = document.createElement('div');
-    overlay.id = 'yt-time-limit-overlay';
-    Object.assign(overlay.style, {
-      position: 'fixed', inset: '0',
-      background: 'rgba(0,0,0,0.88)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      zIndex: '2147483647',
-      fontFamily: 'Inter, sans-serif',
-      color: '#fff', textAlign: 'center',
-      backdropFilter: 'blur(4px)',
-    });
-
-    overlay.innerHTML = `
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:20px">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 16 14"></polyline>
-      </svg>
-      <div style="font-size:22px;font-weight:700;margin-bottom:10px">Daily Limit Reached</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.55);max-width:300px;line-height:1.6;margin-bottom:28px">
-        You've hit your daily ${domain} screen time limit. Take a break!
-      </div>
-      <button id="yt-time-limit-override" style="background:#ff0000;border:none;color:#fff;border-radius:8px;padding:10px 24px;font-size:14px;cursor:pointer;font-family:inherit">
-        Keep Watching Anyway
-      </button>
-      <div style="font-size:11px;margin-top:12px;color:rgba(255,255,255,0.3)">Limit set in extension settings → Advanced</div>
-    `;
-
-    document.body.appendChild(overlay);
-    document.getElementById('yt-time-limit-override').onclick = () => {
-      overlay.remove();
-      const v2 = document.querySelector('video');
-      if (v2) v2.play();
+    const render = (min) => {
+      const overlay = document.createElement('div');
+      overlay.id = 'yt-time-limit-overlay';
+      Object.assign(overlay.style, {
+        position: 'fixed', inset: '0',
+        background: '#060606',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        zIndex: '2147483647',
+        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+        color: '#fff', textAlign: 'center',
+        padding: '40px 24px',
+      });
+      overlay.innerHTML = `
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:28px">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:12px">Screen Time Reached</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.45);max-width:380px;line-height:1.7;margin-bottom:10px">
+          Your daily <strong style="color:rgba(255,255,255,0.72)">YouTube</strong> limit of
+          <strong style="color:rgba(255,255,255,0.72)">${fmtLimitMin(min)}</strong> has been reached.
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.28);max-width:360px;line-height:1.85;margin-bottom:36px">
+          To continue, open the <strong style="color:rgba(255,255,255,0.48)">YT Enhanced</strong> extension popup<br>
+          → <strong style="color:rgba(255,255,255,0.48)">Advanced → Screen Time Limits</strong><br>
+          and disable or increase your YouTube limit.
+        </div>
+        <button id="yt-time-limit-close" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);color:rgba(255,255,255,0.6);border-radius:8px;padding:11px 30px;font-size:13px;cursor:pointer;font-family:inherit">Close Tab</button>
+      `;
+      document.documentElement.appendChild(overlay);
+      document.getElementById('yt-time-limit-close').addEventListener('click', () => window.close());
     };
+
+    if (typeof limitMin === 'number') {
+      render(limitMin);
+    } else {
+      chrome.storage.sync.get(['ytDailyLimit'], (d) => render(parseInt(d.ytDailyLimit || 120, 10)));
+    }
   }
 
   /**
@@ -2464,6 +2584,7 @@
 
   init();
   observeUrlChange();
+  initTimeLimitHud();
 
   // ─── Watched Progress thumbnail MutationObserver ───────────────────────────
   // Fires on every DOM mutation of the YT feed and injects progress bars on any

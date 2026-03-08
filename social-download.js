@@ -727,52 +727,184 @@
     sendMsg({ type: 'socialScrollUpdate', domain, count }, () => { scrollFlushing = false; });
   }, 10_000);
 
-  // ── Screen Time Limit Block (F1) ─────────────────────────────────────────
-  // Listen for a `timeLimitHit` message from background.js and show a soft-block.
+  // ── Screen Time Limit Block ───────────────────────────────────────────────
+  // Listen for timeLimitHit from background.js and show hard-block overlay.
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === 'timeLimitHit') {
       showSocialTimeLimitOverlay(domain === 'ig' ? 'Instagram' : 'Facebook');
     }
   });
 
-  /**
-   * Shows a full-page soft-block overlay when the daily screen time limit fires.
-   * The user can dismiss it and continue — it's a nudge, not a hard lock.
-   * @param {string} platformName - human-readable platform name
-   */
-  function showSocialTimeLimitOverlay(platformName) {
-    const existing = document.getElementById('yt-ext-time-limit');
-    if (existing) return;
-
-    const overlay = document.createElement('div');
-    overlay.id = 'yt-ext-time-limit';
-    Object.assign(overlay.style, {
-      position: 'fixed', inset: '0',
-      background: 'rgba(0,0,0,0.88)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      zIndex: '2147483647',
-      fontFamily: 'Inter, -apple-system, sans-serif',
-      color: '#fff', textAlign: 'center',
-      backdropFilter: 'blur(4px)',
-    });
-
-    overlay.innerHTML = `
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:20px">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 16 14"></polyline>
-      </svg>
-      <div style="font-size:22px;font-weight:700;margin-bottom:10px">Daily Limit Reached</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.5);max-width:300px;line-height:1.6;margin-bottom:28px">
-        You've hit your daily ${platformName} screen time limit. Take a break!
-      </div>
-      <button id="yt-ext-limit-dismiss" style="background:#ff0000;border:none;color:#fff;border-radius:8px;padding:10px 24px;font-size:14px;cursor:pointer;font-family:inherit">
-        Keep Scrolling Anyway
-      </button>
-      <div style="font-size:11px;margin-top:12px;color:rgba(255,255,255,0.3)">Limit set in YT Enhanced → Advanced</div>
-    `;
-
-    document.body.appendChild(overlay);
-    document.getElementById('yt-ext-limit-dismiss').onclick = () => overlay.remove();
+  /** Formats seconds → "Xh Ym" / "Zm". */
+  function fmtHudTime(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
   }
+
+  /** Formats a minute-based limit to a human string. */
+  function fmtLimitMin(min) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  }
+
+  /**
+   * Renders (or updates) the live screen-time HUD in the top-right corner.
+   * @param {number} usedSec       - seconds on platform today
+   * @param {number} limitMin      - daily limit in minutes
+   * @param {string} platformLabel - short label shown in header (e.g. "FB")
+   */
+  function renderSocialTimeLimitHud(usedSec, limitMin, platformLabel) {
+    const limitSec  = limitMin * 60;
+    const remainSec = Math.max(0, limitSec - usedSec);
+    const pct       = Math.min(100, Math.round((usedSec / limitSec) * 100));
+    const barColor  = pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
+
+    let hud = document.getElementById('yt-ext-social-time-hud');
+    if (!hud) {
+      hud = document.createElement('div');
+      hud.id = 'yt-ext-social-time-hud';
+      Object.assign(hud.style, {
+        position: 'fixed', top: '68px', right: '14px',
+        zIndex: '2147483646',
+        background: 'rgba(8,8,8,0.86)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderRadius: '10px',
+        padding: '10px 14px',
+        minWidth: '162px',
+        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+        fontSize: '12px',
+        color: '#f2f2f2',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
+        userSelect: 'none',
+        lineHeight: '1',
+        pointerEvents: 'none',
+      });
+      hud.innerHTML = `
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px;opacity:.55">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Screen Time · ${platformLabel}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <span class="yt-ext-hud-used" style="font-size:15px;font-weight:700;"></span>
+          <span class="yt-ext-hud-remain" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
+        </div>
+        <div style="height:3px;background:rgba(255,255,255,0.09);border-radius:99px;overflow:hidden;">
+          <div class="yt-ext-hud-bar" style="height:100%;border-radius:99px;transition:width .6s,background .6s;"></div>
+        </div>
+      `;
+      document.documentElement.appendChild(hud);
+    }
+
+    hud.querySelector('.yt-ext-hud-used').textContent   = fmtHudTime(usedSec) + ' used';
+    hud.querySelector('.yt-ext-hud-remain').textContent = remainSec > 0 ? fmtHudTime(remainSec) + ' left' : 'limit reached';
+    const bar = hud.querySelector('.yt-ext-hud-bar');
+    bar.style.width      = pct + '%';
+    bar.style.background = barColor;
+  }
+
+  /**
+   * Checks today's stats on page load, shows HUD if limit not yet hit,
+   * hard-block immediately if already exceeded.
+   * Subscribes to storage changes to keep HUD live (background flushes every 10 s).
+   * @param {string} d             - 'fb' or 'ig'
+   * @param {string} platformName  - 'Facebook' or 'Instagram'
+   * @param {string} platformLabel - 'FB' or 'IG'
+   */
+  function initSocialTimeLimitHud(d, platformName, platformLabel) {
+    const enabledKey = `${d}LimitEnabled`;
+    const limitKey   = `${d}DailyLimit`;
+    const statsKey   = `${d}Stats`;
+    const today      = new Date().toDateString();
+
+    chrome.storage.sync.get([enabledKey, limitKey], (syncData) => {
+      if (!syncData[enabledKey]) return;
+      const limitMin = parseInt(syncData[limitKey] || 60, 10);
+
+      chrome.storage.local.get([statsKey], (localData) => {
+        const usedSec = ((localData[statsKey] || {}).dailyData || {})[today]?.activeTime || 0;
+        if (usedSec >= limitMin * 60) {
+          showSocialTimeLimitOverlay(platformName, limitMin);
+          return;
+        }
+        renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+      });
+
+      // Background flushes {domain}Stats every 10 s — stay live.
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'local' || !changes[statsKey]) return;
+        const usedSec = ((changes[statsKey].newValue?.dailyData || {})[today] || {}).activeTime || 0;
+        if (usedSec >= limitMin * 60) {
+          document.getElementById('yt-ext-social-time-hud')?.remove();
+          showSocialTimeLimitOverlay(platformName, limitMin);
+        } else {
+          renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+        }
+      });
+    });
+  }
+
+  /**
+   * Full-screen hard-block when the daily FB/IG time limit is reached.
+   * No bypass button — user must disable/increase the limit in extension settings.
+   * @param {string} platformName - 'Facebook' or 'Instagram'
+   * @param {number} [limitMin]   - if omitted, fetched from chrome.storage.sync
+   */
+  function showSocialTimeLimitOverlay(platformName, limitMin) {
+    if (document.getElementById('yt-ext-time-limit')) return;
+
+    // Pause all playing videos.
+    document.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (_) {} });
+
+    const render = (min) => {
+      const overlay = document.createElement('div');
+      overlay.id = 'yt-ext-time-limit';
+      Object.assign(overlay.style, {
+        position: 'fixed', inset: '0',
+        background: '#060606',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        zIndex: '2147483647',
+        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+        color: '#fff', textAlign: 'center',
+        padding: '40px 24px',
+      });
+      overlay.innerHTML = `
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:28px">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:12px">Screen Time Reached</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.45);max-width:380px;line-height:1.7;margin-bottom:10px">
+          Your daily <strong style="color:rgba(255,255,255,0.72)">${platformName}</strong> limit of
+          <strong style="color:rgba(255,255,255,0.72)">${fmtLimitMin(min)}</strong> has been reached.
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.28);max-width:360px;line-height:1.85;margin-bottom:36px">
+          To continue, open the <strong style="color:rgba(255,255,255,0.48)">YT Enhanced</strong> extension popup<br>
+          → <strong style="color:rgba(255,255,255,0.48)">Advanced → Screen Time Limits</strong><br>
+          and disable or increase your ${platformName} limit.
+        </div>
+        <button id="yt-ext-limit-close" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);color:rgba(255,255,255,0.6);border-radius:8px;padding:11px 30px;font-size:13px;cursor:pointer;font-family:inherit">Close Tab</button>
+      `;
+      document.documentElement.appendChild(overlay);
+      document.getElementById('yt-ext-limit-close').addEventListener('click', () => window.close());
+    };
+
+    if (typeof limitMin === 'number') {
+      render(limitMin);
+    } else {
+      const key = domain === 'ig' ? 'igDailyLimit' : 'fbDailyLimit';
+      chrome.storage.sync.get([key], (d) => render(parseInt(d[key] || 60, 10)));
+    }
+  }
+
+  // Kick off HUD check once the page content has settled.
+  initSocialTimeLimitHud(domain, isIG ? 'Instagram' : 'Facebook', isIG ? 'IG' : 'FB');
 })();
