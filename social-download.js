@@ -801,7 +801,7 @@
           <div class="yt-ext-hud-bar" style="height:100%;border-radius:99px;transition:width .6s,background .6s;"></div>
         </div>
       `;
-      document.documentElement.appendChild(hud);
+      document.body.appendChild(hud);
     }
 
     hud.querySelector('.yt-ext-hud-used').textContent   = fmtHudTime(usedSec) + ' used';
