@@ -825,30 +825,34 @@
     const statsKey   = `${d}Stats`;
     const today      = new Date().toDateString();
 
-    chrome.storage.sync.get([enabledKey, limitKey], (syncData) => {
-      if (!syncData[enabledKey]) return;
-      const limitMin = parseInt(syncData[limitKey] || 60, 10);
-
-      chrome.storage.local.get([statsKey], (localData) => {
-        const usedSec = ((localData[statsKey] || {}).dailyData || {})[today]?.activeTime || 0;
-        if (usedSec >= limitMin * 60) {
-          showSocialTimeLimitOverlay(platformName, limitMin);
+    /** Core eval: read current settings + stats and update HUD/overlay. */
+    function evalSocialHud() {
+      chrome.storage.sync.get([enabledKey, limitKey], (syncData) => {
+        if (!syncData[enabledKey]) {
+          document.getElementById('yt-ext-social-time-hud')?.remove();
           return;
         }
-        renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+        const limitMin = parseInt(syncData[limitKey] || 60, 10);
+        chrome.storage.local.get([statsKey], (localData) => {
+          const usedSec = ((localData[statsKey] || {}).dailyData || {})[today]?.activeTime || 0;
+          if (usedSec >= limitMin * 60) {
+            document.getElementById('yt-ext-social-time-hud')?.remove();
+            showSocialTimeLimitOverlay(platformName, limitMin);
+          } else {
+            renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+          }
+        });
       });
+    }
 
-      // Background flushes {domain}Stats every 10 s — stay live.
-      chrome.storage.onChanged.addListener((changes, area) => {
-        if (area !== 'local' || !changes[statsKey]) return;
-        const usedSec = ((changes[statsKey].newValue?.dailyData || {})[today] || {}).activeTime || 0;
-        if (usedSec >= limitMin * 60) {
-          document.getElementById('yt-ext-social-time-hud')?.remove();
-          showSocialTimeLimitOverlay(platformName, limitMin);
-        } else {
-          renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
-        }
-      });
+    evalSocialHud();
+
+    // React to both sync (limit toggled/changed in popup) and local (stats flushed).
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if ((area === 'sync' && (changes[enabledKey] !== undefined || changes[limitKey] !== undefined)) ||
+          (area === 'local' && changes[statsKey])) {
+        evalSocialHud();
+      }
     });
   }
 

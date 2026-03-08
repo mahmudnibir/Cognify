@@ -1187,38 +1187,43 @@
   }
 
   /**
-   * Checks today's YT active time and limit settings on page load.
-   * Shows the HUD if the limit is enabled and not yet exceeded.
-   * Shows the hard-block immediately if the limit is already exceeded.
-   * Subscribes to storage changes to keep the HUD live (background flushes every 10 s).
+   * Shows/hides the HUD and hard-block overlay based on current settings and stats.
+   * Re-evaluates whenever either the limit settings (sync) or the ytStats (local)
+   * change — so the HUD appears live when the user enables the limit in the popup
+   * while watching, without needing a page reload.
    */
   function initTimeLimitHud() {
     const today = new Date().toDateString();
-    chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit'], (syncData) => {
-      if (!syncData.ytLimitEnabled) return;
-      const limitMin = parseInt(syncData.ytDailyLimit || 120, 10);
 
-      chrome.storage.local.get(['ytStats'], (localData) => {
-        const usedSec = ((localData.ytStats || {}).dailyData || {})[today]?.activeTime || 0;
-        if (usedSec >= limitMin * 60) {
-          showTimeLimitOverlay(limitMin);
-          return;
-        }
-        renderTimeLimitHud(usedSec, limitMin);
-      });
-
-      // Background writes ytStats every 10 s — listen for live updates.
-      chrome.storage.onChanged.addListener((changes, area) => {
+    /** Core eval: read current settings + stats and update HUD/overlay. */
+    function evalHud() {
+      if (!isCtxValid()) return;
+      chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit'], (syncData) => {
         if (!isCtxValid()) return;
-        if (area !== 'local' || !changes.ytStats) return;
-        const usedSec = ((changes.ytStats.newValue?.dailyData || {})[today] || {}).activeTime || 0;
-        if (usedSec >= limitMin * 60) {
-          removeTimeLimitHud();
-          showTimeLimitOverlay(limitMin);
-        } else {
-          renderTimeLimitHud(usedSec, limitMin);
-        }
+        if (!syncData.ytLimitEnabled) { removeTimeLimitHud(); return; }
+        const limitMin = parseInt(syncData.ytDailyLimit || 120, 10);
+        chrome.storage.local.get(['ytStats'], (localData) => {
+          if (!isCtxValid()) return;
+          const usedSec = ((localData.ytStats || {}).dailyData || {})[today]?.activeTime || 0;
+          if (usedSec >= limitMin * 60) {
+            removeTimeLimitHud();
+            showTimeLimitOverlay(limitMin);
+          } else {
+            renderTimeLimitHud(usedSec, limitMin);
+          }
+        });
       });
+    }
+
+    evalHud();
+
+    // React to both sync (limit toggled/changed in popup) and local (stats flushed).
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (!isCtxValid()) return;
+      if ((area === 'sync' && (changes.ytLimitEnabled !== undefined || changes.ytDailyLimit !== undefined)) ||
+          (area === 'local' && changes.ytStats)) {
+        evalHud();
+      }
     });
   }
 

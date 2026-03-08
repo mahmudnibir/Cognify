@@ -1057,6 +1057,7 @@
       padding: 10px 14px;
       margin-bottom: 6px;
       transition: border-color 0.2s;
+      position: relative;
     }
     .limit-card.limit-active { border-color: rgba(255,255,255,0.22); }
     .limit-platform-icon {
@@ -2991,10 +2992,12 @@
             <input type="number" id="ytDailyLimit" min="5" max="1440" value="120" disabled>
             <span class="limit-unit">min/day</span>
           </div>
-          <input type="checkbox" id="ytLimitEnabled" class="toggle-input">
-          <label for="ytLimitEnabled" class="toggle-label">
-            <div class="toggle-thumb"></div>
-          </label>
+          <div>
+            <input type="checkbox" id="ytLimitEnabled" class="toggle-input" tabindex="-1">
+            <label for="ytLimitEnabled" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
         </div>
 
         <!-- Instagram -->
@@ -3007,10 +3010,12 @@
             <input type="number" id="igDailyLimit" min="5" max="1440" value="60" disabled>
             <span class="limit-unit">min/day</span>
           </div>
-          <input type="checkbox" id="igLimitEnabled" class="toggle-input">
-          <label for="igLimitEnabled" class="toggle-label">
-            <div class="toggle-thumb"></div>
-          </label>
+          <div>
+            <input type="checkbox" id="igLimitEnabled" class="toggle-input" tabindex="-1">
+            <label for="igLimitEnabled" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
         </div>
 
         <!-- Facebook -->
@@ -3023,10 +3028,12 @@
             <input type="number" id="fbDailyLimit" min="5" max="1440" value="60" disabled>
             <span class="limit-unit">min/day</span>
           </div>
-          <input type="checkbox" id="fbLimitEnabled" class="toggle-input">
-          <label for="fbLimitEnabled" class="toggle-label">
-            <div class="toggle-thumb"></div>
-          </label>
+          <div>
+            <input type="checkbox" id="fbLimitEnabled" class="toggle-input" tabindex="-1">
+            <label for="fbLimitEnabled" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
         </div>
 
         <button class="btn-save-limits" id="saveLimitsBtn">

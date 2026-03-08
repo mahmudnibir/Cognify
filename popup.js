@@ -1835,10 +1835,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el('fbDailyLimit'))   el('fbDailyLimit').value    = d.fbDailyLimit  || 60;
   });
 
-  // Toggle-change: update card border and enable/disable the number input live.
+  // Toggle-change: update card border, enable/disable input, and auto-save.
   ['yt', 'ig', 'fb'].forEach(prefix => {
     document.getElementById(`${prefix}LimitEnabled`)
-      ?.addEventListener('change', () => applyLimitCardState(prefix));
+      ?.addEventListener('change', () => {
+        applyLimitCardState(prefix);
+        saveScreenTimeLimits();
+      });
   });
 
   // ── Additional feature event listeners ───────────────────────────────────
