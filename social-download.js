@@ -135,14 +135,16 @@
     const SW_ERRORS = ['no sw', 'could not establish connection', 'message port closed', 'receiving end does not exist'];
     const isSWError = (err) => SW_ERRORS.some(s => (err?.message || '').toLowerCase().includes(s));
 
-    const attempt = (isRetry) => {
+    // Retry schedule: 300ms, 800ms, 1600ms — covers MV3 SW cold-start (~1s worst case).
+    const DELAYS = [300, 800, 1600];
+
+    const attempt = (retryIdx) => {
       try {
         chrome.runtime.sendMessage(msg, (res) => {
           const err = chrome.runtime.lastError; // always consumed
           if (err) {
-            if (!isRetry && isSWError(err)) {
-              // SW was asleep — give Chrome 300 ms to wake it then retry once.
-              setTimeout(() => attempt(true), 300);
+            if (retryIdx < DELAYS.length && isSWError(err)) {
+              setTimeout(() => attempt(retryIdx + 1), DELAYS[retryIdx]);
               return;
             }
             cb(null);
@@ -155,7 +157,7 @@
       }
     };
 
-    attempt(false);
+    attempt(0);
   }
 
   // ── Extract a progressive (audio+video) URL from Facebook's page JSON ───
@@ -671,7 +673,23 @@
       if (countedPaths.has(key)) return;
 
       countedPaths.add(key);
-      sendMsg({ type: 'socialVideoPlay', domain }, () => {});
+
+      // Write directly to chrome.storage.local instead of relaying through the
+      // background service worker. The SW-relay approach was intermittently
+      // dropping counts: Chrome MV3 service workers can take up to ~1s to wake,
+      // and the single 300ms retry in sendMsg would time out — the path was
+      // already marked in countedPaths so no further retry was possible.
+      // Content scripts have direct storage access, which is always synchronous
+      // and never depends on the SW being awake.
+      const _today = new Date().toDateString();
+      const _storeKey = `${domain}Stats`;
+      chrome.storage.local.get([_storeKey], (_data) => {
+        const _stats = _data[_storeKey] || { dailyData: {} };
+        const _day = _stats.dailyData[_today] || { activeTime: 0, videosWatched: 0, chatTime: 0 };
+        _day.videosWatched = (_day.videosWatched || 0) + 1;
+        _stats.dailyData[_today] = _day;
+        chrome.storage.local.set({ [_storeKey]: _stats });
+      });
     }, { passive: true });
   }
 
