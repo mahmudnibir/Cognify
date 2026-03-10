@@ -277,6 +277,9 @@
 
   // ── Drag ───────────────────────────────────────────────────────────────────
 
+  // Short ease applied while dragging so the widget glides after the cursor.
+  const DRAG_TRANSITION = 'top 0.10s ease, left 0.10s ease';
+
   function _setupDrag() {
     let startY = 0, startX = 0, startOffset = 0, startLeft = 0;
     let didDrag = false;
@@ -358,7 +361,7 @@
 
       _hud.style.cursor     = 'grabbing';
       _tab.style.cursor     = 'grabbing';
-      _hud.style.transition = 'none';
+      _hud.style.transition = DRAG_TRANSITION;
       _hud.style.transform  = 'none';
       if (_panel) _panel.style.pointerEvents = 'none';
       window.addEventListener('pointermove',   _onMove,  { capture: true, passive: true });
