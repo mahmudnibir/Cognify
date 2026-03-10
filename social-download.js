@@ -101,6 +101,114 @@
     });
   }
 
+  // ── Hide Notifications (Facebook only) ───────────────────────────────────
+  if (isFB) {
+    const NOTIF_STYLE_ID = 'yt-ext-hide-fb-notifications';
+    const NOTIF_CSS = `
+      /* Notification bell in top nav */
+      [aria-label="Notifications"],
+      [data-pagelet*="NotifJewelSection"],
+      [data-pagelet*="FeedNotifsJewel"],
+      [id*="navNotif"],
+      /* Response to notification badge overlay (numeral dot) */
+      [data-testid="fbNotifJewelFlyout"],
+      /* Notification pop-up panel */
+      [aria-label*="notification" i][role="navigation"] { display: none !important; }
+    `;
+
+    function injectNotifStyle() {
+      if (document.getElementById(NOTIF_STYLE_ID)) return;
+      const s = document.createElement('style');
+      s.id = NOTIF_STYLE_ID;
+      s.textContent = NOTIF_CSS;
+      (document.head || document.documentElement).appendChild(s);
+    }
+    function removeNotifStyle() {
+      document.getElementById(NOTIF_STYLE_ID)?.remove();
+    }
+
+    let _notifObserver = null;
+    function enableHideFbNotifications() {
+      injectNotifStyle();
+      if (!_notifObserver) {
+        _notifObserver = new MutationObserver(injectNotifStyle);
+        _notifObserver.observe(document.documentElement, { childList: true, subtree: true });
+      }
+    }
+    function disableHideFbNotifications() {
+      removeNotifStyle();
+      if (_notifObserver) { _notifObserver.disconnect(); _notifObserver = null; }
+    }
+
+    chrome.storage.sync.get(['hideFbNotifications'], (d) => {
+      if (d.hideFbNotifications) enableHideFbNotifications();
+    });
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'sync' || !('hideFbNotifications' in changes)) return;
+      changes.hideFbNotifications.newValue ? enableHideFbNotifications() : disableHideFbNotifications();
+    });
+    // Instant toggle from HUD panel
+    window.addEventListener('yt-ext-edge-toggle', (e) => {
+      if (e.detail?.key !== 'hideFbNotifications') return;
+      e.detail.value ? enableHideFbNotifications() : disableHideFbNotifications();
+    });
+  }
+
+  // ── Hide Reels (Facebook only) ────────────────────────────────────────────
+  if (isFB) {
+    const REELS_STYLE_ID = 'yt-ext-hide-fb-reels';
+    const REELS_CSS = `
+      /* Left-sidebar Reels nav item */
+      [aria-label="Reels"],
+      /* Stories / Reels horizontal bar at top of feed */
+      [data-pagelet="StoriesHarpy"],
+      [data-pagelet="Stories"],
+      [data-pagelet*="ReelsSection"],
+      /* Reel posts and feed items linking to /reel/ */
+      [href*="/reel/"],
+      div:has(> [data-pagelet*="Reels"]),
+      /* Reels tab on profile/pages */
+      [data-tab-key="reels"] { display: none !important; }
+    `;
+
+    function injectReelsStyle() {
+      if (document.getElementById(REELS_STYLE_ID)) return;
+      const s = document.createElement('style');
+      s.id = REELS_STYLE_ID;
+      s.textContent = REELS_CSS;
+      (document.head || document.documentElement).appendChild(s);
+    }
+    function removeReelsStyle() {
+      document.getElementById(REELS_STYLE_ID)?.remove();
+    }
+
+    let _reelsObserver = null;
+    function enableHideFbReels() {
+      injectReelsStyle();
+      if (!_reelsObserver) {
+        _reelsObserver = new MutationObserver(injectReelsStyle);
+        _reelsObserver.observe(document.documentElement, { childList: true, subtree: true });
+      }
+    }
+    function disableHideFbReels() {
+      removeReelsStyle();
+      if (_reelsObserver) { _reelsObserver.disconnect(); _reelsObserver = null; }
+    }
+
+    chrome.storage.sync.get(['hideFbReels'], (d) => {
+      if (d.hideFbReels) enableHideFbReels();
+    });
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'sync' || !('hideFbReels' in changes)) return;
+      changes.hideFbReels.newValue ? enableHideFbReels() : disableHideFbReels();
+    });
+    // Instant toggle from HUD panel
+    window.addEventListener('yt-ext-edge-toggle', (e) => {
+      if (e.detail?.key !== 'hideFbReels') return;
+      e.detail.value ? enableHideFbReels() : disableHideFbReels();
+    });
+  }
+
   // Session-based screen-time timer handle for FB/IG.
   let _socialSessionTimer = null;
 
@@ -1148,25 +1256,29 @@
     const limitKey   = `${d}DailyLimit`;
     const sessionStartKey   = `${d}SessionStart`;
     const sessionBlockedKey = `${d}SessionBlocked`;
+    let _currentLimitMin = 0;  // mutable so add-session can extend it
 
     /**
      * Starts (or restarts) the per-second session countdown timer for FB/IG.
      */
-    function _startTimer(limitMin) {
+    function _startTimer(lim) {
       if (_socialSessionTimer) clearInterval(_socialSessionTimer);
-      const limitSec = limitMin * 60;
+      _currentLimitMin = lim;
+      const limitSec = lim * 60;
       _socialSessionTimer = setInterval(() => {
         chrome.storage.local.get([sessionStartKey, sessionBlockedKey], (local) => {
           if (local[sessionBlockedKey]) { clearInterval(_socialSessionTimer); return; }
           if (!local[sessionStartKey]) return;
           const usedSec = Math.round((Date.now() - local[sessionStartKey]) / 1000);
+          // Update rolling daily stat (every ~10 s to reduce write frequency)
+          if (usedSec % 10 === 0) window.__ytExtEdgeHud?.recordStat(usedSec);
           if (usedSec >= limitSec) {
             clearInterval(_socialSessionTimer);
             window.__ytExtEdgeHud?.remove();
             chrome.storage.local.set({ [sessionBlockedKey]: true });
-            showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin);
+            showSocialTimeLimitOverlay(platformName, platformLabel, d, _currentLimitMin);
           } else {
-            renderSocialTimeLimitHud(usedSec, limitMin, platformLabel);
+            renderSocialTimeLimitHud(usedSec, _currentLimitMin, platformLabel);
           }
         });
       }, 1000);
@@ -1179,17 +1291,20 @@
           window.__ytExtEdgeHud?.remove();
           return;
         }
-        const limitMin = parseInt(syncData[limitKey] || 60, 10);
+        const lim = parseInt(syncData[limitKey] || 60, 10);
         chrome.storage.local.get([sessionBlockedKey, sessionStartKey], (local) => {
           if (local[sessionBlockedKey]) {
             window.__ytExtEdgeHud?.remove();
-            showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin);
+            showSocialTimeLimitOverlay(platformName, platformLabel, d, lim);
             return;
           }
           if (!local[sessionStartKey]) {
-            chrome.storage.local.set({ [sessionStartKey]: Date.now() }, () => _startTimer(limitMin));
+            chrome.storage.local.set({ [sessionStartKey]: Date.now() }, () => {
+              window.__ytExtEdgeHud?.incrementSession();
+              _startTimer(lim);
+            });
           } else {
-            _startTimer(limitMin);
+            _startTimer(lim);
           }
         });
       });
@@ -1205,6 +1320,12 @@
         document.getElementById('yt-ext-time-limit')?.remove();
         evalHud();
       }
+    });
+
+    // Extend current session by N minutes when the user taps "+ Add 5 minutes"
+    window.addEventListener('yt-ext-add-session', (e) => {
+      if (!_currentLimitMin) return;
+      _startTimer(_currentLimitMin + (e.detail?.minutes || 5));
     });
   }
 
@@ -1307,8 +1428,17 @@
 
     document.getElementById('yt-ext-new-session-btn').addEventListener('click', () => {
       if (!selectedReason) return;
-      chrome.storage.local.set({ [sessionBlockedKey]: false, [sessionStartKey]: Date.now() });
-      // Overlay removed via storage.onChanged → sessionBlocked = false in initSocialTimeLimitHud
+      // Remove the overlay immediately so the UI responds at once, rather than
+      // waiting for the storage.onChanged round-trip (which also handles timer restart).
+      overlay.remove();
+      try {
+        chrome.storage.local.set(
+          { [sessionBlockedKey]: false, [sessionStartKey]: Date.now() },
+          () => { void chrome.runtime.lastError; }
+        );
+      } catch (_) {
+        // Extension context invalidated — overlay is already removed; nothing more to do.
+      }
     });
 
     document.getElementById('yt-ext-limit-close').addEventListener('click', () => window.close());

@@ -40,17 +40,20 @@
   // DOM refs
   let _hud, _tab, _panel;
   let _dotEl, _miniEl, _usedEl, _remainEl, _barEl, _arcEl, _pctEl, _ctrlsEl;
+  let _statSessionsEl, _statTodayEl, _statStreakEl;
 
   // ── Platform focus-control definitions ────────────────────────────────────
   const CONTROLS = {
     YT: [
-      { key: 'focusMode',       label: 'Focus Mode'       },
-      { key: 'hideShorts',      label: 'Hide Shorts'      },
-      { key: 'hideComments',    label: 'Hide Comments'    },
-      { key: 'hideSuggestions', label: 'Hide Suggestions' },
+      { key: 'focusMode',           label: 'Focus Mode'         },
+      { key: 'hideShorts',          label: 'Hide Shorts'        },
+      { key: 'hideComments',        label: 'Hide Comments'      },
+      { key: 'hideSuggestions',     label: 'Hide Suggestions'   },
     ],
     FB: [
-      { key: 'hideFbMessenger', label: 'Hide Messenger'   },
+      { key: 'hideFbMessenger',     label: 'Hide Messenger'     },
+      { key: 'hideFbNotifications', label: 'Hide Notifications' },
+      { key: 'hideFbReels',         label: 'Hide Reels'         },
     ],
     IG: [],
   };
@@ -77,6 +80,42 @@
   /** Progress colour: green → amber → red */
   function _col(pct) {
     return pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
+  }
+
+  /** Returns today's date as YYYYMMDD for storage keys. */
+  function _todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /**
+   * Reads stats for the current platform from chrome.storage.local and
+   * updates the three stat tiles (Sessions / Today / Streak).
+   * Also computes a consecutive-day streak by scanning the last 30 days.
+   */
+  function _refreshStats() {
+    if (!_statSessionsEl) return;
+    const keys = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+      keys.push(`ytExtStats_${_label}_${ds}`);
+    }
+    try {
+      chrome.storage.local.get(keys, (data) => {
+        void chrome.runtime.lastError;
+        const todayKey = `ytExtStats_${_label}_${_todayStr()}`;
+        const today    = data[todayKey] || { sessions: 0, totalSec: 0 };
+        _statSessionsEl.textContent = today.sessions || '0';
+        _statTodayEl.textContent    = today.totalSec > 0 ? _fmt(today.totalSec) : '0s';
+        // Streak: consecutive days with ≥ 1 session, starting from today/yesterday
+        let streak = 0;
+        for (let i = 0; i < 30; i++) {
+          if ((data[keys[i]]?.sessions || 0) > 0) { streak++; } else { break; }
+        }
+        _statStreakEl.textContent = streak > 0 ? `${streak}d` : '0d';
+      });
+    } catch (_) {}
   }
 
   // ── Position helpers ───────────────────────────────────────────────────────
@@ -163,6 +202,7 @@
     _hud.style.transform  = _tfExpanded();
     if (_panel) _panel.style.pointerEvents = 'auto';
     _refreshControls();
+    _refreshStats();
   }
 
   // ── Focus controls ─────────────────────────────────────────────────────────
@@ -439,13 +479,51 @@
       </div>
 
       <!-- Progress bar -->
-      <div style="padding:0 16px 12px;">
+      <div style="padding:0 16px 10px;">
         <div style="height:3px;background:rgba(255,255,255,0.12);border-radius:99px;overflow:hidden;">
           <div id="yt-ext-hud-bar" style="
             height:100%;border-radius:99px;width:0%;
             transition:width .7s ease,background .6s ease;
           "></div>
         </div>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex;border-top:1px solid rgba(255,255,255,0.09);">
+        <div style="flex:1;padding:8px 0;text-align:center;
+          border-right:1px solid rgba(255,255,255,0.08);">
+          <div id="yt-ext-hud-stat-sessions" style="
+            font-size:14px;font-weight:700;color:#f0f0f0;
+          ">—</div>
+          <div style="font-size:8px;font-weight:600;letter-spacing:.08em;
+            text-transform:uppercase;color:rgba(255,255,255,0.32);margin-top:2px;">Sessions</div>
+        </div>
+        <div style="flex:1;padding:8px 0;text-align:center;
+          border-right:1px solid rgba(255,255,255,0.08);">
+          <div id="yt-ext-hud-stat-today" style="
+            font-size:14px;font-weight:700;color:#f0f0f0;
+          ">—</div>
+          <div style="font-size:8px;font-weight:600;letter-spacing:.08em;
+            text-transform:uppercase;color:rgba(255,255,255,0.32);margin-top:2px;">Today</div>
+        </div>
+        <div style="flex:1;padding:8px 0;text-align:center;">
+          <div id="yt-ext-hud-stat-streak" style="
+            font-size:14px;font-weight:700;color:#f0f0f0;
+          ">—</div>
+          <div style="font-size:8px;font-weight:600;letter-spacing:.08em;
+            text-transform:uppercase;color:rgba(255,255,255,0.32);margin-top:2px;">Streak</div>
+        </div>
+      </div>
+
+      <!-- Add session button -->
+      <div style="padding:7px 14px 9px;border-top:1px solid rgba(255,255,255,0.08);">
+        <button id="yt-ext-add-session-btn" style="
+          width:100%;padding:6px 0;border-radius:7px;border:none;
+          background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.78);
+          font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;
+          font-family:Inter,-apple-system,sans-serif;
+          transition:background .15s;
+        ">+ Add 5 minutes</button>
       </div>
 
       <!-- Focus controls -->
@@ -491,6 +569,28 @@
     _arcEl    = _hud.querySelector('#yt-ext-hud-arc');
     _pctEl    = _hud.querySelector('#yt-ext-hud-pct');
     _ctrlsEl  = _hud.querySelector('#yt-ext-hud-controls');
+    _statSessionsEl = _hud.querySelector('#yt-ext-hud-stat-sessions');
+    _statTodayEl    = _hud.querySelector('#yt-ext-hud-stat-today');
+    _statStreakEl   = _hud.querySelector('#yt-ext-hud-stat-streak');
+
+    // Wire add-session button
+    const _addBtn = _hud.querySelector('#yt-ext-add-session-btn');
+    if (_addBtn) {
+      _addBtn.addEventListener('mouseenter', () => { _addBtn.style.background = 'rgba(255,255,255,0.18)'; });
+      _addBtn.addEventListener('mouseleave', () => { _addBtn.style.background = 'rgba(255,255,255,0.10)'; });
+      _addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.dispatchEvent(new CustomEvent('yt-ext-add-session', { detail: { minutes: 5 } }));
+        // Optimistic visual feedback
+        const orig = _addBtn.textContent;
+        _addBtn.textContent = '✓ +5 min added';
+        _addBtn.style.background = 'rgba(74,214,109,0.22)';
+        setTimeout(() => {
+          _addBtn.textContent = orig;
+          _addBtn.style.background = 'rgba(255,255,255,0.10)';
+        }, 1600);
+      });
+    }
 
     // Hide focus section if this platform has no controls (IG)
     const ctrlSection = _hud.querySelector('#yt-ext-hud-ctrl-section');
@@ -590,6 +690,44 @@
     remove() {
       _hud?.remove();
       _hud = null;
+    },
+
+    /**
+     * Increment the session counter for today's stats bucket.
+     * Called by content.js / social-download.js when a fresh session starts.
+     */
+    incrementSession() {
+      const key = `ytExtStats_${_label}_${_todayStr()}`;
+      try {
+        chrome.storage.local.get([key], (d) => {
+          void chrome.runtime.lastError;
+          const cur = d[key] || { sessions: 0, totalSec: 0 };
+          chrome.storage.local.set({ [key]: { ...cur, sessions: cur.sessions + 1 } }, () => {
+            void chrome.runtime.lastError;
+          });
+        });
+      } catch (_) {}
+    },
+
+    /**
+     * Update the cumulative time spent today for stats.
+     * Called by host scripts on each timer tick with the running usedSec.
+     * @param {number} usedSec - total seconds used in the current session
+     */
+    recordStat(usedSec) {
+      const key = `ytExtStats_${_label}_${_todayStr()}`;
+      try {
+        chrome.storage.local.get([key], (d) => {
+          void chrome.runtime.lastError;
+          const cur = d[key] || { sessions: 0, totalSec: 0 };
+          // Only update totalSec if it grew (don't regress on new session)
+          if (usedSec > cur.totalSec) {
+            chrome.storage.local.set({ [key]: { ...cur, totalSec: usedSec } }, () => {
+              void chrome.runtime.lastError;
+            });
+          }
+        });
+      } catch (_) {}
     },
   };
 })();

@@ -30,6 +30,8 @@
 
   // Session-based screen-time timer handle — cleared when HUD is torn down.
   let _ytSessionTimer = null;
+  // Current session limit in minutes — updated by evalHud; extended by add-session event.
+  let _ytCurrentLimitMin = 0;
   // Saves video.currentTime before the session-block overlay is shown so it
   // can be restored precisely when the user starts a new session.
   let _ytSavedVideoTime = 0;
@@ -1173,6 +1175,7 @@
    */
   function _startYtSessionTimer(limitMin) {
     if (_ytSessionTimer) clearInterval(_ytSessionTimer);
+    _ytCurrentLimitMin = limitMin;
     const limitSec = limitMin * 60;
     _ytSessionTimer = setInterval(() => {
       if (!isCtxValid()) { clearInterval(_ytSessionTimer); return; }
@@ -1180,13 +1183,15 @@
         if (local.ytSessionBlocked) { clearInterval(_ytSessionTimer); return; }
         if (!local.ytSessionStart) return;
         const usedSec = Math.round((Date.now() - local.ytSessionStart) / 1000);
-        if (usedSec >= limitSec) {
+        // Update rolling daily stat (every ~10 s to reduce write frequency)
+        if (usedSec % 10 === 0) window.__ytExtEdgeHud?.recordStat(usedSec);
+        if (usedSec >= _ytCurrentLimitMin * 60) {
           clearInterval(_ytSessionTimer);
           removeTimeLimitHud();
           chrome.storage.local.set({ ytSessionBlocked: true });
-          showTimeLimitOverlay(limitMin);
+          showTimeLimitOverlay(_ytCurrentLimitMin);
         } else {
-          renderTimeLimitHud(usedSec, limitMin);
+          renderTimeLimitHud(usedSec, _ytCurrentLimitMin);
         }
       });
     }, 1000);
@@ -1217,7 +1222,10 @@
           }
           if (!local.ytSessionStart) {
             // First visit — start the session clock now.
-            chrome.storage.local.set({ ytSessionStart: Date.now() }, () => _startYtSessionTimer(limitMin));
+            chrome.storage.local.set({ ytSessionStart: Date.now() }, () => {
+              window.__ytExtEdgeHud?.incrementSession();
+              _startYtSessionTimer(limitMin);
+            });
           } else {
             _startYtSessionTimer(limitMin);
           }
@@ -1245,6 +1253,12 @@
         }
         evalHud();
       }
+    });
+
+    // Extend the running session by N minutes when the user taps "+ Add 5 minutes"
+    window.addEventListener('yt-ext-add-session', (e) => {
+      if (!_ytCurrentLimitMin || !isCtxValid()) return;
+      _startYtSessionTimer(_ytCurrentLimitMin + (e.detail?.minutes || 5));
     });
   }
 
