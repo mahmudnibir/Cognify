@@ -25,7 +25,7 @@
   // ── Constants ──────────────────────────────────────────────────────────────
   const STORAGE_KEY  = 'ytExtEdgeHudPos';
   const PANEL_W      = 252;                   // card width in px
-  const TAB_W        = 22;                    // always-visible tab width (slimmer)
+  const TAB_W        = 16;                    // always-visible tab width (slimmer)
   const CIRCUMF      = 2 * Math.PI * 26;      // arc circumference (r = 26)
   const TRANSITION   = 'transform 0.26s cubic-bezier(.4,0,.2,1)';
 
@@ -368,42 +368,42 @@
     _tab.id = 'yt-ext-edge-tab';
     Object.assign(_tab.style, {
       width:          TAB_W + 'px',
-      minHeight:      '80px',
+      minHeight:      '62px',
       display:        'flex',
       flexDirection:  'column',
       alignItems:     'center',
       justifyContent: 'center',
-      gap:            '5px',
+      gap:            '3px',
       background:     'rgba(52,53,56,0.97)',
       backdropFilter: 'blur(20px)',
       cursor:         'grab',
       pointerEvents:  'auto',
       flexShrink:     '0',
-      padding:        '10px 0',
+      padding:        '6px 0',
       userSelect:     'none',
     });
 
     _tab.innerHTML = `
       <div id="yt-ext-hud-dot" style="
-        width:6px;height:6px;border-radius:50%;flex-shrink:0;
+        width:5px;height:5px;border-radius:50%;flex-shrink:0;
         transition:background .4s ease,box-shadow .4s ease;
       "></div>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
         stroke="rgba(255,255,255,0.45)" stroke-width="2.5"
         stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
       <span id="yt-ext-hud-mini" style="
         writing-mode:vertical-rl;text-orientation:mixed;
-        font-size:9px;font-weight:700;letter-spacing:.05em;
+        font-size:8px;font-weight:700;letter-spacing:.05em;
         color:rgba(255,255,255,0.60);
         font-family:Inter,-apple-system,sans-serif;
       "></span>
       <div title="Drag to reposition"
-        style="display:flex;flex-direction:column;gap:2px;margin-top:4px;opacity:.32;">
-        <div style="width:8px;height:1.5px;background:#fff;border-radius:1px;"></div>
-        <div style="width:8px;height:1.5px;background:#fff;border-radius:1px;"></div>
-        <div style="width:8px;height:1.5px;background:#fff;border-radius:1px;"></div>
+        style="display:flex;flex-direction:column;gap:2px;margin-top:2px;opacity:.28;">
+        <div style="width:6px;height:1px;background:#fff;border-radius:1px;"></div>
+        <div style="width:6px;height:1px;background:#fff;border-radius:1px;"></div>
+        <div style="width:6px;height:1px;background:#fff;border-radius:1px;"></div>
       </div>
     `;
 
