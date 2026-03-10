@@ -137,8 +137,9 @@
    */
   function _applyPos() {
     if (!_hud || !_tab) return;
-    const panelH = _panel ? (_panel.offsetHeight || 280) : 280;
-    const top    = Math.max(60, Math.min(window.innerHeight - panelH - 20, _pos.offset));
+    // Use tab height when collapsed so saved positions near the bottom stay valid.
+    const activeH = _expanded ? (_panel ? (_panel.offsetHeight || 380) : 380) : 54;
+    const top    = Math.max(20, Math.min(window.innerHeight - activeH - 20, _pos.offset));
     _hud.style.top = top + 'px';
 
     if (_pos.edge === 'right') {
@@ -191,7 +192,7 @@
     if (_dragging || !_hud) return;
     _expanded = false;
     _hud.style.alignItems  = 'flex-start';
-    _tab.style.height      = '42px';
+    _tab.style.height      = '54px';
     _hud.style.transition  = TRANSITION;
     _hud.style.transform   = _tfCollapsed();
     if (_panel) _panel.style.pointerEvents = 'none';
@@ -283,8 +284,12 @@
       // don't accidentally move the widget.
       if (!didDrag && Math.abs(dy) < 4) return;
       didDrag = true;
-      const panelH = _panel ? (_panel.offsetHeight || 280) : 280;
-      _pos.offset  = Math.max(60, Math.min(window.innerHeight - panelH - 20, startOffset + dy));
+      // When collapsed clamp to tab height so the full viewport is reachable;
+      // when expanded clamp to panel height so the card doesn't go off-screen.
+      const activeH = _expanded
+        ? (_panel ? (_panel.offsetHeight || 380) : 380)
+        : 54;
+      _pos.offset  = Math.max(20, Math.min(window.innerHeight - activeH - 20, startOffset + dy));
       _hud.style.top = _pos.offset + 'px';
 
       // Flip edge when dragged past 35 % / 65 % of viewport width
@@ -372,7 +377,7 @@
     _tab.id = 'yt-ext-edge-tab';
     Object.assign(_tab.style, {
       width:          TAB_W + 'px',
-      height:         '42px',
+      height:         '54px',
       display:        'flex',
       flexDirection:  'column',
       alignItems:     'center',
