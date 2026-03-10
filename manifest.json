@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Enhanced - Speed Control & Bookmarks",
+  "name": "Cognify – Smart Study Automation for Your Browser",
   "version": "3.8.0",
-  "description": "Advanced YouTube player with cloud-synced bookmarks, custom speed control, ad skipping, content filters, watch statistics, and full keyboard customization for power users.",
+  "description": "Cognify supercharges your browser with smart study automation — screen-time limits, focus mode, ad-skip, cloud-synced bookmarks, universal video controls, and real-time watch analytics across YouTube, Instagram, and Facebook.",
   "author": "Mahmud Nibir",
   "homepage_url": "https://github.com/mahmudnibir/yt-extension-enhanced",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "downloads", "webRequest"],
@@ -10,7 +10,7 @@
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/*"],
-      "js": ["content.js"],
+      "js": ["edge-hud.js", "content.js"],
       "run_at": "document_idle"
     },
     {
@@ -21,7 +21,7 @@
     },
     {
       "matches": ["*://www.instagram.com/*", "*://www.facebook.com/*", "*://www.fb.com/*"],
-      "js": ["social-download.js"],
+      "js": ["edge-hud.js", "social-download.js"],
       "run_at": "document_idle"
     }
   ],

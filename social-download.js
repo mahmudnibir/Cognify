@@ -260,6 +260,314 @@
     return null;
   }
 
+  // ── Instagram progressive URL extractor ──────────────────────────────────
+  /**
+   * Scans Instagram's embedded <script> JSON for a direct MP4 video_url or
+   * playback_url — the same strategy used by getFBProgressiveUrl() for FB.
+   * Returns a muxed (audio+video) MP4 URL when available, or null for
+   * DASH-only Reels where no progressive stream is present in the page data.
+   *
+   * @returns {string|null}
+   */
+  function getIGProgressiveUrl() {
+    const patterns = [
+      /"video_url"\s*:\s*"(https?[^"]+)"/,
+      /"playback_url"\s*:\s*"(https?[^"]+)"/,
+    ];
+    const decodeUrl = (raw) => {
+      try { return JSON.parse(`"${raw}"`); }
+      catch (_) {
+        return raw
+          .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+          .replace(/\\\//g, '/');
+      }
+    };
+    for (const script of document.querySelectorAll('script')) {
+      const text = script.textContent || '';
+      if (!text.includes('video_url') && !text.includes('playback_url')) continue;
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (!match) continue;
+        const url = decodeUrl(match[1]);
+        if (!url.startsWith('http')) continue;
+        // Reject DASH init/manifest — those are video-only streams.
+        if (url.includes('dashinit') || url.includes('dash_init') || url.endsWith('.mpd')) continue;
+        return url;
+      }
+    }
+    return null;
+  }
+
+  // ── Minimal ISO BMFF / fMP4 re-muxer ─────────────────────────────────────
+  // Combines a video-only fMP4 and an audio-only fMP4 — both typical of
+  // Instagram/Facebook DASH streams — into one valid, non-interleaved MP4
+  // file without re-encoding any data.
+
+  /** Read unsigned 32-bit big-endian integer from Uint8Array. */
+  const _r32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+  /** Write unsigned 32-bit big-endian integer into Uint8Array. */
+  const _w32 = (b, o, v) => {
+    b[o] = (v >>> 24) & 0xff; b[o + 1] = (v >>> 16) & 0xff;
+    b[o + 2] = (v >>> 8) & 0xff; b[o + 3] = v & 0xff;
+  };
+  /** Read 4-char ISO BMFF box type. */
+  const _rtype = (b, o) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+
+  /**
+   * Parse all direct-child ISO BMFF boxes within the byte range [from, to).
+   * Each entry: { type, start, end, dataStart } — all offsets in the source array.
+   * @returns {Array<{type:string,start:number,end:number,dataStart:number}>}
+   */
+  function _parseBoxes(data, from, to) {
+    const boxes = [];
+    let p = from;
+    while (p + 8 <= to) {
+      let sz = _r32(data, p);
+      const type = _rtype(data, p + 4);
+      let hdr = 8;
+      if (sz === 1) {
+        // Extended 64-bit size — only the lo-32 bits are used (files < 4 GB).
+        sz = _r32(data, p + 12);
+        hdr = 16;
+      } else if (sz === 0) {
+        sz = to - p; // box extends to the container boundary
+      }
+      if (sz < hdr || p + sz > to) break;
+      boxes.push({ type, start: p, end: p + sz, dataStart: p + hdr });
+      p += sz;
+    }
+    return boxes;
+  }
+
+  /** Return the first box of the given type, or null. */
+  const _findBox = (arr, type) => arr.find(b => b.type === type) || null;
+
+  /**
+   * Get track_ID from a tkhd (Track Header) full box.
+   * v0: version(1)+flags(3)+ctime(4)+mtime(4) → track_ID at +12
+   * v1: version(1)+flags(3)+ctime(8)+mtime(8) → track_ID at +20
+   */
+  const _tkhdId    = (b, tkhd) => _r32(b, tkhd.dataStart + (b[tkhd.dataStart] === 1 ? 20 : 12));
+  const _setTkhdId = (b, tkhd, id) => _w32(b, tkhd.dataStart + (b[tkhd.dataStart] === 1 ? 20 : 12), id);
+
+  /**
+   * Get/set track_ID from a trex or tfhd full box.
+   * Both have: version(1)+flags(3)+track_ID(4) → offset +4 from dataStart.
+   */
+  const _tid4    = (b, box) => _r32(b, box.dataStart + 4);
+  const _setTid4 = (b, box, id) => _w32(b, box.dataStart + 4, id);
+
+  /**
+   * Get baseMediaDecodeTime from a tfdt box (used to sort fragments).
+   * v0: 4-byte time at +4; v1: 8-byte time — use lo-32 bits at +8 (sufficient for sorting).
+   */
+  const _tfdtTime = (b, tfdt) =>
+    b[tfdt.dataStart] === 1 ? _r32(b, tfdt.dataStart + 8) : _r32(b, tfdt.dataStart + 4);
+
+  /** Concatenate multiple Uint8Array segments into one. */
+  function _concat(...parts) {
+    let len = 0;
+    for (const p of parts) len += p.length;
+    const out = new Uint8Array(len);
+    let pos = 0;
+    for (const p of parts) { out.set(p, pos); pos += p.length; }
+    return out;
+  }
+
+  /**
+   * Build an ISO BMFF box: [size(4)][type(4)][...dataParts]
+   * @returns {Uint8Array}
+   */
+  function _box(type, ...dataParts) {
+    const tc = new Uint8Array([
+      type.charCodeAt(0), type.charCodeAt(1), type.charCodeAt(2), type.charCodeAt(3),
+    ]);
+    let len = 8;
+    for (const d of dataParts) len += d.length;
+    const out = new Uint8Array(len);
+    _w32(out, 0, len);
+    out.set(tc, 4);
+    let p = 8;
+    for (const d of dataParts) { out.set(d, p); p += d.length; }
+    return out;
+  }
+
+  /**
+   * Build a trex (Track Extends) full box.
+   * All default-sample values are 0; default_sample_description_index = 1.
+   */
+  function _buildTrex(trackId) {
+    // version(1)+flags(3)+track_ID(4)+5×uint32 = 24 bytes of full-box data
+    const d = new Uint8Array(24);
+    _w32(d, 4, trackId);
+    _w32(d, 8, 1); // default_sample_description_index
+    return _box('trex', d);
+  }
+
+  /** Build an mvex box containing two trex entries (one per track). */
+  const _buildMvex = (id1, id2) => _box('mvex', _buildTrex(id1), _buildTrex(id2));
+
+  /**
+   * Merge a video-only fMP4 and an audio-only fMP4 into one combined MP4.
+   *
+   * Algorithm:
+   *  1. Parse top-level and moov-child boxes from both files.
+   *  2. Identify each file's track ID from its tkhd box.
+   *  3. Assign non-conflicting IDs: keep video's ID; bump audio's if equal.
+   *  4. Clone audio data and patch every track_ID reference (tkhd, trex, tfhd).
+   *  5. Build a new moov = patched mvhd + video trak + audio trak + new mvex.
+   *  6. Collect moof+mdat fragment pairs from both files.
+   *  7. Interleave all fragments by baseMediaDecodeTime (from tfdt).
+   *  8. Return: ftyp + new moov + all interleaved fragments.
+   *
+   * @param {Uint8Array} vData  Video-only fMP4
+   * @param {Uint8Array} aData  Audio-only fMP4
+   * @returns {Uint8Array}      Combined MP4
+   */
+  function _muxMP4(vData, aData) {
+    // ── Parse top-level boxes ────────────────────────────────────────────
+    const vBoxes = _parseBoxes(vData, 0, vData.length);
+    const aBoxes = _parseBoxes(aData, 0, aData.length);
+    const vMoov  = _findBox(vBoxes, 'moov');
+    const aMoov  = _findBox(aBoxes, 'moov');
+    const vFtyp  = _findBox(vBoxes, 'ftyp');
+    if (!vMoov || !aMoov) throw new Error('mergeMP4: missing moov box');
+
+    // ── Parse moov children ──────────────────────────────────────────────
+    const vMoovKids = _parseBoxes(vData, vMoov.dataStart, vMoov.end);
+    const aMoovKids = _parseBoxes(aData, aMoov.dataStart, aMoov.end);
+    const vTrak = _findBox(vMoovKids, 'trak');
+    const aTrak = _findBox(aMoovKids, 'trak');
+    if (!vTrak || !aTrak) throw new Error('mergeMP4: missing trak box');
+
+    // ── Get track IDs from tkhd ──────────────────────────────────────────
+    const vTkhd = _findBox(_parseBoxes(vData, vTrak.dataStart, vTrak.end), 'tkhd');
+    const aTkhd = _findBox(_parseBoxes(aData, aTrak.dataStart, aTrak.end), 'tkhd');
+    if (!vTkhd || !aTkhd) throw new Error('mergeMP4: missing tkhd box');
+
+    const vTid     = _tkhdId(vData, vTkhd);
+    const aTidOrig = _tkhdId(aData, aTkhd);
+    // Assign audio a track ID that doesn't collide with video's.
+    const aTidNew  = (aTidOrig === vTid) ? vTid + 1 : aTidOrig;
+
+    // ── Clone audio data and patch all track_ID references ───────────────
+    const aC = aData.slice(); // mutable clone
+
+    // Patch audio tkhd
+    const aTkhdC = _findBox(_parseBoxes(aC, aTrak.dataStart, aTrak.end), 'tkhd');
+    if (aTkhdC) _setTkhdId(aC, aTkhdC, aTidNew);
+
+    // Patch audio mvex > trex
+    const aMvexC = _findBox(_parseBoxes(aC, aMoov.dataStart, aMoov.end), 'mvex');
+    if (aMvexC) {
+      for (const trex of _parseBoxes(aC, aMvexC.dataStart, aMvexC.end).filter(b => b.type === 'trex')) {
+        if (_tid4(aC, trex) === aTidOrig) _setTid4(aC, trex, aTidNew);
+      }
+    }
+
+    // Patch audio moof > traf > tfhd in every fragment
+    for (const box of aBoxes) {
+      if (box.type !== 'moof') continue;
+      for (const traf of _parseBoxes(aC, box.dataStart, box.end).filter(b => b.type === 'traf')) {
+        const tfhd = _findBox(_parseBoxes(aC, traf.dataStart, traf.end), 'tfhd');
+        if (tfhd && _tid4(aC, tfhd) === aTidOrig) _setTid4(aC, tfhd, aTidNew);
+      }
+    }
+
+    // ── Build new moov ───────────────────────────────────────────────────
+    // Clone mvhd and update next_track_ID to max(vTid, aTidNew) + 1.
+    const vMvhd = _findBox(vMoovKids, 'mvhd');
+    let mvhdBytes = vMvhd ? vData.slice(vMvhd.start, vMvhd.end) : new Uint8Array(0);
+    if (vMvhd) {
+      const rel  = vMvhd.dataStart - vMvhd.start; // dataStart offset within this slice
+      const ntId = Math.max(vTid, aTidNew) + 1;
+      _w32(mvhdBytes, rel + (mvhdBytes[rel] === 1 ? 108 : 96), ntId);
+    }
+
+    // Audio trak bytes from the patched clone
+    const aTrakB = aC.slice(aTrak.start, aTrak.end);
+
+    // Any non-mvhd/trak/mvex children from the video moov (e.g. udta metadata)
+    const extraParts = vMoovKids
+      .filter(c => c.type !== 'mvhd' && c.type !== 'trak' && c.type !== 'mvex')
+      .map(c => vData.slice(c.start, c.end));
+
+    const newMoov = _box('moov',
+      mvhdBytes,
+      vData.slice(vTrak.start, vTrak.end), // video trak — unchanged
+      aTrakB,                               // audio trak — patched track ID
+      _buildMvex(vTid, aTidNew),            // fresh mvex with trex for both tracks
+      ...extraParts,
+    );
+
+    // ── Collect moof+mdat fragment pairs ─────────────────────────────────
+    /**
+     * Walk a box list and collect consecutive (moof, mdat) pairs.
+     * Sort key is the baseMediaDecodeTime from the inner tfdt box.
+     */
+    function collectFrags(boxes, src) {
+      const frags = [];
+      for (let i = 0; i < boxes.length - 1; i++) {
+        if (boxes[i].type !== 'moof' || boxes[i + 1].type !== 'mdat') continue;
+        const moof = boxes[i];
+        const mdat = boxes[i + 1];
+        let time = 0;
+        const traf = _findBox(_parseBoxes(src, moof.dataStart, moof.end), 'traf');
+        if (traf) {
+          const tfdt = _findBox(_parseBoxes(src, traf.dataStart, traf.end), 'tfdt');
+          if (tfdt) time = _tfdtTime(src, tfdt);
+        }
+        frags.push({
+          time,
+          bytes: _concat(src.slice(moof.start, moof.end), src.slice(mdat.start, mdat.end)),
+        });
+        i++; // skip the mdat we just consumed
+      }
+      return frags;
+    }
+
+    const vFrags = collectFrags(vBoxes, vData);
+    const aFrags = collectFrags(aBoxes, aC);
+
+    // ── Interleave and assemble output ───────────────────────────────────
+    const allFrags = [...vFrags, ...aFrags].sort((a, b) => a.time - b.time);
+    const parts = [];
+    if (vFtyp) parts.push(vData.slice(vFtyp.start, vFtyp.end));
+    parts.push(newMoov);
+    for (const f of allFrags) parts.push(f.bytes);
+    return _concat(...parts);
+  }
+
+  /**
+   * Fetch the video-only and audio-only DASH streams and merge them into a
+   * single combined MP4 Blob. Returns a revocable object URL for download.
+   *
+   * The extension's "<all_urls>" host_permission means content-script fetch()
+   * calls bypass the CDN's CORS policy, so no background relay is needed.
+   *
+   * @param {string}    videoUrl
+   * @param {string}    audioUrl
+   * @param {function} [onProgress] - Called with intermediate status messages
+   * @returns {Promise<string>} Revocable object URL pointing to the merged MP4
+   */
+  async function fetchAndMerge(videoUrl, audioUrl, onProgress) {
+    onProgress?.('⏳ Downloading video + audio streams...');
+    const [vBuf, aBuf] = await Promise.all([
+      fetch(videoUrl, { credentials: 'omit' }).then(r => {
+        if (!r.ok) throw new Error(`Video stream error ${r.status}`);
+        return r.arrayBuffer();
+      }),
+      fetch(audioUrl, { credentials: 'omit' }).then(r => {
+        if (!r.ok) throw new Error(`Audio stream error ${r.status}`);
+        return r.arrayBuffer();
+      }),
+    ]);
+    onProgress?.('⏳ Merging streams into one file...');
+    const merged = _muxMP4(new Uint8Array(vBuf), new Uint8Array(aBuf));
+    const blob   = new Blob([merged], { type: 'video/mp4' });
+    return URL.createObjectURL(blob);
+  }
+
   // ── Dispatch the download via background.js ──────────────────────────────
   /**
    * Resolves the video URL and triggers a local download via background.js.
@@ -268,11 +576,14 @@
    *  1. (FB only) Parse the page's embedded JSON for a progressive (muxed
    *     audio+video) MP4 URL — browser_native_hd_url / playable_url etc.
    *     This is the preferred path because DASH segments are video-only.
+   *  1b. (IG only) Same scan for Instagram's video_url / playback_url keys.
    *  2. Ask background for the CDN URL it intercepted via webRequest — the
    *     real mp4 URL when <video>.currentSrc is a blob: (MSE player).
    *  3. Fall back to scanning the DOM for any <video> with a plain http URL
    *     (works for FB Watch and other non-MSE embeds).
    *  4. If the only URL found is still a blob, show a clear error.
+   *  5. When DASH video+audio are both available, merge client-side (no
+   *     re-encoding) and download a single combined MP4.
    */
   function triggerDownload() {
     // Step 1 — For Facebook, try to extract a progressive (audio+video) URL
@@ -282,6 +593,23 @@
       const progressiveUrl = getFBProgressiveUrl();
       if (progressiveUrl) {
         const filename = `facebook_${Date.now()}.mp4`;
+        sendMsg({ type: 'downloadVideo', url: progressiveUrl, filename }, (res) => {
+          if (!res?.success) {
+            showPageToast('❌ Download failed. Try again.');
+          } else {
+            showPageToast('✅ Download started!');
+          }
+        });
+        return;
+      }
+    }
+
+    // Step 1b — For Instagram, try to extract a muxed (audio+video) MP4 URL
+    // directly from the page's embedded JSON before falling back to DASH.
+    if (isIG) {
+      const progressiveUrl = getIGProgressiveUrl();
+      if (progressiveUrl) {
+        const filename = `instagram_${Date.now()}.mp4`;
         sendMsg({ type: 'downloadVideo', url: progressiveUrl, filename }, (res) => {
           if (!res?.success) {
             showPageToast('❌ Download failed. Try again.');
@@ -321,20 +649,44 @@
       const ts        = Date.now();
       const filename  = `${platform}_${ts}.mp4`;
 
+      // When both DASH video and audio streams are available, merge them
+      // client-side into a single combined MP4 (no re-encoding, no extra files).
+      if (isDashVideoOnly && cachedAudioUrl) {
+        fetchAndMerge(src, cachedAudioUrl, (msg) => showPageToast(msg))
+          .then((blobUrl) => {
+            // Trigger download via a temporary <a> element so the merged Blob
+            // is saved directly — no round-trip back through background.js.
+            const a = document.createElement('a');
+            a.href     = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // Release the object URL after the download has had time to start.
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+            showPageToast('✅ Download started!');
+          })
+          .catch((err) => {
+            console.error('[YT-Ext] Stream merge failed:', err);
+            // Fallback: download video + audio as separate files.
+            sendMsg({ type: 'downloadVideo', url: src, filename }, () => {});
+            sendMsg({
+              type: 'downloadVideo',
+              url: cachedAudioUrl,
+              filename: `${platform}_${ts}_audio.mp4`,
+              saveAs: false,
+            }, () => {});
+            showPageToast('⚠️ Merge failed — saved as 2 separate files (video + audio).');
+          });
+        return; // async path — do not fall through to the sync sendMsg below
+      }
+
       sendMsg({ type: 'downloadVideo', url: src, filename }, (res) => {
         if (!res?.success) {
           showPageToast('❌ Download failed. Try again.');
           return;
         }
-
-        // If we only have a DASH video stream AND we also captured the audio stream,
-        // trigger a second automatic download for the audio so the user has both files.
-        if (isDashVideoOnly && cachedAudioUrl) {
-          const audioFilename = `${platform}_${ts}_audio.mp4`;
-          // saveAs: false — auto-saves silently so only the video triggers a Save dialog.
-          sendMsg({ type: 'downloadVideo', url: cachedAudioUrl, filename: audioFilename, saveAs: false }, () => {});
-          showPageToast('⚠️ Saved as 2 files (video + audio) — merge them in any video editor.');
-        } else if (isDashVideoOnly) {
+        if (isDashVideoOnly) {
           showPageToast('⚠️ Download started — audio unavailable (DASH-only reel).');
         } else {
           showPageToast('✅ Download started!');
@@ -769,63 +1121,20 @@
   }
 
   /**
-   * Renders (or updates) the live screen-time HUD in the top-right corner.
-   * @param {number} usedSec       - seconds on platform today
-   * @param {number} limitMin      - daily limit in minutes
-   * @param {string} platformLabel - short label shown in header (e.g. "FB")
+   * Renders (or updates) the live screen-time HUD.
+   *
+   * Facebook — injected as an inline pill into the FB right-nav header,
+   *            matching the same pattern used on YouTube (`ytd-masthead #end`).
+   * Instagram — rendered as a floating card (position:fixed) since IG's header
+   *             layout is a left sidebar and has no horizontal right-nav to anchor to.
+   *
+   * @param {number} usedSec       - seconds elapsed this session
+   * @param {number} limitMin      - session limit in minutes
+   * @param {string} platformLabel - platform label (e.g. "FB", "IG")
    */
   function renderSocialTimeLimitHud(usedSec, limitMin, platformLabel) {
-    const limitSec  = limitMin * 60;
-    const remainSec = Math.max(0, limitSec - usedSec);
-    const pct       = Math.min(100, Math.round((usedSec / limitSec) * 100));
-    const barColor  = pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
-
-    let hud = document.getElementById('yt-ext-social-time-hud');
-    if (!hud) {
-      hud = document.createElement('div');
-      hud.id = 'yt-ext-social-time-hud';
-      Object.assign(hud.style, {
-        position: 'fixed', top: '68px', right: '14px',
-        zIndex: '2147483646',
-        background: 'rgba(8,8,8,0.86)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: '10px',
-        padding: '10px 14px',
-        minWidth: '162px',
-        fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
-        fontSize: '12px',
-        color: '#f2f2f2',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
-        userSelect: 'none',
-        lineHeight: '1',
-        pointerEvents: 'none',
-      });
-      hud.innerHTML = `
-        <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px;opacity:.55">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase">Screen Time · ${platformLabel}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-          <span class="yt-ext-hud-used" style="font-size:15px;font-weight:700;"></span>
-          <span class="yt-ext-hud-remain" style="font-size:11px;color:rgba(255,255,255,0.45);"></span>
-        </div>
-        <div style="height:3px;background:rgba(255,255,255,0.09);border-radius:99px;overflow:hidden;">
-          <div class="yt-ext-hud-bar" style="height:100%;border-radius:99px;transition:width .6s,background .6s;"></div>
-        </div>
-      `;
-      document.body.appendChild(hud);
-    }
-
-    hud.querySelector('.yt-ext-hud-used').textContent   = fmtHudTime(usedSec) + ' used';
-    hud.querySelector('.yt-ext-hud-remain').textContent = remainSec > 0 ? fmtHudTime(remainSec) + ' left' : 'limit reached';
-    const bar = hud.querySelector('.yt-ext-hud-bar');
-    bar.style.width      = pct + '%';
-    bar.style.background = barColor;
+    window.__ytExtEdgeHud?.render(usedSec, limitMin, platformLabel);
   }
-
   /**
    * Checks today's stats on page load, shows HUD if limit not yet hit,
    * hard-block immediately if already exceeded.
@@ -853,7 +1162,7 @@
           const usedSec = Math.round((Date.now() - local[sessionStartKey]) / 1000);
           if (usedSec >= limitSec) {
             clearInterval(_socialSessionTimer);
-            document.getElementById('yt-ext-social-time-hud')?.remove();
+            window.__ytExtEdgeHud?.remove();
             chrome.storage.local.set({ [sessionBlockedKey]: true });
             showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin);
           } else {
@@ -867,13 +1176,13 @@
       chrome.storage.sync.get([enabledKey, limitKey], (syncData) => {
         if (!syncData[enabledKey]) {
           if (_socialSessionTimer) { clearInterval(_socialSessionTimer); _socialSessionTimer = null; }
-          document.getElementById('yt-ext-social-time-hud')?.remove();
+          window.__ytExtEdgeHud?.remove();
           return;
         }
         const limitMin = parseInt(syncData[limitKey] || 60, 10);
         chrome.storage.local.get([sessionBlockedKey, sessionStartKey], (local) => {
           if (local[sessionBlockedKey]) {
-            document.getElementById('yt-ext-social-time-hud')?.remove();
+            window.__ytExtEdgeHud?.remove();
             showSocialTimeLimitOverlay(platformName, platformLabel, d, limitMin);
             return;
           }

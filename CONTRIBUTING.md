@@ -1,4 +1,4 @@
-# Contributing to YT Enhanced
+# Contributing to Cognify
 
 Thanks for taking the time to contribute! All improvements are welcome — bug fixes, new features, UI polish, and documentation.
 

@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           });
         } catch {
-          showModal({ title: 'Invalid File', message: 'Invalid backup file. Please select a valid YT Enhanced backup JSON.', buttons: [{ text: 'OK', type: 'primary' }] });
+          showModal({ title: 'Invalid File', message: 'Invalid backup file. Please select a valid Cognify backup JSON.', buttons: [{ text: 'OK', type: 'primary' }] });
         }
         // Reset input so the same file can be re-selected
         importBookmarksFile.value = '';
@@ -1770,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await file.text();
       const backup = JSON.parse(text);
       if (!backup.sync && !backup.local) {
-        await showModal({ title: 'Invalid Backup', message: 'This file is not a valid YT Enhanced backup.', buttons: [{ text: 'OK', type: 'primary' }] });
+        await showModal({ title: 'Invalid Backup', message: 'This file is not a valid Cognify backup.', buttons: [{ text: 'OK', type: 'primary' }] });
         e.target.value = '';
         return;
       }
@@ -1786,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await showModal({ title: 'Restored!', message: 'Backup restored successfully. Reloading...', buttons: [{ text: 'OK', type: 'primary' }] });
       window.location.reload();
     } catch {
-      await showModal({ title: 'Error', message: 'Failed to parse backup file. Please select a valid YT Enhanced backup JSON.', buttons: [{ text: 'OK', type: 'primary' }] });
+      await showModal({ title: 'Error', message: 'Failed to parse backup file. Please select a valid Cognify backup JSON.', buttons: [{ text: 'OK', type: 'primary' }] });
     }
     e.target.value = '';
   }

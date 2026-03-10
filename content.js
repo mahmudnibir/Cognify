@@ -1139,77 +1139,17 @@
    * @param {number} usedSec  - seconds elapsed this session
    * @param {number} limitMin - session limit in minutes
    */
+  /**
+   * Delegates to the shared edge-docked HUD widget (edge-hud.js).
+   * @param {number} usedSec  - seconds elapsed this session
+   * @param {number} limitMin - session limit in minutes
+   */
   function renderTimeLimitHud(usedSec, limitMin) {
-    const limitSec  = limitMin * 60;
-    const remainSec = Math.max(0, limitSec - usedSec);
-    const pct       = Math.min(100, Math.round((usedSec / limitSec) * 100));
-    const barColor  = pct >= 90 ? '#e04030' : pct >= 70 ? '#f0a030' : '#4ad66d';
-
-    let hud = document.getElementById('yt-ext-time-hud');
-    if (!hud) {
-      hud = document.createElement('div');
-      hud.id = 'yt-ext-time-hud';
-      // Match YouTube's native header button geometry exactly:
-      // height 36px · padding 0 16px · border-radius 18px · Roboto 14px 500
-      Object.assign(hud.style, {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        height: '36px',
-        padding: '0 16px 0 20px',
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '18px',
-        fontFamily: 'Roboto,Arial,sans-serif',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: '#fff',
-        userSelect: 'none',
-        cursor: 'default',
-        alignSelf: 'center',
-        flexShrink: '0',
-        marginRight: '8px',
-        whiteSpace: 'nowrap',
-        position: 'relative',
-        overflow: 'hidden',
-      });
-      hud.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="rgba(255,255,255,0.55)" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <span id="yt-ext-hud-used" style="font-weight:600;"></span>
-        <span style="color:rgba(255,255,255,0.25);font-size:12px;font-weight:400;">/</span>
-        <span id="yt-ext-hud-remain" style="color:rgba(255,255,255,0.55);font-size:13px;font-weight:400;"></span>
-        <div id="yt-ext-hud-bar" style="
-          position:absolute;bottom:0;left:0;height:2px;
-          transition:width .6s ease,background .6s ease;
-        "></div>
-      `;
-
-      // Inject into the YT header's #end section (right of search+voice area).
-      // Retries until the header is ready (SPA navigation may delay it).
-      const attach = () => {
-        const end = document.querySelector('ytd-masthead #end');
-        if (end) {
-          end.insertBefore(hud, end.firstChild);
-        } else {
-          setTimeout(attach, 400);
-        }
-      };
-      attach();
-    }
-
-    document.getElementById('yt-ext-hud-used').textContent   = fmtHudTime(usedSec) + ' used';
-    document.getElementById('yt-ext-hud-remain').textContent = remainSec > 0
-      ? fmtHudTime(remainSec) + ' left'
-      : 'limit reached';
-    const bar = document.getElementById('yt-ext-hud-bar');
-    if (bar) { bar.style.width = pct + '%'; bar.style.background = barColor; }
+    window.__ytExtEdgeHud?.render(usedSec, limitMin, 'YT');
   }
 
   function removeTimeLimitHud() {
-    document.getElementById('yt-ext-time-hud')?.remove();
+    window.__ytExtEdgeHud?.remove();
   }
 
   /**
@@ -2777,6 +2717,19 @@
   init();
   observeUrlChange();
   initTimeLimitHud();
+
+  // ── Edge-HUD instant toggle relay ─────────────────────────────────────────
+  // edge-hud.js dispatches this event when a focus-control toggle is clicked.
+  // Applying immediately here avoids waiting for the applySettings() interval.
+  window.addEventListener('yt-ext-edge-toggle', (e) => {
+    if (!isCtxValid()) return;
+    const { key, value } = e.detail || {};
+    if (key === 'focusMode')       { value ? applyFocusMode()    : removeFocusMode();    }
+    else if (key === 'hideComments')    { value ? hideComments()    : showComments();    }
+    else if (key === 'hideShorts')      { value ? hideShorts()      : showShorts();      }
+    else if (key === 'hideDescription') { value ? hideDescription() : showDescription(); }
+    else if (key === 'hideSuggestions') { value ? hideSuggestions() : showSuggestions(); }
+  });
 
   // ─── Watched Progress thumbnail MutationObserver ───────────────────────────
   // Fires on every DOM mutation of the YT feed and injects progress bars on any

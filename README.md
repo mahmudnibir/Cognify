@@ -1,8 +1,8 @@
-# YouTube Enhanced
+# Cognify – Smart Study Automation for Your Browser
 
-> Advanced YouTube browser extension for power users.
+> A powerful Chrome extension that automates your study routine and brings intelligent focus tools directly to your browser.
 
-**Version** 3.9.0 &nbsp;·&nbsp; **Manifest** V3 &nbsp;·&nbsp; **Author** [Mahmud Nibir](https://github.com/mahmudnibir)
+**Version** 3.8.0 &nbsp;·&nbsp; **Manifest** V3 &nbsp;·&nbsp; **Author** [Mahmud Nibir](https://github.com/mahmudnibir)
 
 ![Views](https://visitor-badge.laobi.icu/badge?page_id=mahmudnibir.yt-extension-enhanced)
 
@@ -59,7 +59,7 @@
 
 ## Usage
 
-Click the extension icon on any `youtube.com` page to open the control panel. All settings persist across sessions via Chrome's sync storage. The **Advanced** tab contains automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, bookmark import/export, and statistics management.
+Click the **Cognify** extension icon on any supported page to open the control panel. All settings persist across sessions via Chrome's sync storage. The **Advanced** tab contains automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, bookmark import/export, and statistics management.
 
 ---
 
