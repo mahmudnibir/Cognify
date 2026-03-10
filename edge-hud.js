@@ -25,12 +25,12 @@
   // ── Constants ──────────────────────────────────────────────────────────────
   const STORAGE_KEY  = 'ytExtEdgeHudPos';
   const PANEL_W      = 252;                   // card width in px
-  const TAB_W        = 30;                    // always-visible tab width
+  const TAB_W        = 22;                    // always-visible tab width (slimmer)
   const CIRCUMF      = 2 * Math.PI * 26;      // arc circumference (r = 26)
   const TRANSITION   = 'transform 0.26s cubic-bezier(.4,0,.2,1)';
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let _pos      = { edge: 'right', offset: 200 };
+  let _pos      = { edge: 'right', offset: 0 };  // 0 = first-time, will be centered on create
   let _posReady = false;
   let _label    = 'YT';
   let _expanded = false;
@@ -103,34 +103,45 @@
     _hud.style.top = top + 'px';
 
     if (_pos.edge === 'right') {
+      // row: _tab (1st child) = left, _panel (2nd child) = right.
+      // translateX(+PANEL_W) → panel slides off-screen right, TAB peeks at right edge. ✓
       _hud.style.right         = '0';
       _hud.style.left          = 'auto';
-      // row-reverse: panel is left, tab is right → only tab peeks at right edge
-      _hud.style.flexDirection = 'row-reverse';
-      _tab.style.borderRadius  = '16px 5px 5px 16px';
-      _tab.style.borderRight   = '1px solid rgba(255,255,255,0.06)';
-      _tab.style.borderLeft    = '1px solid rgba(255,255,255,0.13)';
-      _tab.style.borderTop     = '1px solid rgba(255,255,255,0.10)';
-      _tab.style.borderBottom  = '1px solid rgba(255,255,255,0.10)';
+      _hud.style.flexDirection = 'row';
+      // Tab: exposed on its LEFT face (the visible handle side)
+      _tab.style.borderRadius  = '14px 0 0 14px';   // tl tr br bl — rounded left, flat right (seam)
+      _tab.style.borderLeft    = '1px solid rgba(255,255,255,0.22)';
+      _tab.style.borderRight   = 'none';
+      _tab.style.borderTop     = '1px solid rgba(255,255,255,0.16)';
+      _tab.style.borderBottom  = '1px solid rgba(255,255,255,0.16)';
       if (_panel) {
-        _panel.style.borderRadius = '16px 0 0 16px';
-        _panel.style.borderRight  = 'none';
-        _panel.style.boxShadow    = '-6px 0 36px rgba(0,0,0,0.75)';
+        // Panel: right side floats near screen edge; left side is the seam with tab
+        _panel.style.borderRadius = '0 12px 12px 0';
+        _panel.style.borderLeft   = 'none';
+        _panel.style.borderRight  = '1px solid rgba(255,255,255,0.10)';
+        _panel.style.borderTop    = '1px solid rgba(255,255,255,0.16)';
+        _panel.style.borderBottom = '1px solid rgba(255,255,255,0.16)';
+        _panel.style.boxShadow    = '4px 0 32px rgba(0,0,0,0.50)';
       }
     } else {
+      // row-reverse: _tab (1st child) flows from right = right side, _panel flows from left.
+      // translateX(-PANEL_W) → panel slides off-screen left, TAB peeks at left edge. ✓
       _hud.style.left          = '0';
       _hud.style.right         = 'auto';
-      // row: tab is left, panel is right → only tab peeks at left edge
-      _hud.style.flexDirection = 'row';
-      _tab.style.borderRadius  = '5px 16px 16px 5px';
-      _tab.style.borderLeft    = '1px solid rgba(255,255,255,0.06)';
-      _tab.style.borderRight   = '1px solid rgba(255,255,255,0.13)';
-      _tab.style.borderTop     = '1px solid rgba(255,255,255,0.10)';
-      _tab.style.borderBottom  = '1px solid rgba(255,255,255,0.10)';
+      _hud.style.flexDirection = 'row-reverse';
+      // Tab: exposed on its RIGHT face
+      _tab.style.borderRadius  = '0 14px 14px 0';   // tl tr br bl — flat left (seam), rounded right
+      _tab.style.borderRight   = '1px solid rgba(255,255,255,0.22)';
+      _tab.style.borderLeft    = 'none';
+      _tab.style.borderTop     = '1px solid rgba(255,255,255,0.16)';
+      _tab.style.borderBottom  = '1px solid rgba(255,255,255,0.16)';
       if (_panel) {
-        _panel.style.borderRadius = '0 16px 16px 0';
-        _panel.style.borderLeft   = 'none';
-        _panel.style.boxShadow    = '6px 0 36px rgba(0,0,0,0.75)';
+        _panel.style.borderRadius = '12px 0 0 12px';
+        _panel.style.borderRight  = 'none';
+        _panel.style.borderLeft   = '1px solid rgba(255,255,255,0.10)';
+        _panel.style.borderTop    = '1px solid rgba(255,255,255,0.16)';
+        _panel.style.borderBottom = '1px solid rgba(255,255,255,0.16)';
+        _panel.style.boxShadow    = '-4px 0 32px rgba(0,0,0,0.50)';
       }
     }
   }
@@ -184,12 +195,12 @@
           padding:5px 0;cursor:pointer;gap:8px;
         `;
         row.innerHTML = `
-          <span style="font-size:12px;color:rgba(255,255,255,0.58);flex:1;
+          <span style="font-size:12px;color:rgba(255,255,255,0.75);flex:1;
             font-family:Inter,-apple-system,sans-serif;">${label}</span>
           <div style="
             position:relative;width:34px;height:19px;border-radius:10px;
             flex-shrink:0;
-            background:${on ? '#4ad66d' : 'rgba(255,255,255,0.11)'};
+            background:${on ? '#4ad66d' : 'rgba(255,255,255,0.18)'};
             transition:background .18s;
           ">
             <div style="
@@ -219,28 +230,20 @@
   // ── Drag ───────────────────────────────────────────────────────────────────
 
   function _setupDrag() {
-    let startY = 0, startOffset = 0;
+    let startY = 0, startOffset = 0, didDrag = false;
 
-    _tab.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
-      e.stopPropagation();
-      _dragging    = true;
-      startY       = e.clientY;
-      startOffset  = _pos.offset;
-      _tab.style.cursor     = 'grabbing';
-      _hud.style.transition = 'none';
-      _hud.style.transform  = _tfExpanded();
-      if (_panel) _panel.style.pointerEvents = 'none';
-      _tab.setPointerCapture(e.pointerId);
-    });
-
-    _tab.addEventListener('pointermove', (e) => {
+    const _onMove = (e) => {
       if (!_dragging) return;
+      const dy = e.clientY - startY;
+      // Only commit to drag after a 4 px threshold so small hover movements
+      // don't accidentally move the widget.
+      if (!didDrag && Math.abs(dy) < 4) return;
+      didDrag = true;
       const panelH = _panel ? (_panel.offsetHeight || 280) : 280;
-      _pos.offset  = Math.max(60, Math.min(window.innerHeight - panelH - 20, startOffset + e.clientY - startY));
+      _pos.offset  = Math.max(60, Math.min(window.innerHeight - panelH - 20, startOffset + dy));
       _hud.style.top = _pos.offset + 'px';
 
-      // Flip side when dragged past 35% / 65% of viewport width
+      // Flip edge when dragged past 35 % / 65 % of viewport width
       const cx = e.clientX;
       if (_pos.edge === 'right' && cx < window.innerWidth * 0.35) {
         _pos.edge = 'left';
@@ -251,24 +254,53 @@
         _applyPos();
         _hud.style.transform = _tfExpanded();
       }
-    });
+    };
 
     const _endDrag = () => {
       if (!_dragging) return;
       _dragging         = false;
+      _hud.style.cursor = '';
       _tab.style.cursor = 'grab';
       _hud.style.transition = TRANSITION;
-      if (_expanded) {
-        _hud.style.transform = _tfExpanded();
-        if (_panel) _panel.style.pointerEvents = 'auto';
-      } else {
-        _collapse();
+      window.removeEventListener('pointermove', _onMove, true);
+      window.removeEventListener('pointerup',   _endDrag, true);
+      window.removeEventListener('pointercancel', _endDrag, true);
+      if (didDrag) {
+        // Finished an actual drag — settle in current expand/collapse state
+        if (_expanded) {
+          _hud.style.transform = _tfExpanded();
+          if (_panel) _panel.style.pointerEvents = 'auto';
+        } else {
+          _collapse();
+        }
+        _savePos();
       }
-      _savePos();
+      // If !didDrag it was just a click — don't change expand state, let
+      // the natural mouseenter/mouseleave handle it.
     };
 
-    _tab.addEventListener('pointerup',     _endDrag);
-    _tab.addEventListener('pointercancel', _endDrag);
+    // Listen on the whole _hud so dragging the panel area also works.
+    _hud.addEventListener('pointerdown', (e) => {
+      // Let interactive panel elements (toggles, buttons) receive their own clicks
+      if (e.target.closest('label, button, input, a, select')) return;
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      didDrag      = false;
+      _dragging    = true;
+      startY       = e.clientY;
+      // Use actual rendered top to prevent jump when clamped value differs
+      startOffset  = parseInt(_hud.style.top, 10) || _pos.offset;
+      _pos.offset  = startOffset;
+      _hud.style.cursor     = 'grabbing';
+      _tab.style.cursor     = 'grabbing';
+      _hud.style.transition = 'none';
+      _hud.style.transform  = _tfExpanded();
+      if (_panel) _panel.style.pointerEvents = 'none';
+      window.addEventListener('pointermove',   _onMove,  { capture: true, passive: true });
+      window.addEventListener('pointerup',     _endDrag, { capture: true });
+      window.addEventListener('pointercancel', _endDrag, { capture: true });
+    });
   }
 
   // ── Build DOM ──────────────────────────────────────────────────────────────
@@ -276,7 +308,10 @@
   function _create() {
     if (_hud) return;
 
-    // ── Outer wrapper (position:fixed, pointer-events:none so page isn't blocked)
+    // ── Outer wrapper (position:fixed)
+    // pointerEvents must be 'auto' on the wrapper so mouseenter/mouseleave
+    // fire correctly. The panel + off-screen area never covers live content
+    // while collapsed because the whole widget is translated off-screen.
     _hud = document.createElement('div');
     _hud.id = 'yt-ext-edge-hud';
     Object.assign(_hud.style, {
@@ -284,7 +319,7 @@
       zIndex:        '2147483646',
       display:       'flex',
       alignItems:    'stretch',
-      pointerEvents: 'none',
+      pointerEvents: 'auto',
       top:           _pos.offset + 'px',
     });
 
@@ -293,42 +328,42 @@
     _tab.id = 'yt-ext-edge-tab';
     Object.assign(_tab.style, {
       width:          TAB_W + 'px',
-      minHeight:      '108px',
+      minHeight:      '80px',
       display:        'flex',
       flexDirection:  'column',
       alignItems:     'center',
       justifyContent: 'center',
-      gap:            '6px',
-      background:     'rgba(10,10,10,0.93)',
-      backdropFilter: 'blur(16px)',
+      gap:            '5px',
+      background:     'rgba(52,53,56,0.97)',
+      backdropFilter: 'blur(20px)',
       cursor:         'grab',
       pointerEvents:  'auto',
       flexShrink:     '0',
-      padding:        '12px 0',
+      padding:        '10px 0',
       userSelect:     'none',
     });
 
     _tab.innerHTML = `
       <div id="yt-ext-hud-dot" style="
-        width:8px;height:8px;border-radius:50%;flex-shrink:0;
+        width:6px;height:6px;border-radius:50%;flex-shrink:0;
         transition:background .4s ease,box-shadow .4s ease;
       "></div>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-        stroke="rgba(255,255,255,0.28)" stroke-width="2.5"
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+        stroke="rgba(255,255,255,0.45)" stroke-width="2.5"
         stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
       <span id="yt-ext-hud-mini" style="
         writing-mode:vertical-rl;text-orientation:mixed;
-        font-size:10px;font-weight:700;letter-spacing:.05em;
-        color:rgba(255,255,255,0.38);
+        font-size:9px;font-weight:700;letter-spacing:.05em;
+        color:rgba(255,255,255,0.60);
         font-family:Inter,-apple-system,sans-serif;
       "></span>
       <div title="Drag to reposition"
-        style="display:flex;flex-direction:column;gap:2.5px;margin-top:5px;opacity:.18;">
-        <div style="width:10px;height:1.5px;background:#fff;border-radius:1px;"></div>
-        <div style="width:10px;height:1.5px;background:#fff;border-radius:1px;"></div>
-        <div style="width:10px;height:1.5px;background:#fff;border-radius:1px;"></div>
+        style="display:flex;flex-direction:column;gap:2px;margin-top:4px;opacity:.32;">
+        <div style="width:8px;height:1.5px;background:#fff;border-radius:1px;"></div>
+        <div style="width:8px;height:1.5px;background:#fff;border-radius:1px;"></div>
+        <div style="width:8px;height:1.5px;background:#fff;border-radius:1px;"></div>
       </div>
     `;
 
@@ -337,9 +372,9 @@
     _panel.id = 'yt-ext-edge-panel';
     Object.assign(_panel.style, {
       width:          PANEL_W + 'px',
-      background:     'rgba(8,8,8,0.95)',
-      border:         '1px solid rgba(255,255,255,0.08)',
-      backdropFilter: 'blur(20px)',
+      background:     'rgba(40,41,44,0.97)',
+      border:         '1px solid rgba(255,255,255,0.13)',  /* overridden per-side in _applyPos */
+      backdropFilter: 'blur(24px)',
       pointerEvents:  'none',
       fontFamily:     'Inter,-apple-system,Helvetica Neue,Arial,sans-serif',
       color:          '#f0f0f0',
@@ -354,15 +389,15 @@
       ">
         <span style="
           font-size:9px;font-weight:700;letter-spacing:.10em;
-          text-transform:uppercase;color:rgba(255,255,255,0.28);
+          text-transform:uppercase;color:rgba(255,255,255,0.50);
         ">Screen Time</span>
         <span id="yt-ext-hud-badge" style="
           font-size:9px;font-weight:800;letter-spacing:.08em;
           text-transform:uppercase;
-          background:rgba(255,255,255,0.07);
-          border:1px solid rgba(255,255,255,0.10);
+          background:rgba(255,255,255,0.10);
+          border:1px solid rgba(255,255,255,0.18);
           border-radius:4px;padding:2px 6px;
-          color:rgba(255,255,255,0.35);
+          color:rgba(255,255,255,0.70);
         ">${_label}</span>
       </div>
 
@@ -375,7 +410,7 @@
         <div style="position:relative;width:68px;height:68px;flex-shrink:0;">
           <svg width="68" height="68" viewBox="0 0 68 68">
             <circle cx="34" cy="34" r="26"
-              fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="5"/>
+              fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5"/>
             <circle id="yt-ext-hud-arc"
               cx="34" cy="34" r="26"
               fill="none" stroke-width="5" stroke-linecap="round"
@@ -398,14 +433,14 @@
             font-size:17px;font-weight:700;line-height:1.1;letter-spacing:-.02em;
           "></div>
           <div id="yt-ext-hud-remain" style="
-            font-size:12px;color:rgba(255,255,255,0.40);margin-top:4px;
+            font-size:12px;color:rgba(255,255,255,0.58);margin-top:4px;
           "></div>
         </div>
       </div>
 
       <!-- Progress bar -->
       <div style="padding:0 16px 12px;">
-        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+        <div style="height:3px;background:rgba(255,255,255,0.12);border-radius:99px;overflow:hidden;">
           <div id="yt-ext-hud-bar" style="
             height:100%;border-radius:99px;width:0%;
             transition:width .7s ease,background .6s ease;
@@ -415,12 +450,12 @@
 
       <!-- Focus controls -->
       <div id="yt-ext-hud-ctrl-section" style="
-        border-top:1px solid rgba(255,255,255,0.06);
+        border-top:1px solid rgba(255,255,255,0.10);
         padding:10px 16px 14px;
       ">
         <div style="
           font-size:9px;font-weight:700;letter-spacing:.10em;
-          text-transform:uppercase;color:rgba(255,255,255,0.22);
+          text-transform:uppercase;color:rgba(255,255,255,0.40);
           margin-bottom:8px;
         ">Focus Controls</div>
         <div id="yt-ext-hud-controls"></div>
@@ -428,16 +463,16 @@
 
       <!-- Drag hint footer -->
       <div style="
-        border-top:1px solid rgba(255,255,255,0.04);
+        border-top:1px solid rgba(255,255,255,0.08);
         padding:6px 16px 8px;
         display:flex;align-items:center;gap:5px;
       ">
-        <div style="display:flex;flex-direction:column;gap:2px;opacity:.18;flex-shrink:0;">
+        <div style="display:flex;flex-direction:column;gap:2px;opacity:.30;flex-shrink:0;">
           <div style="width:10px;height:1.5px;background:#fff;border-radius:1px;"></div>
           <div style="width:10px;height:1.5px;background:#fff;border-radius:1px;"></div>
           <div style="width:10px;height:1.5px;background:#fff;border-radius:1px;"></div>
         </div>
-        <span style="font-size:9px;color:rgba(255,255,255,0.16);letter-spacing:.04em;">
+        <span style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:.04em;">
           Drag tab to reposition
         </span>
       </div>
@@ -463,6 +498,8 @@
       ctrlSection.style.display = 'none';
     }
 
+    // First-time install: center vertically so the widget is visible immediately
+    if (!_pos.offset) _pos.offset = Math.round(window.innerHeight * 0.38);
     _applyPos();
     _hud.style.transform = _tfCollapsed();
 
