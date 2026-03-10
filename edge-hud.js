@@ -278,30 +278,25 @@
   // ── Drag ───────────────────────────────────────────────────────────────────
 
   function _setupDrag() {
-    let startY = 0, startOffset = 0, didDrag = false;
-    let _clampH = 54;  // snapshotted at drag start so clamp is stable through entire drag
+    let startY = 0, startX = 0, startOffset = 0, startLeft = 0;
+    let didDrag = false;
+    let _clampH = 54;  // snapshotted at drag start
 
     const _onMove = (e) => {
       if (!_dragging) return;
+      const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      // Only commit to drag after a 4 px threshold so small hover movements
-      // don't accidentally move the widget.
-      if (!didDrag && Math.abs(dy) < 4) return;
+      if (!didDrag && Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
       didDrag = true;
-      _pos.offset  = Math.max(20, Math.min(window.innerHeight - _clampH - 20, startOffset + dy));
-      _hud.style.top = _pos.offset + 'px';
 
-      // Flip edge when dragged past 35 % / 65 % of viewport width
-      const cx = e.clientX;
-      if (_pos.edge === 'right' && cx < window.innerWidth * 0.35) {
-        _pos.edge = 'left';
-        _applyPos();
-        _hud.style.transform = _tfExpanded();
-      } else if (_pos.edge === 'left' && cx > window.innerWidth * 0.65) {
-        _pos.edge = 'right';
-        _applyPos();
-        _hud.style.transform = _tfExpanded();
-      }
+      // Freely follow the cursor in both axes while dragging.
+      const vw = window.innerWidth;
+      const top = Math.max(20, Math.min(window.innerHeight - _clampH - 20, startOffset + dy));
+      const left = Math.max(0, Math.min(vw - PANEL_W - TAB_W, startLeft + dx));
+      _hud.style.top       = top + 'px';
+      _hud.style.transform = 'none';    // neutralise the edge-translate while mid-air
+      _hud.style.left      = left + 'px';
+      _hud.style.right     = 'auto';
     };
 
     const _endDrag = () => {
@@ -309,12 +304,20 @@
       _dragging         = false;
       _hud.style.cursor = '';
       _tab.style.cursor = 'grab';
-      _hud.style.transition = TRANSITION;
-      window.removeEventListener('pointermove', _onMove, true);
-      window.removeEventListener('pointerup',   _endDrag, true);
-      window.removeEventListener('pointercancel', _endDrag, true);
+
       if (didDrag) {
-        // Finished an actual drag — settle in current expand/collapse state
+        // Snap to nearest edge based on where the widget was released.
+        const cx = parseInt(_hud.style.left, 10) + (PANEL_W + TAB_W) / 2;
+        _pos.edge   = cx < window.innerWidth / 2 ? 'left' : 'right';
+        _pos.offset = parseInt(_hud.style.top, 10);
+
+        // Clear the free-float left override so _applyPos can set right/left properly.
+        _hud.style.left  = '';
+        _hud.style.right = '';
+
+        _hud.style.transition = TRANSITION;
+        _applyPos();
+
         if (_expanded) {
           _hud.style.transform = _tfExpanded();
           if (_panel) _panel.style.pointerEvents = 'auto';
@@ -322,9 +325,14 @@
           _collapse();
         }
         _savePos();
+      } else {
+        // Just a click — restore transition, keep state.
+        _hud.style.transition = TRANSITION;
       }
-      // If !didDrag it was just a click — don't change expand state, let
-      // the natural mouseenter/mouseleave handle it.
+
+      window.removeEventListener('pointermove', _onMove, true);
+      window.removeEventListener('pointerup',   _endDrag, true);
+      window.removeEventListener('pointercancel', _endDrag, true);
     };
 
     // Listen on the whole _hud so dragging the panel area also works.
@@ -337,16 +345,21 @@
       didDrag      = false;
       _dragging    = true;
       startY       = e.clientY;
-      // Snapshot clamp height now — stays stable through entire drag regardless
-      // of expand/collapse state changes mid-drag.
+      startX       = e.clientX;
       _clampH      = _expanded ? (_panel ? (_panel.offsetHeight || 380) : 380) : 54;
-      // Use actual rendered top to prevent jump when clamped value differs
       startOffset  = parseInt(_hud.style.top, 10) || _pos.offset;
       _pos.offset  = startOffset;
+
+      // Compute absolute left of the widget so free-drag starts from the right place.
+      const rect = _hud.getBoundingClientRect();
+      startLeft = rect.left;
+      _hud.style.left  = rect.left + 'px';
+      _hud.style.right = 'auto';
+
       _hud.style.cursor     = 'grabbing';
       _tab.style.cursor     = 'grabbing';
       _hud.style.transition = 'none';
-      _hud.style.transform  = _tfExpanded();
+      _hud.style.transform  = 'none';
       if (_panel) _panel.style.pointerEvents = 'none';
       window.addEventListener('pointermove',   _onMove,  { capture: true, passive: true });
       window.addEventListener('pointerup',     _endDrag, { capture: true });
