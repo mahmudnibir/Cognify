@@ -41,6 +41,7 @@
   let _hud, _tab, _panel;
   let _dotEl, _miniEl, _usedEl, _remainEl, _barEl, _arcEl, _pctEl, _ctrlsEl;
   let _statSessionsEl, _statTodayEl, _statStreakEl;
+  let _collapseTimer = null;  // debounce handle for mouseleave → collapse
 
   // ── Platform focus-control definitions ────────────────────────────────────
   const CONTROLS = {
@@ -190,6 +191,7 @@
 
   function _collapse() {
     if (_dragging || !_hud) return;
+    _collapseTimer = null;
     _expanded = false;
     _hud.style.alignItems  = 'flex-start';
     _tab.style.height      = '54px';
@@ -199,6 +201,7 @@
   }
 
   function _expand() {
+    if (_collapseTimer) { clearTimeout(_collapseTimer); _collapseTimer = null; }
     if (_dragging || !_hud) return;
     _expanded = true;
     _hud.style.alignItems  = 'stretch';
@@ -276,6 +279,7 @@
 
   function _setupDrag() {
     let startY = 0, startOffset = 0, didDrag = false;
+    let _clampH = 54;  // snapshotted at drag start so clamp is stable through entire drag
 
     const _onMove = (e) => {
       if (!_dragging) return;
@@ -284,12 +288,7 @@
       // don't accidentally move the widget.
       if (!didDrag && Math.abs(dy) < 4) return;
       didDrag = true;
-      // When collapsed clamp to tab height so the full viewport is reachable;
-      // when expanded clamp to panel height so the card doesn't go off-screen.
-      const activeH = _expanded
-        ? (_panel ? (_panel.offsetHeight || 380) : 380)
-        : 54;
-      _pos.offset  = Math.max(20, Math.min(window.innerHeight - activeH - 20, startOffset + dy));
+      _pos.offset  = Math.max(20, Math.min(window.innerHeight - _clampH - 20, startOffset + dy));
       _hud.style.top = _pos.offset + 'px';
 
       // Flip edge when dragged past 35 % / 65 % of viewport width
@@ -338,6 +337,9 @@
       didDrag      = false;
       _dragging    = true;
       startY       = e.clientY;
+      // Snapshot clamp height now — stays stable through entire drag regardless
+      // of expand/collapse state changes mid-drag.
+      _clampH      = _expanded ? (_panel ? (_panel.offsetHeight || 380) : 380) : 54;
       // Use actual rendered top to prevent jump when clamped value differs
       startOffset  = parseInt(_hud.style.top, 10) || _pos.offset;
       _pos.offset  = startOffset;
@@ -613,7 +615,12 @@
     _hud.style.transform = _tfCollapsed();
 
     _hud.addEventListener('mouseenter', _expand);
-    _hud.addEventListener('mouseleave', _collapse);
+    // Debounce collapse: 200 ms wait before firing so rapid cursor movements
+    // near the panel edge don't trigger the blink loop.
+    _hud.addEventListener('mouseleave', () => {
+      if (_collapseTimer) clearTimeout(_collapseTimer);
+      _collapseTimer = setTimeout(_collapse, 200);
+    });
 
     _setupDrag();
   }
