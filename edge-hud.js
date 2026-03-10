@@ -190,16 +190,20 @@
   function _collapse() {
     if (_dragging || !_hud) return;
     _expanded = false;
-    _hud.style.transition = TRANSITION;
-    _hud.style.transform  = _tfCollapsed();
+    _hud.style.alignItems  = 'flex-start';
+    _tab.style.height      = '42px';
+    _hud.style.transition  = TRANSITION;
+    _hud.style.transform   = _tfCollapsed();
     if (_panel) _panel.style.pointerEvents = 'none';
   }
 
   function _expand() {
     if (_dragging || !_hud) return;
     _expanded = true;
-    _hud.style.transition = TRANSITION;
-    _hud.style.transform  = _tfExpanded();
+    _hud.style.alignItems  = 'stretch';
+    _tab.style.height      = '';
+    _hud.style.transition  = TRANSITION;
+    _hud.style.transform   = _tfExpanded();
     if (_panel) _panel.style.pointerEvents = 'auto';
     _refreshControls();
     _refreshStats();
@@ -358,7 +362,7 @@
       position:      'fixed',
       zIndex:        '2147483646',
       display:       'flex',
-      alignItems:    'stretch',
+      alignItems:    'flex-start',
       pointerEvents: 'auto',
       top:           _pos.offset + 'px',
     });
@@ -368,7 +372,7 @@
     _tab.id = 'yt-ext-edge-tab';
     Object.assign(_tab.style, {
       width:          TAB_W + 'px',
-      minHeight:      '62px',
+      height:         '42px',
       display:        'flex',
       flexDirection:  'column',
       alignItems:     'center',
