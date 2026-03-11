@@ -10,31 +10,35 @@
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/*"],
-      "js": ["edge-hud.js", "content.js"],
+      "js": ["src/edge-hud.js", "src/content.js"],
       "run_at": "document_idle"
     },
     {
       "matches": ["<all_urls>"],
-      "js": ["video-hover.js"],
+      "js": ["src/video-hover.js"],
       "run_at": "document_idle",
       "all_frames": true
     },
     {
       "matches": ["*://www.instagram.com/*", "*://www.facebook.com/*", "*://www.fb.com/*"],
-      "js": ["edge-hud.js", "social-download.js"],
+      "js": ["src/edge-hud.js", "src/social-download.js"],
       "run_at": "document_idle"
     }
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": "youtube.png"
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16":  "icons/icon-16.png",
+      "48":  "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
   "icons": {
-    "16": "youtube.png",
-    "48": "youtube.png",
-    "128": "youtube.png"
+    "16":  "icons/icon-16.png",
+    "48":  "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   }
 }
