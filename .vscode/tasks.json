@@ -4,13 +4,13 @@
 		{
 			"label": "Run web app for UX verification",
 			"type": "shell",
-			"command": "start chrome \"file:///%CD%/popup.html\"",
+			"command": "start chrome \"file:///%CD%/index.html\"",
 			"group": "test"
 		},
 		{
 			"label": "Reload web app for layout verification",
 			"type": "shell",
-			"command": "start chrome \"file:///%CD%/popup.html\"",
+			"command": "start chrome \"file:///%CD%/index.html\"",
 			"group": "test"
 		}
 	]

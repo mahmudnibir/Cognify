@@ -239,7 +239,46 @@
   // Track the element that was tapped/clicked most recently so we can walk
   // up to the containing post and verify it has a <video>.
   let lastClickTarget = null;
-  document.addEventListener('click', (e) => { lastClickTarget = e.target; }, { capture: true, passive: true });
+
+  // Instagram guard: inject only when the options sheet was opened from
+  // a recent 3-dot/menu trigger click. This prevents accidental injection
+  // on ordinary reel taps (pause/play area).
+  let lastMenuTriggerAt = 0;
+  const MENU_TRIGGER_WINDOW_MS = 2500;
+
+  /**
+   * Returns true when the clicked element looks like a 3-dot/options trigger.
+   * This intentionally uses broad heuristics to remain robust across minor IG
+   * UI markup changes.
+   * @param {EventTarget|null} target
+   * @returns {boolean}
+   */
+  function isLikelyOptionsTrigger(target) {
+    if (!(target instanceof Element)) return false;
+
+    const clickable = target.closest('button, [role="button"], [aria-label], [title]');
+    if (!clickable) return false;
+
+    const label = [
+      clickable.getAttribute('aria-label') || '',
+      clickable.getAttribute('title') || '',
+      clickable.textContent || '',
+    ].join(' ').toLowerCase();
+
+    if (/more|options|menu|ellipsis|\.\.\./.test(label)) return true;
+
+    // Common IG pattern: options button contains an svg with an accessible
+    // label that references "More" / "Options".
+    const svgLabel = clickable.querySelector('svg[aria-label]')?.getAttribute('aria-label')?.toLowerCase() || '';
+    return /more|options|menu|ellipsis/.test(svgLabel);
+  }
+
+  document.addEventListener('click', (e) => {
+    lastClickTarget = e.target;
+    if (isIG && isLikelyOptionsTrigger(e.target)) {
+      lastMenuTriggerAt = Date.now();
+    }
+  }, { capture: true, passive: true });
 
   // ── Resilient sendMessage wrapper ────────────────────────────────────────
   /**
@@ -873,55 +912,75 @@
     item.setAttribute('tabindex', '0');
 
     // Read computed styles from the reference item for font/spacing parity.
-    // We deliberately do NOT copy padding/display from computed styles because
-    // those are already provided by the cloned class list — overriding them
-    // inline would break the class-driven layout.
     const ref        = referenceItem ? getComputedStyle(referenceItem) : null;
     const fontSize   = ref?.fontSize   || '15px';
     const fontFamily = ref?.fontFamily ||
       '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     const minHeight  = ref?.minHeight && ref.minHeight !== '0px' ? ref.minHeight : '48px';
 
-    // Only apply styles that the cloned classes may not cover.
-    Object.assign(item.style, {
-      display:                 'flex',
-      alignItems:              'center',
-      gap:                     '16px',
-      width:                   '100%',
-      minHeight,
-      padding:                 ref?.padding || '12px 16px',
-      background:              'transparent',
-      border:                  'none',
-      cursor:                  'pointer',
-      fontSize,
-      fontWeight:              '400',
-      color:                   '#ffffff',
-      textAlign:               'left',
-      fontFamily,
-      lineHeight:              '1.4',
-      boxSizing:               'border-box',
-      userSelect:              'none',
-      WebkitTapHighlightColor: 'transparent',
-    });
+    if (isIG) {
+      // IG native options are text-only rows. Keep the structure minimal and
+      // inherit spacing/typography from the referenced native menu item.
+      Object.assign(item.style, {
+        width:                   '100%',
+        minHeight,
+        padding:                 ref?.padding || '12px 16px',
+        background:              'transparent',
+        border:                  'none',
+        cursor:                  'pointer',
+        fontSize,
+        fontWeight:              ref?.fontWeight || '400',
+        color:                   ref?.color || '#ffffff',
+        textAlign:               'left',
+        fontFamily,
+        lineHeight:              ref?.lineHeight || '1.4',
+        boxSizing:               'border-box',
+        userSelect:              'none',
+        WebkitTapHighlightColor: 'transparent',
+      });
+      item.textContent = LABEL;
+    } else {
+      // FB context menus can include icons; keep a visual icon for parity.
+      Object.assign(item.style, {
+        display:                 'flex',
+        alignItems:              'center',
+        gap:                     '16px',
+        width:                   '100%',
+        minHeight,
+        padding:                 ref?.padding || '12px 16px',
+        background:              'transparent',
+        border:                  'none',
+        cursor:                  'pointer',
+        fontSize,
+        fontWeight:              '400',
+        color:                   '#ffffff',
+        textAlign:               'left',
+        fontFamily,
+        lineHeight:              '1.4',
+        boxSizing:               'border-box',
+        userSelect:              'none',
+        WebkitTapHighlightColor: 'transparent',
+      });
 
-    // 24 px icon matches native IG/FB menu icon sizing
-    item.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true" style="flex-shrink:0;opacity:0.9;display:block">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      <span>${LABEL}</span>`;
+      // 24 px icon matches native FB menu icon sizing.
+      item.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" style="flex-shrink:0;opacity:0.9;display:block">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>${LABEL}</span>`;
 
-    item.addEventListener('mouseenter', () => {
-      item.style.background = 'rgba(255,255,255,0.08)';
-    });
-    item.addEventListener('mouseleave', () => {
-      item.style.background = 'transparent';
-    });
+      item.addEventListener('mouseenter', () => {
+        item.style.background = 'rgba(255,255,255,0.08)';
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.background = 'transparent';
+      });
+    }
 
     return item;
   }
@@ -1035,6 +1094,10 @@
   function tryInject(menuNode) {
     // Skip if already injected into this node's subtree
     if (menuNode.querySelector('#' + ITEM_ID)) return;
+
+    // IG-only: only inject when we very recently clicked a 3-dot/options trigger.
+    // This keeps download entry scoped to the options sheet flow.
+    if (isIG && (Date.now() - lastMenuTriggerAt > MENU_TRIGGER_WINDOW_MS)) return;
 
     // Only inject when the menu text signals a video post
     if (!isVideoOptionsMenu(menuNode)) return;
@@ -1204,9 +1267,14 @@
 
   // ── Screen Time Limit Block ───────────────────────────────────────────────
   // Listen for timeLimitHit from background.js and show hard-block overlay.
-  chrome.runtime.onMessage.addListener((request) => {
+  chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'timeLimitHit') {
       showSocialTimeLimitOverlay(domain === 'ig' ? 'Instagram' : 'Facebook');
+    }
+    if (request.type === 'contextMenuDownload') {
+      triggerDownload();
+      sendResponse({ ok: true });
+      return true;
     }
   });
 

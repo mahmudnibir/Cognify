@@ -5,12 +5,12 @@
   "description": "Cognify supercharges your browser with smart study automation — screen-time limits, focus mode, ad-skip, cloud-synced bookmarks, universal video controls, and real-time watch analytics across YouTube, Instagram, and Facebook.",
   "author": "Mahmud Nibir",
   "homepage_url": "https://github.com/mahmudnibir/yt-extension-enhanced",
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "downloads", "webRequest"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "downloads", "webRequest", "contextMenus"],
   "host_permissions": ["*://www.youtube.com/*", "<all_urls>"],
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/*"],
-      "js": ["src/edge-hud.js", "src/content.js"],
+      "js": ["src/edge-hud.js", "src/content.js", "src/download.js"],
       "run_at": "document_idle"
     },
     {

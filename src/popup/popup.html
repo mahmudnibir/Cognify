@@ -1565,7 +1565,7 @@
     <header>
       <div class="header-left">
         <div class="logo">
-          <img src="youtube.png" alt="YouTube" style="width: 100%; height: 100%; object-fit: contain;">
+          <img src="../../icons/icon-48.png" alt="Cognify" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
         <h1>Cognify</h1>
       </div>
@@ -2733,6 +2733,70 @@
 
       </section>
 
+      <!-- Screen Time Limits -->
+      <section>
+        <h2>Screen Time Limits</h2>
+
+        <!-- YouTube -->
+        <div class="limit-card" id="ytLimitCard">
+          <div class="limit-platform-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <span class="limit-platform-name">YouTube</span>
+          <div class="limit-time-input">
+            <input type="number" id="ytDailyLimit" min="5" max="1440" value="120" disabled>
+            <span class="limit-unit">min/session</span>
+          </div>
+          <div>
+            <input type="checkbox" id="ytLimitEnabled" class="toggle-input" tabindex="-1">
+            <label for="ytLimitEnabled" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Instagram -->
+        <div class="limit-card" id="igLimitCard">
+          <div class="limit-platform-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
+          </div>
+          <span class="limit-platform-name">Instagram</span>
+          <div class="limit-time-input">
+            <input type="number" id="igDailyLimit" min="5" max="1440" value="60" disabled>
+            <span class="limit-unit">min/session</span>
+          </div>
+          <div>
+            <input type="checkbox" id="igLimitEnabled" class="toggle-input" tabindex="-1">
+            <label for="igLimitEnabled" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Facebook -->
+        <div class="limit-card" id="fbLimitCard">
+          <div class="limit-platform-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+          </div>
+          <span class="limit-platform-name">Facebook</span>
+          <div class="limit-time-input">
+            <input type="number" id="fbDailyLimit" min="5" max="1440" value="60" disabled>
+            <span class="limit-unit">min/session</span>
+          </div>
+          <div>
+            <input type="checkbox" id="fbLimitEnabled" class="toggle-input" tabindex="-1">
+            <label for="fbLimitEnabled" class="toggle-label">
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn-save-limits" id="saveLimitsBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Save Limits
+        </button>
+      </section>
+
       </div>
 
       <!-- Advanced Tab -->
@@ -2978,70 +3042,6 @@
         </div>
       </section>
 
-      <!-- Screen Time Limits -->
-      <section>
-        <h2>Screen Time Limits</h2>
-
-        <!-- YouTube -->
-        <div class="limit-card" id="ytLimitCard">
-          <div class="limit-platform-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </div>
-          <span class="limit-platform-name">YouTube</span>
-          <div class="limit-time-input">
-            <input type="number" id="ytDailyLimit" min="5" max="1440" value="120" disabled>
-            <span class="limit-unit">min/session</span>
-          </div>
-          <div>
-            <input type="checkbox" id="ytLimitEnabled" class="toggle-input" tabindex="-1">
-            <label for="ytLimitEnabled" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Instagram -->
-        <div class="limit-card" id="igLimitCard">
-          <div class="limit-platform-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
-          </div>
-          <span class="limit-platform-name">Instagram</span>
-          <div class="limit-time-input">
-            <input type="number" id="igDailyLimit" min="5" max="1440" value="60" disabled>
-            <span class="limit-unit">min/session</span>
-          </div>
-          <div>
-            <input type="checkbox" id="igLimitEnabled" class="toggle-input" tabindex="-1">
-            <label for="igLimitEnabled" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Facebook -->
-        <div class="limit-card" id="fbLimitCard">
-          <div class="limit-platform-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-          </div>
-          <span class="limit-platform-name">Facebook</span>
-          <div class="limit-time-input">
-            <input type="number" id="fbDailyLimit" min="5" max="1440" value="60" disabled>
-            <span class="limit-unit">min/session</span>
-          </div>
-          <div>
-            <input type="checkbox" id="fbLimitEnabled" class="toggle-input" tabindex="-1">
-            <label for="fbLimitEnabled" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <button class="btn-save-limits" id="saveLimitsBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Save Limits
-        </button>
-      </section>
-      
       <!-- Cloud Sync Control -->
       <section>
         <h2>Storage Mode</h2>

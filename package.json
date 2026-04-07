@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "ytdl-core-browser": "^1.0.0"
+  }
+}

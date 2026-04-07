@@ -1,3 +1,5 @@
+import ytdl from 'ytdl-core-browser';
+
 // background.js
 
 // ─── CDN segment cache ───────────────────────────────────────────────────────
@@ -16,6 +18,110 @@
 // This is path-keyword-free, so it works regardless of how FB/IG name their
 // DASH segment paths (they vary by CDN edge and content type).
 const segmentCache = new Map(); // tabId → Map<basePath, {url, byteEnd}>
+
+const VIDEO_CTX_MENU_ID = 'yt-ext-download-video';
+
+/**
+ * Creates (or recreates) the video right-click context menu entry.
+ * Safe to call multiple times.
+ */
+function ensureVideoContextMenu() {
+  chrome.contextMenus.remove(VIDEO_CTX_MENU_ID, () => {
+    void chrome.runtime.lastError;
+    chrome.contextMenus.create({
+      id: VIDEO_CTX_MENU_ID,
+      title: 'Download Video/Reel',
+      contexts: ['video', 'page'],
+      documentUrlPatterns: ['*://*.instagram.com/*', '*://*.facebook.com/*', '*://*.fb.com/*'],
+    }, () => {
+      void chrome.runtime.lastError;
+    });
+  });
+}
+
+// Recreate immediately when the service worker starts so the menu exists even
+// when onInstalled/onStartup does not fire in the current lifecycle.
+ensureVideoContextMenu();
+
+chrome.runtime.onInstalled.addListener(() => {
+  ensureVideoContextMenu();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  ensureVideoContextMenu();
+});
+
+/**
+ * Returns best available cached stream URLs for a tab from DASH intercepts.
+ * @param {number} tabId
+ * @returns {{videoUrl: (string|null), audioUrl: (string|null)}}
+ */
+function getCachedStreamUrls(tabId) {
+  const tabMap = segmentCache.get(tabId);
+  let videoUrl = null;
+  let audioUrl = null;
+  if (!tabMap || tabMap.size === 0) return { videoUrl, audioUrl };
+
+  const sorted = Array.from(tabMap.values())
+    .sort((a, b) => b.byteEnd - a.byteEnd);
+  videoUrl = sorted[0]?.url || null;
+  if (sorted.length >= 2 && sorted[0].byteEnd >= sorted[1].byteEnd * 4) {
+    audioUrl = sorted[1].url;
+  }
+  return { videoUrl, audioUrl };
+}
+
+/**
+ * Downloads a URL with a generated platform-aware filename.
+ * @param {string} url
+ * @param {'instagram'|'facebook'} platform
+ */
+function downloadFromUrl(url, platform) {
+  const filename = `${platform}_${Date.now()}.mp4`;
+  chrome.downloads.download({ url, filename, saveAs: true }, () => {
+    void chrome.runtime.lastError;
+  });
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== VIDEO_CTX_MENU_ID) return;
+  if (!tab?.id || !tab.url) return;
+
+  const domain = getDomain(tab.url);
+  if (domain !== 'ig' && domain !== 'fb') return;
+  const platform = domain === 'ig' ? 'instagram' : 'facebook';
+
+  // Prefer delegating to content script so we can reuse the full smart flow:
+  // progressive URL extraction + DASH audio/video merge (with sound).
+  chrome.tabs.sendMessage(tab.id, { type: 'contextMenuDownload' }, (res) => {
+    if (chrome.runtime.lastError) {
+      // No content-script receiver (or tab not ready): fallback to direct URL path.
+      const srcUrl = info.srcUrl || '';
+      if (srcUrl.startsWith('http') && !srcUrl.startsWith('blob:')) {
+        downloadFromUrl(srcUrl, platform);
+        return;
+      }
+      const { videoUrl } = getCachedStreamUrls(tab.id);
+      if (videoUrl) {
+        downloadFromUrl(videoUrl, platform);
+      }
+      return;
+    }
+
+    // If content script explicitly failed to handle, still fallback safely.
+    if (!res?.ok) {
+      const srcUrl = info.srcUrl || '';
+      if (srcUrl.startsWith('http') && !srcUrl.startsWith('blob:')) {
+        downloadFromUrl(srcUrl, platform);
+        return;
+      }
+      const { videoUrl } = getCachedStreamUrls(tab.id);
+      if (videoUrl) {
+        downloadFromUrl(videoUrl, platform);
+      }
+    }
+  });
+});
 
 // Intercept actual video/audio CDN requests from IG/FB.
 // Must be top-level so Chrome wakes the service worker for it.
@@ -202,23 +308,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Sort all tracked DASH segments by byteEnd descending:
     //   [0] = video stream (largest byte range = highest bitrate)
     //   [1] = audio stream (second-distinct path, much smaller byte range)
-    const tabId   = sender.tab?.id;
-    const tabMap  = tabId != null ? segmentCache.get(tabId) : null;
-    let videoUrl  = null;
-    let audioUrl  = null;
-
-    if (tabMap && tabMap.size > 0) {
-      // Sort entries by byteEnd descending.
-      const sorted = Array.from(tabMap.values())
-        .sort((a, b) => b.byteEnd - a.byteEnd);
-      videoUrl = sorted[0]?.url || null;
-      // Audio is the second entry IF its byteEnd is meaningfully smaller than video
-      // (at least 4× smaller — prevents two near-identical video renditions being
-      // misidentified as video+audio).
-      if (sorted.length >= 2 && sorted[0].byteEnd >= sorted[1].byteEnd * 4) {
-        audioUrl = sorted[1].url;
-      }
-    }
+    const tabId = sender.tab?.id;
+    const { videoUrl, audioUrl } = tabId != null
+      ? getCachedStreamUrls(tabId)
+      : { videoUrl: null, audioUrl: null };
 
     sendResponse({ url: videoUrl, audioUrl });
     return false;
@@ -262,16 +355,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
   if (request.type === 'downloadVideo') {
-    const { url, filename, saveAs = true } = request;
-    // saveAs: true opens the native OS "Save As" dialog (default for the main video).
-    // Pass saveAs: false for secondary files (e.g. companion audio) to auto-save.
-    chrome.downloads.download({ url, filename, saveAs }, (id) => {
-      if (chrome.runtime.lastError) {
-        sendResponse({ success: false, error: chrome.runtime.lastError.message });
-      } else {
-        sendResponse({ success: true, downloadId: id });
+    const videoId = request.videoId;
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    (async () => {
+      try {
+        const info = await ytdl.getInfo(videoUrl);
+        const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
+        chrome.downloads.download({
+          url: format.url,
+          filename: `${info.videoDetails.title}.mp4`,
+          saveAs: true
+        });
+      } catch (error) {
+        console.error('Error downloading video:', error);
       }
-    });
-    return true; // keep message channel open for async response
+    })();
+    return true; // Indicates that the response is sent asynchronously
   }
 });

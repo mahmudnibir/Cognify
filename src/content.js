@@ -127,7 +127,9 @@
     fetchSponsorSegments(videoId);
 
     addRemainingTimeOverlay(); // Add the remaining time overlay
-    addBookmarkButton(); // Add bookmark button to player controls
+    addBookmarkButton();       // Add bookmark button to player controls
+    addDownloadButton();       // Add download button
+    removeQuickSettingsUI();   // Ensure Cognify quick-settings UI is not injected
     
     // Load saved time from storage
     chrome.storage.local.get(['totalTimeSaved'], (res) => {
@@ -639,8 +641,13 @@
     try {
       const ctx = new AudioContext();
       const source = ctx.createMediaElementSource(videoEl);
+      // masterGain is the fixed sink for all voice‑mode DSP nodes. Post‑processing
+      // effects (stableVolume compressor, voiceBoost EQ) are wired between masterGain
+      // and ctx.destination by applyAudioPostChain().
+      const masterGain = ctx.createGain();
+      masterGain.connect(ctx.destination);
       // currentMode: track last applied mode to avoid needless chain rebuilds every second
-      const chain = { ctx, source, activeNodes: [], oscNodes: [], currentMode: null };
+      const chain = { ctx, source, activeNodes: [], oscNodes: [], currentMode: null, masterGain, postNodes: [] };
       _audioChains.set(videoEl, chain);
       // Resume on any meaningful page interaction — popup clicks don't satisfy
       // Chrome's AudioContext user-gesture requirement for the page context.
@@ -691,14 +698,15 @@
     if (typeof videoEl.preservesPitch    !== 'undefined') videoEl.preservesPitch    = preservePitch;
     if (typeof videoEl.mozPreservesPitch !== 'undefined') videoEl.mozPreservesPitch = preservePitch;
 
-    // Normal — bypass Web Audio entirely; restore default path if chain was built
+    // Normal — no DSP voice effects; route source directly through masterGain so
+    // post-processing effects (stableVolume / voiceBoost) can still be applied.
+    const _normalChain = getOrCreateAudioChain(videoEl);
     if (mode === 'normal') {
-      if (_audioChains.has(videoEl)) {
-        const chain = _audioChains.get(videoEl);
-        if (chain.currentMode === 'normal') return; // already bypassed, nothing to do
-        clearChainNodes(chain);
-        chain.source.connect(chain.ctx.destination);
-        chain.currentMode = 'normal';
+      if (_normalChain) {
+        if (_normalChain.currentMode === 'normal') return;
+        clearChainNodes(_normalChain);
+        _normalChain.source.connect(_normalChain.masterGain);
+        _normalChain.currentMode = 'normal';
       }
       return;
     }
@@ -742,7 +750,7 @@
       source.connect(lowCut);
       lowCut.connect(midPeak);
       midPeak.connect(highShelf);
-      highShelf.connect(ctx.destination);
+      highShelf.connect(chain.masterGain);
       chain.activeNodes = [lowCut, midPeak, highShelf];
       return;
     }
@@ -768,7 +776,7 @@
       source.connect(hpf);
       hpf.connect(formant);
       formant.connect(air);
-      air.connect(ctx.destination);
+      air.connect(chain.masterGain);
       chain.activeNodes = [hpf, formant, air];
       return;
     }
@@ -807,7 +815,7 @@
       shaper.connect(lowCut);
       lowCut.connect(presence);
       presence.connect(airShelf);
-      airShelf.connect(ctx.destination);
+      airShelf.connect(chain.masterGain);
       chain.activeNodes = [shaper, lowCut, presence, airShelf];
       return;
     }
@@ -843,7 +851,7 @@
       bright.connect(ringGain);
       source.connect(hpf);
       osc.connect(ringGain.gain);
-      ringGain.connect(ctx.destination);
+      ringGain.connect(chain.masterGain);
       osc.start();
       chain.activeNodes = [hpf, nasal, bright, ringGain];
       chain.oscNodes = [osc];
@@ -857,7 +865,7 @@
       shelf.frequency.value = 200;
       shelf.gain.value = 10;
       source.connect(shelf);
-      shelf.connect(ctx.destination);
+      shelf.connect(chain.masterGain);
       chain.activeNodes = [shelf];
 
     } else if (mode === 'robot') {
@@ -869,7 +877,7 @@
       gainNode.gain.value = 0;      // base gain = 0; osc drives it to ±1
       source.connect(gainNode);
       osc.connect(gainNode.gain);   // audio-rate modulation of gain
-      gainNode.connect(ctx.destination);
+      gainNode.connect(chain.masterGain);
       osc.start();
       chain.activeNodes = [gainNode];
       chain.oscNodes   = [osc];
@@ -883,15 +891,78 @@
       const wetGain  = ctx.createGain();
       wetGain.gain.value = 0.55;
       // dry
-      source.connect(ctx.destination);
+      source.connect(chain.masterGain);
       // wet with feedback
       source.connect(delay);
       delay.connect(feedback);
       feedback.connect(delay);          // feedback loop
       delay.connect(wetGain);
-      wetGain.connect(ctx.destination);
+      wetGain.connect(chain.masterGain);
       chain.activeNodes = [delay, feedback, wetGain];
     }
+  }
+
+  /**
+   * Rebuilds the post-processing audio chain (between masterGain and ctx.destination).
+   * Called after applyVoiceMode whenever stableVolume or voiceBoost settings change.
+   * Inserts a DynamicsCompressor for loudness normalisation and/or a peaking EQ for
+   * voice-frequency presence boost. Both are applied transparently — callers don't
+   * need to know which effects are active.
+   *
+   * @param {HTMLVideoElement} videoEl
+   * @param {boolean} stableVolume  — DynamicsCompressor normalisation
+   * @param {boolean} voiceBoost    — +6 dB peaking EQ at 3 kHz
+   */
+  function applyAudioPostChain(videoEl, stableVolume, voiceBoost) {
+    if (!videoEl) return;
+    // Only proceed if effects are needed OR a chain already exists to update
+    if (!stableVolume && !voiceBoost && !_audioChains.has(videoEl)) return;
+
+    const chain = getOrCreateAudioChain(videoEl);
+    if (!chain) return;
+    const { ctx, source, masterGain } = chain;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    // Disconnect masterGain from existing post-nodes and destination
+    try { masterGain.disconnect(); } catch (_) {}
+    chain.postNodes.forEach(n => { try { n.disconnect(); } catch (_) {} });
+    chain.postNodes = [];
+
+    // If the chain was freshly created (normal mode, no prior effects),
+    // ensure source → masterGain is wired. Non-normal voice modes handle this.
+    if (chain.currentMode === null) {
+      source.connect(masterGain);
+      chain.currentMode = 'normal';
+    }
+
+    let prev = masterGain;
+
+    if (stableVolume) {
+      // DynamicsCompressor evens out loud/quiet passages (normalisation)
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value      = 30;
+      compressor.ratio.value     = 12;
+      compressor.attack.value    = 0.003;
+      compressor.release.value   = 0.25;
+      prev.connect(compressor);
+      chain.postNodes.push(compressor);
+      prev = compressor;
+    }
+
+    if (voiceBoost) {
+      // Peaking EQ centred on 3 kHz — lifts vocal presence and clarity
+      const boost = ctx.createBiquadFilter();
+      boost.type               = 'peaking';
+      boost.frequency.value    = 3000;
+      boost.Q.value            = 0.7;
+      boost.gain.value         = 6;
+      prev.connect(boost);
+      chain.postNodes.push(boost);
+      prev = boost;
+    }
+
+    prev.connect(ctx.destination);
   }
 
   /**
@@ -918,7 +989,7 @@
   function applySettings() {
     if (manualOverride) return; // Prevent auto-speed adjustment during manual override
 
-    chrome.storage.sync.get(["speed", "rememberSpeed", "voiceMode", "pitchCorrection", "skipAds", "sponsorBlock", "autoTheater", "autoSubtitles", "focusMode"], ({ speed, rememberSpeed, voiceMode, pitchCorrection, skipAds, sponsorBlock, autoTheater, autoSubtitles, focusMode }) => {
+    chrome.storage.sync.get(["speed", "rememberSpeed", "voiceMode", "pitchCorrection", "skipAds", "sponsorBlock", "autoTheater", "autoSubtitles", "focusMode", "stableVolume", "voiceBoost", "ambientMode"], ({ speed, rememberSpeed, voiceMode, pitchCorrection, skipAds, sponsorBlock, autoTheater, autoSubtitles, focusMode, stableVolume, voiceBoost, ambientMode }) => {
       const video = document.querySelector('video');
       if (!video || !speed) return;
 
@@ -956,6 +1027,10 @@
       // Resolve voiceMode (migrate legacy pitchCorrection boolean)
       const mode = voiceMode || (pitchCorrection === false ? 'chipmunk' : 'normal');
       applyVoiceMode(video, mode);
+      applyAudioPostChain(video, !!stableVolume, !!voiceBoost);
+
+      // ── Ambient Mode ─────────────────────────────────────────────────────
+      applyAmbientMode(!!ambientMode);
 
       // ── Auto Theater Mode ─────────────────────────────────────────────────
       // Clicks the theater button once per video load if not already in theater
@@ -2531,8 +2606,7 @@
         totalWatchTime: 0,
         totalTimeSaved: 0,
         speedUsage: {},
-        dailyStats: {},
-        videoHistory: []
+        dailyStats: {}
       };
 
       // Track unique video
@@ -2561,9 +2635,6 @@
     chrome.storage.local.get(['statistics'], (data) => {
       const stats = data.statistics || {
         totalVideos: 0,
-        totalWatchTime: 0,
-        totalTimeSaved: 0,
-        speedUsage: {},
         dailyStats: {}
       };
 
@@ -2726,6 +2797,487 @@
         imgWrap.appendChild(bar);
       });
     });
+  }
+
+  // ─── Ambient Mode ─────────────────────────────────────────────────────────
+  /**
+   * Enables or disables YouTube's native Ambient Mode by clicking the Ambient
+   * Mode button in the YouTube settings panel. Falls back gracefully if YouTube
+   * does not expose the button in the current layout.
+   * @param {boolean} enabled
+   */
+  function applyAmbientMode(enabled) {
+    // YouTube exposes ambient mode via its own settings panel button.
+    // We detect whether it is currently ON by the aria-checked attribute.
+    const ambientToggle = document.querySelector(
+      '.ytp-menuitem[aria-role="menuitemcheckbox"] .ytp-menuitem-label'
+    );
+    if (ambientToggle && ambientToggle.textContent.trim() === 'Ambient mode') {
+      const menuItem = ambientToggle.closest('.ytp-menuitem');
+      const checked  = menuItem.getAttribute('aria-checked') === 'true';
+      if (enabled !== checked) menuItem.click();
+      return;
+    }
+    // Alternative: YouTube 2024 layout stores ambient mode on <ytd-watch-flexy>
+    const watchFlexy = document.querySelector('ytd-watch-flexy');
+    if (watchFlexy) {
+      if (enabled) {
+        watchFlexy.setAttribute('ambient-mode', '');
+      } else {
+        watchFlexy.removeAttribute('ambient-mode');
+      }
+    }
+  }
+
+  // ─── Quick Settings Panel ──────────────────────────────────────────────────
+  // Panel CSS — injected once into the page head.
+  (function injectQuickSettingsPanelCSS() {
+    if (document.getElementById('yt-qs-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'yt-qs-styles';
+    style.textContent = `
+      #yt-qs-panel {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 288px;
+        background: rgba(13, 13, 13, 0.97);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.72);
+        z-index: 10001;
+        overflow: hidden;
+        font-family: 'Roboto', 'Inter', sans-serif;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100% - 80px);
+      }
+      #yt-qs-panel .qs-rows {
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.18) transparent;
+        flex: 1;
+      }
+      #yt-qs-panel .qs-rows::-webkit-scrollbar { width: 5px; }
+      #yt-qs-panel .qs-rows::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.18); border-radius: 3px;
+      }
+      #yt-qs-panel .qs-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 16px;
+        height: 50px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        cursor: default;
+        user-select: none;
+        transition: background 0.15s;
+      }
+      #yt-qs-panel .qs-row:last-child { border-bottom: none; }
+      #yt-qs-panel .qs-row:hover { background: rgba(255,255,255,0.05); }
+      #yt-qs-panel .qs-icon { flex-shrink: 0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; opacity: 0.7; }
+      #yt-qs-panel .qs-label { flex: 1; font-size: 13.5px; font-weight: 500; letter-spacing: 0.1px; }
+      #yt-qs-panel .qs-toggle-wrap { flex-shrink: 0; }
+      /* iOS-style toggle */
+      #yt-qs-panel .qs-toggle {
+        position: relative; width: 40px; height: 22px; cursor: pointer;
+      }
+      #yt-qs-panel .qs-toggle input { display: none; }
+      #yt-qs-panel .qs-toggle-track {
+        position: absolute; inset: 0;
+        background: rgba(255,255,255,0.18);
+        border-radius: 11px;
+        transition: background 0.2s;
+      }
+      #yt-qs-panel .qs-toggle input:checked ~ .qs-toggle-track {
+        background: #ff0000;
+      }
+      #yt-qs-panel .qs-toggle-thumb {
+        position: absolute; top: 3px; left: 3px;
+        width: 16px; height: 16px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        transition: transform 0.2s;
+      }
+      #yt-qs-panel .qs-toggle input:checked ~ .qs-toggle-thumb {
+        transform: translateX(18px);
+      }
+      /* Nav row value */
+      #yt-qs-panel .qs-value {
+        font-size: 12.5px;
+        color: rgba(255,255,255,0.45);
+        display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+      }
+      #yt-qs-panel .qs-value svg { opacity: 0.45; }
+      #yt-qs-panel .qs-row.qs-nav { cursor: pointer; }
+      #yt-qs-panel .qs-row.qs-nav:active { background: rgba(255,255,255,0.08); }
+      /* Voice mode inline sub-panel */
+      #yt-qs-voice-sub {
+        background: rgba(8,8,8,0.98);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        display: none;
+        flex-direction: column;
+        padding: 6px 0;
+      }
+      #yt-qs-voice-sub.open { display: flex; }
+      #yt-qs-voice-sub .qs-mode-opt {
+        padding: 9px 52px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.55);
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+      }
+      #yt-qs-voice-sub .qs-mode-opt:hover { background: rgba(255,255,255,0.06); color: #fff; }
+      #yt-qs-voice-sub .qs-mode-opt.active { color: #ff0000; font-weight: 600; }
+      /* Bottom toolbar */
+      #yt-qs-panel .qs-toolbar {
+        display: flex;
+        border-top: 1px solid rgba(255,255,255,0.07);
+        background: rgba(0,0,0,0.35);
+        flex-shrink: 0;
+      }
+      #yt-qs-panel .qs-tb-btn {
+        flex: 1; height: 52px;
+        background: transparent; border: none; cursor: pointer;
+        color: rgba(255,255,255,0.6);
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s, color 0.15s;
+      }
+      #yt-qs-panel .qs-tb-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+      #yt-qs-panel .qs-tb-btn:active { background: rgba(255,255,255,0.12); }
+      #yt-qs-panel .qs-tb-btn svg { width: 18px; height: 18px; }
+    `;
+    document.head.appendChild(style);
+  })();
+
+  const VOICE_LABELS_FULL = {
+    normal: 'Normal', chipmunk: 'Chipmunk', pikachu: 'Pikachu',
+    naruto: 'Naruto', doraemon: 'Doraemon', bassboost: 'Bass Boost',
+    robot: 'Robot', echo: 'Echo'
+  };
+  const VOICE_ORDER_QS = ['normal','chipmunk','pikachu','naruto','doraemon','bassboost','robot','echo'];
+
+  /**
+   * Builds the DOM for the quick settings panel and returns the element.
+   * The panel is NOT appended to the DOM — callers must do that.
+   * @returns {HTMLElement}
+   */
+  function buildQuickSettingsPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'yt-qs-panel';
+
+    const CHEVRON_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+    const VOLUME_ICON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+    const BOOST_ICON   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+    const AMBIENT_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>`;
+    const MIC_ICON     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+    const CC_ICON      = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M8 11v2"/><path d="M8 15h4"/><path d="M12 11h4"/><path d="M16 15h1"/></svg>`;
+    const SLEEP_ICON   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+    const SPEED_ICON   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    const QUALITY_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>`;
+
+    /** Creates a toggle row and returns { row, input } */
+    function makeToggleRow(icon, label, storageKey) {
+      const row = document.createElement('div');
+      row.className = 'qs-row';
+      row.dataset.key = storageKey;
+      row.innerHTML = `
+        <span class="qs-icon">${icon}</span>
+        <span class="qs-label">${label}</span>
+        <span class="qs-toggle-wrap">
+          <label class="qs-toggle">
+            <input type="checkbox" class="qs-chk">
+            <span class="qs-toggle-track"></span>
+            <span class="qs-toggle-thumb"></span>
+          </label>
+        </span>`;
+      const input = row.querySelector('.qs-chk');
+      input.addEventListener('change', () => {
+        chrome.storage.sync.set({ [storageKey]: input.checked }, () => {
+          // Immediately apply audio post-chain changes
+          const vid = document.querySelector('video');
+          if (!vid) return;
+          chrome.storage.sync.get(['stableVolume', 'voiceBoost'], (d) => {
+            applyAudioPostChain(vid, !!d.stableVolume, !!d.voiceBoost);
+          });
+        });
+      });
+      return { row, input };
+    }
+
+    /** Creates a nav row (shows value + chevron) and returns { row, valueEl } */
+    function makeNavRow(icon, label) {
+      const row = document.createElement('div');
+      row.className = 'qs-row qs-nav';
+      const valueEl = document.createElement('span');
+      valueEl.className = 'qs-value';
+      row.innerHTML = `<span class="qs-icon">${icon}</span><span class="qs-label">${label}</span>`;
+      row.appendChild(valueEl);
+      return { row, valueEl };
+    }
+
+    const rows = document.createElement('div');
+    rows.className = 'qs-rows';
+    panel.appendChild(rows);
+
+    // ── Toggle rows ─────────────────────────────────────────────────────────
+    const { row: svRow, input: svInput } = makeToggleRow(VOLUME_ICON, 'Stable Volume', 'stableVolume');
+    const { row: vbRow, input: vbInput } = makeToggleRow(BOOST_ICON,  'Voice boost',   'voiceBoost');
+    const { row: amRow, input: amInput } = makeToggleRow(AMBIENT_ICON,'Ambient mode',  'ambientMode');
+    amInput.addEventListener('change', () => applyAmbientMode(amInput.checked));
+    rows.append(svRow, vbRow, amRow);
+
+    // ── Voice Mode row ───────────────────────────────────────────────────────
+    const { row: vmRow, valueEl: vmValueEl } = makeNavRow(MIC_ICON, 'Voice Mode');
+    vmValueEl.innerHTML = `<span id="qs-vm-label">Normal</span>${CHEVRON_SVG}`;
+    rows.appendChild(vmRow);
+
+    // Voice mode inline sub-panel
+    const voiceSub = document.createElement('div');
+    voiceSub.id = 'yt-qs-voice-sub';
+    VOICE_ORDER_QS.forEach(key => {
+      const opt = document.createElement('div');
+      opt.className = 'qs-mode-opt';
+      opt.dataset.mode = key;
+      opt.textContent = VOICE_LABELS_FULL[key];
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const vid = document.querySelector('video');
+        chrome.storage.sync.set({ voiceMode: key, pitchCorrection: (key !== 'chipmunk') }, () => {
+          if (vid) applyVoiceMode(vid, key);
+          panel.querySelector('#qs-vm-label').textContent = VOICE_LABELS_FULL[key];
+          voiceSub.querySelectorAll('.qs-mode-opt').forEach(o => o.classList.toggle('active', o.dataset.mode === key));
+        });
+      });
+      voiceSub.appendChild(opt);
+    });
+    rows.appendChild(voiceSub);
+
+    vmRow.addEventListener('click', () => {
+      voiceSub.classList.toggle('open');
+    });
+
+    // ── Nav rows ─────────────────────────────────────────────────────────────
+    const { row: ccRow,  valueEl: ccVal  } = makeNavRow(CC_ICON,     'Subtitles/CC');
+    const { row: stRow,  valueEl: stVal  } = makeNavRow(SLEEP_ICON,  'Sleep timer');
+    const { row: spRow,  valueEl: spVal  } = makeNavRow(SPEED_ICON,  'Playback speed');
+    const { row: qRow,   valueEl: qVal   } = makeNavRow(QUALITY_ICON,'Quality');
+
+    ccRow.dataset.qs = 'subtitles';
+    stRow.dataset.qs = 'sleep';
+    spRow.dataset.qs = 'speed';
+    qRow.dataset.qs  = 'quality';
+
+    // Subtitles toggle on click
+    ccRow.addEventListener('click', () => {
+      const ccBtn = document.querySelector('.ytp-subtitles-button');
+      if (ccBtn) { ccBtn.click(); setTimeout(() => refreshQuickSettingsPanel(panel), 100); }
+    });
+
+    // Sleep timer opens a simple prompt via existing sendMessage
+    stRow.addEventListener('click', () => {
+      const min = window.prompt('Sleep timer — pause after N minutes (0 to cancel):', '30');
+      if (min === null) return;
+      const n = parseInt(min, 10);
+      chrome.runtime.sendMessage({ action: 'setSleepTimer', minutes: isNaN(n) ? 0 : n });
+      stVal.innerHTML = (isNaN(n) || n <= 0) ? `Off ${CHEVRON_SVG}` : `${n} min ${CHEVRON_SVG}`;
+    });
+
+    rows.append(ccRow, stRow, spRow, qRow);
+
+    // ── Bottom toolbar ───────────────────────────────────────────────────────
+    const toolbar = document.createElement('div');
+    toolbar.className = 'qs-toolbar';
+
+    const BOOKMARK_SVG  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>`;
+    const PAUSE_SVG     = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+    const PLAY_SVG      = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+    const CC_TB_SVG     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><text x="6" y="15" font-size="6.5" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">CC</text></svg>`;
+    const SETTINGS_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+    const LOOP_SVG      = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
+    const EXPAND_SVG    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+
+    const tbDefs = [
+      { svg: BOOKMARK_SVG,  title: 'Bookmarks',       action: () => toggleBookmarkPanel() },
+      { svg: PAUSE_SVG,     title: 'Play / Pause',    action: () => { const v = document.querySelector('video'); if (v) v.paused ? v.play() : v.pause(); }, id: 'qs-tb-play' },
+      { svg: CC_TB_SVG,     title: 'Subtitles',       action: () => { const c = document.querySelector('.ytp-subtitles-button'); if (c) c.click(); } },
+      { svg: SETTINGS_SVG,  title: 'Settings',        action: () => { const s = document.querySelector('.ytp-settings-button'); if (s) s.click(); } },
+      { svg: LOOP_SVG,      title: 'Loop video',      action: () => { chrome.storage.sync.get(['loopVideo'], (d) => { const v = document.querySelector('video'); const next = !d.loopVideo; chrome.storage.sync.set({ loopVideo: next }); if (v) v.loop = next; }); } },
+      { svg: EXPAND_SVG,    title: 'Fullscreen',      action: () => { const f = document.querySelector('.ytp-fullscreen-button'); if (f) f.click(); } },
+    ];
+
+    tbDefs.forEach(def => {
+      const btn = document.createElement('button');
+      btn.className = 'qs-tb-btn';
+      btn.title = def.title;
+      btn.innerHTML = def.svg;
+      if (def.id) btn.id = def.id;
+      btn.addEventListener('click', (e) => { e.stopPropagation(); def.action(); });
+      toolbar.appendChild(btn);
+    });
+    panel.appendChild(toolbar);
+
+    // Prevent YouTube keyboard events from firing while panel is focused
+    panel.addEventListener('keydown', e => e.stopPropagation(), true);
+
+    return panel;
+  }
+
+  /**
+   * Refreshes all dynamic values (speed, quality, subtitles state, voice mode)
+   * displayed inside an already-open panel.
+   * @param {HTMLElement} panel
+   */
+  function refreshQuickSettingsPanel(panel) {
+    if (!panel) return;
+    const vid = document.querySelector('video');
+
+    // Speed
+    const spVal = panel.querySelector('[data-qs="speed"] .qs-value');
+    if (spVal && vid) {
+      const rate = vid.playbackRate;
+      const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+      const label = rate === 1 ? 'Normal' : `${rate}×`;
+      spVal.innerHTML = `${label} ${CHEVRON}`;
+    }
+
+    // Quality — read from YouTube player API
+    const qVal = panel.querySelector('[data-qs="quality"] .qs-value');
+    if (qVal) {
+      const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+      try {
+        const player = document.getElementById('movie_player');
+        const q = player && typeof player.getPlaybackQualityLabel === 'function'
+          ? player.getPlaybackQualityLabel()
+          : (document.querySelector('.ytp-quality-badge') || {}).textContent || 'Auto';
+        qVal.innerHTML = `${q.trim()} ${CHEVRON}`;
+      } catch (_) {
+        qVal.innerHTML = `Auto ${CHEVRON}`;
+      }
+    }
+
+    // Subtitles
+    const ccVal = panel.querySelector('[data-qs="subtitles"] .qs-value');
+    if (ccVal) {
+      const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+      const ccBtn = document.querySelector('.ytp-subtitles-button');
+      const on = ccBtn && ccBtn.getAttribute('aria-pressed') === 'true';
+      ccVal.innerHTML = `${on ? 'On' : 'Off'} ${CHEVRON}`;
+    }
+
+    // Play/pause toolbar button
+    const playBtn = panel.querySelector('#qs-tb-play');
+    if (playBtn && vid) {
+      const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+      const PLAY_SVG  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+      playBtn.innerHTML = vid.paused ? PLAY_SVG : PAUSE_SVG;
+    }
+
+    // Load saved toggle states
+    chrome.storage.sync.get(['stableVolume', 'voiceBoost', 'ambientMode', 'voiceMode', 'pitchCorrection'], (d) => {
+      const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+      const svInput = panel.querySelector('[data-key="stableVolume"] .qs-chk');
+      const vbInput = panel.querySelector('[data-key="voiceBoost"] .qs-chk');
+      const amInput = panel.querySelector('[data-key="ambientMode"] .qs-chk');
+      if (svInput) svInput.checked = !!d.stableVolume;
+      if (vbInput) vbInput.checked = !!d.voiceBoost;
+      if (amInput) amInput.checked = !!d.ambientMode;
+
+      const mode    = d.voiceMode || (d.pitchCorrection === false ? 'chipmunk' : 'normal');
+      const vmLabel = panel.querySelector('#qs-vm-label');
+      if (vmLabel) vmLabel.textContent = VOICE_LABELS_FULL[mode] || 'Normal';
+      panel.querySelectorAll('#yt-qs-voice-sub .qs-mode-opt').forEach(o => {
+        o.classList.toggle('active', o.dataset.mode === mode);
+      });
+
+      // Sleep timer value
+      const stVal = panel.querySelector('[data-qs="sleep"] .qs-value');
+      if (stVal) stVal.innerHTML = `Off ${CHEVRON}`;
+    });
+  }
+
+  /**
+   * Opens the quick settings panel if it is closed, closes it if open.
+   * The panel is appended to .html5-video-player so it overlays the video.
+   */
+  function toggleQuickSettingsPanel() {
+    const existing = document.getElementById('yt-qs-panel');
+    if (existing) { existing.remove(); return; }
+
+    const playerContainer = document.querySelector('.html5-video-player');
+    if (!playerContainer) return;
+
+    const panel = buildQuickSettingsPanel();
+    playerContainer.appendChild(panel);
+    refreshQuickSettingsPanel(panel);
+
+    // Close on outside click (after a short delay to avoid the opening click)
+    setTimeout(() => {
+      document.addEventListener('click', function closeQS(e) {
+        const qsBtn = document.getElementById('yt-qs-btn');
+        if (panel.contains(e.target) || (qsBtn && qsBtn.contains(e.target))) return;
+        panel.remove();
+        document.removeEventListener('click', closeQS);
+      });
+    }, 150);
+  }
+
+  /**
+   * Removes the injected quick-settings button/panel if they already exist.
+   * Called on init so the feature is effectively disabled.
+   */
+  function removeQuickSettingsUI() {
+    document.getElementById('yt-qs-panel')?.remove();
+    document.getElementById('yt-qs-btn')?.remove();
+  }
+
+  /**
+   * Injects the Quick Settings button into YouTube's right player controls,
+   * adjacent to the existing Bookmarks button.
+   */
+  function addQuickSettingsButton() {
+    // Quick settings intentionally disabled.
+    removeQuickSettingsUI();
+    return;
+
+    if (document.getElementById('yt-qs-btn')) return;
+    const rightControls = document.querySelector('.ytp-right-controls');
+    if (!rightControls) { setTimeout(addQuickSettingsButton, 1000); return; }
+
+    const btn = document.createElement('button');
+    btn.id        = 'yt-qs-btn';
+    btn.className = 'ytp-button';
+    btn.title     = 'Quick Settings (Cognify)';
+    btn.setAttribute('aria-label', 'Open Quick Settings');
+    btn.innerHTML = `<svg height="36" width="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>`;
+
+    Object.assign(btn.style, {
+      width: '48px', height: '48px', padding: '0',
+      background: 'transparent', border: 'none', cursor: 'pointer',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      position: 'relative', top: '-2px', opacity: '0.9',
+    });
+    btn.addEventListener('mouseover', () => { btn.style.opacity = '1'; });
+    btn.addEventListener('mouseout',  () => { btn.style.opacity = '0.9'; });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleQuickSettingsPanel(); });
+
+    // Insert before the bookmark button (or before settings button)
+    const bookmarkBtn = document.getElementById('yt-bookmark-btn');
+    const settingsBtn = rightControls.querySelector('.ytp-settings-button');
+    if (bookmarkBtn && bookmarkBtn.parentNode === rightControls) {
+      rightControls.insertBefore(btn, bookmarkBtn);
+    } else if (settingsBtn && settingsBtn.parentNode === rightControls) {
+      rightControls.insertBefore(btn, settingsBtn);
+    } else {
+      rightControls.appendChild(btn);
+    }
   }
 
   init();
