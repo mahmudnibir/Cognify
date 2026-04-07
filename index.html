@@ -1,573 +1,507 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cognify – Smart Study Automation for Your Browser</title>
-  <meta name="description" content="Cognify supercharges your browser with smart study automation — focus mode, screen-time limits, ad-skip, cloud bookmarks, and universal video controls. Free Chrome extension." />
-  <meta property="og:title" content="Cognify" />
-  <meta property="og:description" content="Smart Study Automation for Your Browser — focus mode, screen-time limits, ad-skip, bookmarks, and universal video controls." />
-  <meta property="og:type" content="website" />
-  <meta name="theme-color" content="#080808" />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c0392b'/><polygon points='11,8 25,16 11,24' fill='white'/></svg>" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #080808; --bg2: #0f0f0f;
-      --card: rgba(255,255,255,0.055); --card-h: rgba(255,255,255,0.09);
-      --border: rgba(255,255,255,0.10); --border-h: rgba(255,255,255,0.22);
-      --text: #f2f2f2; --muted: rgba(255,255,255,0.52);
-      --red: #e04030; --red-glow: rgba(220,64,48,0.30);
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>COGNIFY | Kinetic Command Center</title>
+<meta name="description" content="Cognify supercharges your browser with smart study automation — focus mode, screen-time limits, ad-skip, cloud bookmarks, and universal video controls. Free Chrome extension." />
+<meta property="og:title" content="COGNIFY | Kinetic Command Center" />
+<meta property="og:description" content="Smart Study Automation for Your Browser — focus mode, screen-time limits, ad-skip, bookmarks, and universal video controls." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#131313" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c0392b'/><polygon points='11,8 25,16 11,24' fill='white'/></svg>" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#ffb4a8",
+              "outline-variant": "#603e39",
+              "surface-dim": "#131313",
+              "surface-container-low": "#1c1b1b",
+              "primary-fixed": "#ffdad4",
+              "surface-container-lowest": "#0e0e0e",
+              "primary-container": "#ff5540",
+              "on-surface-variant": "#ebbbb4",
+              "inverse-on-surface": "#313030",
+              "surface-variant": "#353534",
+              "surface-container": "#201f1f",
+              "background": "#131313",
+              "tertiary": "#acc7ff",
+              "outline": "#b18780",
+              "on-surface": "#e5e2e1",
+              "secondary-fixed": "#ffdad4",
+              "secondary-fixed-dim": "#ffb4a8",
+              "on-secondary-fixed-variant": "#930100",
+              "surface-container-high": "#2a2a2a",
+              "surface-tint": "#ffb4a8",
+              "on-primary-fixed-variant": "#930100",
+              "secondary": "#ffb4a8",
+              "on-secondary": "#690100",
+              "on-secondary-fixed": "#410000",
+              "on-secondary-container": "#ff9f90",
+              "tertiary-fixed": "#d7e2ff",
+              "surface-bright": "#393939",
+              "on-primary-fixed": "#410000",
+              "error": "#ffb4ab",
+              "primary": "#ffb4a8",
+              "on-tertiary-fixed-variant": "#004491",
+              "secondary-container": "#970100",
+              "on-primary-container": "#5c0000",
+              "tertiary-fixed-dim": "#acc7ff",
+              "on-error": "#690005",
+              "on-error-container": "#ffdad6",
+              "on-background": "#e5e2e1",
+              "surface-container-highest": "#353534",
+              "inverse-primary": "#c00100",
+              "error-container": "#93000a",
+              "surface": "#131313",
+              "tertiary-container": "#488fff",
+              "on-tertiary-fixed": "#001a40",
+              "on-tertiary-container": "#00285b",
+              "on-tertiary": "#002f67",
+              "on-primary": "#690100",
+              "inverse-surface": "#e5e2e1"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #131313; color: #e5e2e1; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-card { background: rgba(32, 31, 31, 0.6); backdrop-filter: blur(12px); }
+        .hero-gradient { background: radial-gradient(circle at 50% 50%, rgba(255, 85, 64, 0.15) 0%, rgba(19, 19, 19, 0) 70%); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
     }
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); background-image: radial-gradient(ellipse 90% 55% at 50% 0%, rgba(220,64,48,0.07) 0%, transparent 65%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(220,64,48,0.04) 0%, transparent 60%); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Helvetica, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; font-family: inherit; }
-
-    /* NAV */
-    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 58px; background: rgba(8,8,8,0.88); backdrop-filter: blur(24px); border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
-    .nav-logo-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--red); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 22px var(--red-glow), 0 0 6px rgba(220,64,48,0.5); }
-    .nav-center { display: flex; align-items: center; gap: 30px; font-size: 13px; color: var(--muted); }
-    .nav-center a:hover { color: var(--text); transition: color .15s; }
-    .nav-right { display: flex; align-items: center; gap: 10px; }
-    .btn-ghost { font-size: 13px; color: var(--muted); padding: 6px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; transition: all .15s; }
-    .btn-ghost:hover { color: var(--text); border-color: var(--border-h); background: var(--card); }
-    .btn-white { font-size: 13px; font-weight: 600; color: #000; padding: 7px 16px; background: #fff; border-radius: 7px; border: none; transition: opacity .15s; display: inline-block; }
-    .btn-white:hover { opacity: 0.88; color: #000; }
-    @media (max-width: 640px) { .nav-center { display: none; } nav { padding: 0 20px; } }
-
-    /* HERO */
-    .hero { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 24px 80px; overflow: hidden; }
-    .hero-glow { position: absolute; top: 35%; left: 50%; transform: translate(-50%,-50%); width: 860px; height: 500px; background: radial-gradient(ellipse, rgba(220,64,48,0.18) 0%, rgba(220,64,48,0.06) 40%, transparent 70%); pointer-events: none; }
-    .hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(220,64,48,0.35); border-radius: 100px; padding: 5px 14px; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 30px; background: rgba(220,64,48,0.06); }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.7); animation: blink 2s ease-in-out infinite; display: inline-block; }
-    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
-    h1 { font-size: clamp(38px,8vw,80px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.04; max-width: 860px; margin-bottom: 24px; position: relative; z-index: 1; }
-    h1 .dim { color: rgba(255,255,255,0.38); }
-    .hero-sub { font-size: clamp(15px,2vw,18px); color: var(--muted); max-width: 480px; margin-bottom: 44px; line-height: 1.65; position: relative; z-index: 1; }
-    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; margin-bottom: 60px; }
-    .btn-primary { display: inline-flex; align-items: center; gap: 9px; background: #fff; color: #000; font-size: 14px; font-weight: 700; padding: 13px 26px; border-radius: 10px; border: none; transition: opacity .15s; }
-    .btn-primary:hover { opacity: 0.93; color: #000; box-shadow: 0 8px 28px rgba(255,255,255,0.22); }
-    .btn-secondary { display: inline-flex; align-items: center; gap: 9px; background: transparent; color: var(--text); font-size: 14px; font-weight: 500; padding: 13px 26px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.22); transition: background .15s, border-color .18s, box-shadow .18s; }
-    .btn-secondary:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.38); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-
-    /* POPUP MOCKUP */
-    .popup-mockup { position: relative; z-index: 1; width: 100%; max-width: 340px; background: #111; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(220,64,48,0.18); }
-    .pm-topbar { background: #161616; border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; gap: 2px; }
-    .ptab { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 5px; color: var(--muted); }
-    .ptab.on { background: rgba(255,255,255,0.09); color: #fff; }
-    .pm-body { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
-    .pm-row { background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; display: flex; align-items: center; justify-content: space-between; }
-    .pm-title { font-size: 12px; font-weight: 600; }
-    .pm-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
-    .pm-toggle { width: 34px; height: 19px; border-radius: 10px; background: #2ecc71; position: relative; flex-shrink: 0; }
-    .pm-toggle::after { content: ""; position: absolute; right: 3px; top: 2.5px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
-    .pm-toggle.off { background: rgba(255,255,255,0.11); }
-    .pm-toggle.off::after { left: 3px; right: auto; }
-    .pm-range { display: flex; align-items: center; gap: 7px; }
-    .pm-range input[type=range] { -webkit-appearance: none; height: 3px; background: linear-gradient(to right,#fff 55%,rgba(255,255,255,0.14) 55%); border-radius: 2px; width: 90px; pointer-events: none; }
-    .pm-range input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
-    .pm-val { font-size: 11px; font-weight: 700; min-width: 26px; text-align: right; }
-    .pm-pill { font-size: 10px; color: var(--text); background: rgba(255,255,255,0.07); border: 1px solid var(--border-h); border-radius: 6px; padding: 3px 9px; }
-    .pm-foot { background: #161616; border-top: 1px solid var(--border); padding: 7px 13px; display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--muted); }
-
-    /* DIVIDER */
-    hr { border: none; height: 1px; background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.09) 25%, rgba(255,255,255,0.09) 75%, transparent 100%); margin: 0; }
-
-    /* SECTION */
-    .section { max-width: 1060px; margin: 0 auto; padding: 90px 24px; position: relative; z-index: 1; }
-    .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); margin-bottom: 12px; font-weight: 600; }
-    .sh { font-size: clamp(28px,4vw,46px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 16px; }
-    .sh .dim { color: rgba(255,255,255,0.34); }
-    .sc { font-size: 15px; color: var(--muted); max-width: 500px; margin-bottom: 52px; line-height: 1.7; }
-
-    /* STATS */
-    .stats { display: flex; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; max-width: 700px; margin: 60px auto 0; background: rgba(255,255,255,0.025); box-shadow: 0 4px 24px rgba(0,0,0,0.35); }
-    .stat { flex: 1; padding: 28px 16px; text-align: center; border-right: 1px solid var(--border); }
-    .stat:last-child { border-right: none; }
-    .sn { font-size: 32px; font-weight: 800; letter-spacing: -0.04em; background: linear-gradient(160deg, #ffffff 30%, rgba(255,255,255,0.55) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .sl { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    @media (max-width: 500px) { .stats { flex-direction: column; } .stat { border-right: none; border-bottom: 1px solid var(--border); } .stat:last-child { border-bottom: none; } }
-
-    /* BENTO */
-    .bento { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
-    @media (max-width: 860px) { .bento { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 560px) { .bento { grid-template-columns: 1fr; } }
-    .bc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; transition: background .18s, border-color .2s, box-shadow .2s; overflow: hidden; }
-    .bc:hover { background: var(--card-h); border-color: var(--border-h); box-shadow: 0 12px 36px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1); }
-    .bc.wide { grid-column: span 2; }
-    @media (max-width: 860px) { .bc.wide { grid-column: span 1; } }
-    .bc.featured { background: linear-gradient(135deg,rgba(220,64,48,0.16) 0%,rgba(220,64,48,0.04) 50%, var(--card) 100%); border-color: rgba(220,64,48,0.30); }
-    .bc.featured:hover { border-color: rgba(220,64,48,0.55); box-shadow: 0 12px 36px rgba(0,0,0,0.5), 0 0 24px rgba(220,64,48,0.12); }
-    .bc.featured .bci { background: rgba(220,64,48,0.18); border-color: rgba(220,64,48,0.30); }
-    .bci { width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
-    .bc h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-    .bc p { font-size: 13px; color: var(--muted); line-height: 1.6; }
-
-    /* OVERLAY DEMO */
-    .odemo { border: 1px solid var(--border-h); border-radius: 18px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.55), 0 0 1px rgba(255,255,255,0.06); }
-    .ods { position: relative; height: 190px; background: #0d0d0d; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border); }
-    .ods-bg { position: absolute; inset: 0; background: repeating-linear-gradient(-45deg,rgba(255,255,255,0.012) 0,rgba(255,255,255,0.012) 1px,transparent 1px,transparent 14px); }
-    .ods-play { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; }
-    .od-bar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; background: rgba(0,0,0,0.8); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); animation: odCycle 10s ease infinite; }
-    @keyframes odIn { from{opacity:0;transform:translateX(-50%) translateY(6px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
-    /* Looping overlay-bar entrance/exit for the animated demo */
-    @keyframes odCycle { 0%,14%{opacity:0;transform:translateX(-50%) translateY(8px);} 20%,80%{opacity:1;transform:translateX(-50%) translateY(0);} 88%,100%{opacity:0;transform:translateX(-50%) translateY(8px);} }
-    .odb { background:none; border:none; color:#fff; font-size:14px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; opacity:.9; }
-    .odl { font-size:11px; font-weight:700; color:#fff; min-width:26px; text-align:center; }
-    .ods2 { width:1px; height:12px; background:rgba(255,255,255,0.18); }
-    .odv { font-size:9px; font-weight:700; color:#fff; background:rgba(255,255,255,0.1); border-radius:3px; padding:2px 6px; }
-    .odi { padding: 22px 28px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-    @media (max-width: 560px) { .odi { grid-template-columns: 1fr; } }
-    .odp { font-size: 12px; }
-    .odp strong { display: block; font-weight: 700; margin-bottom: 3px; }
-    .odp span { color: var(--muted); }
-
-    /* VOICE GRID */
-    .vgrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
-    @media (max-width: 860px) { .vgrid { grid-template-columns: repeat(4,1fr); } }
-    @media (max-width: 700px) { .vgrid { grid-template-columns: repeat(3,1fr); } }
-    @media (max-width: 420px) { .vgrid { grid-template-columns: repeat(2,1fr); } }
-    .vm { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 14px; text-align:center; transition:all .2s; }
-    .vm:hover { background:var(--card-h); border-color:var(--border-h); box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
-    .vmb { width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.10); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
-    .vm h4 { font-size:13px; font-weight:700; margin-bottom:5px; }
-    .vm p { font-size:11px; color:var(--muted); line-height:1.5; }
-
-    /* INSTALL */
-    .igrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
-    @media (max-width: 760px) { .igrid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 440px) { .igrid { grid-template-columns: 1fr; } }
-    .istep { background:rgba(255,255,255,0.075); border:1px solid rgba(255,255,255,0.16); border-left:3px solid rgba(220,64,48,0.50); border-radius:14px; padding:22px 22px 22px 20px; transition: border-color .18s, background .18s, box-shadow .2s; box-shadow: 0 4px 18px rgba(0,0,0,0.30); }
-    .istep:hover { border-color: rgba(255,255,255,0.26); border-left-color: rgba(220,64,48,0.72); background: rgba(255,255,255,0.105); box-shadow: 0 8px 28px rgba(0,0,0,0.40); }
-    .isn { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color: var(--red); margin-bottom:12px; }
-    .istep h3 { font-size:14px; font-weight:700; margin-bottom:6px; }
-    .istep p { font-size:12px; color:var(--muted); line-height:1.6; }
-    .istep code { font-family:"SF Mono","Fira Code",monospace; font-size:11px; background:rgba(255,255,255,0.07); border-radius:4px; padding:1px 5px; }
-
-    /* CTA */
-    .cta { margin: 0 24px 90px; max-width: 1060px; margin-left: auto; margin-right: auto; background: linear-gradient(135deg,rgba(220,64,48,0.13) 0%,rgba(255,255,255,0.025) 100%); border: 1px solid rgba(220,64,48,0.28); border-radius: 20px; padding: 56px 40px; text-align: center; position: relative; z-index: 1; overflow: hidden; }
-    .cta::before { content:""; position:absolute; top:-60px; left:50%; transform:translateX(-50%); width:600px; height:260px; background:radial-gradient(ellipse,rgba(220,64,48,0.22) 0%,transparent 70%); pointer-events:none; }
-    .cta h2 { font-size: clamp(24px,4vw,40px); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 14px; position: relative; }
-    .cta p { font-size: 15px; color: var(--muted); margin-bottom: 32px; position: relative; }
-    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
-
-    /* Scroll entrance animations */
-    .fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
-    .fade-up.visible { opacity: 1; transform: translateY(0); }
-    .copy-chrome-url {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13);
-      border-radius: 4px; padding: 1px 7px 1px 5px; cursor: pointer;
-      font-family: inherit; color: inherit; transition: background .15s, border-color .15s;
-      vertical-align: middle;
-    }
-    .copy-chrome-url:hover { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.28); }
-    .copy-chrome-url code { background: none; padding: 0; font-size: 11px; }
-    .copy-chrome-url .copy-icon { opacity: 0.45; display: flex; align-items: center; }
-    .copy-chrome-url:hover .copy-icon { opacity: 0.85; }
-    .copy-chrome-url.copied { border-color: #2ecc71; background: rgba(46,204,113,0.1); }
-    .copy-chrome-url.copied code { color: #2ecc71; }
-    /* Inline code-only copy button: no icon, just cursor hint */
-    .copy-code-only { padding: 1px 5px; display: inline; white-space: normal; text-align: left; }
-    .copy-code-only code { font-size: 11px; word-break: break-all; }
-    html[data-theme="light"] .copy-chrome-url { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.13); }
-    html[data-theme="light"] .copy-chrome-url:hover { background: rgba(0,0,0,0.1); }
-
-    /* FOOTER */
-    footer { border-top: 1px solid var(--border); padding: 28px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); position: relative; z-index: 1; }
-    .fl { display: flex; align-items: center; gap: 20px; }
-    .fl a { display: flex; align-items: center; gap: 6px; color: var(--muted); transition: color .15s; }
-    .fl a:hover { color: var(--text); }
-    @media (max-width: 560px) { footer { flex-direction: column; align-items: flex-start; } nav { padding: 0 20px; } }
-
-    /* THEME TOGGLE BUTTON */
-    .theme-toggle { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: all .15s; cursor: pointer; flex-shrink: 0; }
-    .theme-toggle:hover { color: var(--text); border-color: var(--border-h); background: var(--card); }
-    .icon-sun { display: none; }
-    html[data-theme="light"] .icon-moon { display: none; }
-    html[data-theme="light"] .icon-sun { display: block; }
-
-    /* LIGHT THEME */
-    html[data-theme="light"] {
-      --bg: #f5f5f5; --bg2: #eeeeee;
-      --card: rgba(0,0,0,0.03); --card-h: rgba(0,0,0,0.06);
-      --border: rgba(0,0,0,0.08); --border-h: rgba(0,0,0,0.16);
-      --text: #111111; --muted: rgba(0,0,0,0.45);
-      --red: #c0392b; --red-glow: rgba(192,57,43,0.14);
-    }
-    html[data-theme="light"] nav { background: rgba(245,245,245,0.90); }
-    html[data-theme="light"] h1 .dim,
-    html[data-theme="light"] .sh .dim { color: rgba(0,0,0,0.22); }
-    html[data-theme="light"] .btn-primary { background: #111; color: #fff; }
-    html[data-theme="light"] .btn-primary:hover { color: #fff; }
-    html[data-theme="light"] .btn-white { background: #111; color: #fff; }
-    html[data-theme="light"] .btn-white:hover { color: #fff; }
-    html[data-theme="light"] .popup-mockup { background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.06); }
-    html[data-theme="light"] .pm-topbar,
-    html[data-theme="light"] .pm-foot { background: #efefef; }
-    html[data-theme="light"] .ptab.on { background: rgba(0,0,0,0.07); color: #111; }
-    html[data-theme="light"] .pm-toggle.off { background: rgba(0,0,0,0.13); }
-    html[data-theme="light"] .pm-range input[type=range] { background: linear-gradient(to right,#111 55%,rgba(0,0,0,0.13) 55%); }
-    html[data-theme="light"] .pm-range input[type=range]::-webkit-slider-thumb { background: #111; }
-    html[data-theme="light"] .pm-pill { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.13); }
-    html[data-theme="light"] .bci,
-    html[data-theme="light"] .vmb { background: rgba(0,0,0,0.06); }
-    html[data-theme="light"] .bci svg,
-    html[data-theme="light"] .vmb svg { filter: invert(1) brightness(0.1); }
-    html[data-theme="light"] .ods { background: #dcdcdc; }
-    html[data-theme="light"] .ods-bg { background: repeating-linear-gradient(-45deg,rgba(0,0,0,0.025) 0,rgba(0,0,0,0.025) 1px,transparent 1px,transparent 14px); }
-    html[data-theme="light"] .ods-play { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.11); }
-    html[data-theme="light"] .ods-play svg { filter: invert(1) brightness(0.1); }
-    html[data-theme="light"] .istep { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.12); border-left-color: rgba(192,57,43,0.65); box-shadow: 0 4px 18px rgba(0,0,0,0.06); }
-    html[data-theme="light"] .istep:hover { background: rgba(0,0,0,0.055); border-color: rgba(0,0,0,0.18); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
-    html[data-theme="light"] .istep code { background: rgba(0,0,0,0.06); }
-    html[data-theme="light"] .cta { background: linear-gradient(135deg,rgba(192,57,43,0.07) 0%,rgba(0,0,0,0.015) 100%); }
-    html[data-theme="light"] .kicker { color: #c0392b; }
-    html[data-theme="light"] .isn { color: #c0392b; }
   </style>
-</head>
-<body>
-
-<nav>
-  <div class="nav-logo">
-    <div class="nav-logo-mark">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-    </div>
-    Cognify
-  </div>
-  <div class="nav-center">
-    <a href="#features">Features</a>
-    <a href="#overlay">Overlay</a>
-    <a href="#voices">Voice Modes</a>
-    <a href="#install">Install</a>
-  </div>
-  <div class="nav-right">
-    <button id="themeToggle" class="theme-toggle" aria-label="Toggle light/dark theme">
-      <!-- Moon icon: shown in dark mode -->
-      <svg class="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <!-- Sun icon: shown in light mode -->
-      <svg class="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-    <a href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank" class="btn-ghost">GitHub</a>
-    <a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="btn-white">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download
-    </a>
-  </div>
+  </head>
+<body class="bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 py-4 bg-[#131313] bg-opacity-90 backdrop-blur-xl">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#FF5540] text-2xl">terminal</span>
+<span class="text-xl font-black tracking-tighter text-[#E5E2E1]">COGNIFY</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-[#FF5540] font-bold font-['Inter'] uppercase tracking-[0.05rem] text-sm" href="#features">Features</a>
+<a class="text-[#E5E2E1] opacity-70 hover:opacity-100 font-['Inter'] uppercase tracking-[0.05rem] text-sm transition-all duration-300" href="#overlay">Overlay</a>
+<a class="text-[#E5E2E1] opacity-70 hover:opacity-100 font-['Inter'] uppercase tracking-[0.05rem] text-sm transition-all duration-300" href="#voices">Voice Modes</a>
+<a class="text-[#E5E2E1] opacity-70 hover:opacity-100 font-['Inter'] uppercase tracking-[0.05rem] text-sm transition-all duration-300" href="#install">Install</a>
+<a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="bg-primary-container text-on-primary-container px-6 py-2 rounded-xl font-bold hover:scale-95 duration-200 transition-all">Install Extension</a>
 </nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-glow"></div>
-  <div class="hero-eyebrow"><span class="dot"></span> Free &nbsp;&middot;&nbsp; Chrome Extension &nbsp;&middot;&nbsp; v3.8.0</div>
-  <h1>Study smarter.<br /><span class="dim">Browse with intention.</span></h1>
-  <p class="hero-sub">Cognify automates your study routine &mdash; screen-time limits, focus mode, ad-skip, synced bookmarks, universal video controls, and real-time analytics across YouTube, Instagram, and Facebook.</p>
-  <div class="hero-actions">
-    <a href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank" class="btn-primary">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-      View on GitHub
-    </a>
-    <a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="btn-secondary">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download ZIP
-    </a>
-  </div>
-  <div class="popup-mockup">
-    <div class="pm-topbar">
-      <div class="ptab on">Controls</div><div class="ptab">Bookmarks</div><div class="ptab">Stats</div><div class="ptab">Settings</div>
+<button class="md:hidden text-on-surface">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative min-h-[795px] flex items-center justify-center px-8 overflow-hidden hero-gradient">
+<div class="max-w-7xl w-full grid md:grid-cols-2 gap-12 items-center">
+<div class="z-10">
+<h1 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-[0.9] text-on-surface">
+                        STUDY SMARTER.<br/>BROWSE WITH <span class="text-primary-container">INTENTION.</span>
+</h1>
+<p class="text-on-surface-variant text-xl mb-10 max-w-lg leading-relaxed">
+                        Transform your browser into a high-performance instrument. COGNIFY streamlines your digital consumption with surgical precision.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-4">
+<a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="bg-primary-container text-on-primary-container px-10 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-2xl shadow-primary-container/20">
+                            Download Extension <span class="material-symbols-outlined">download</span>
+</a>
+<a href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank" class="bg-surface-container-highest text-on-surface px-10 py-4 rounded-xl font-bold text-lg hover:bg-surface-bright transition-all">
+                            View Demo
+                        </a>
+</div>
+</div>
+<div class="relative flex justify-center items-center">
+<div class="w-full aspect-square max-w-md rounded-3xl overflow-hidden glass-card p-4 border border-outline-variant/20 relative group">
+    <div class="w-full h-full bg-[#0f0f0f] rounded-2xl overflow-hidden flex flex-col">
+        <!-- Popup Header -->
+        <header class="flex items-center justify-between px-4 py-3 bg-[#212121] border-b border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="w-7 h-7 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <img src="icons/icon.png" alt="Cognify Logo" class="w-5 h-5">
+                </div>
+                <h1 class="font-bold text-base text-white">Cognify</h1>
+            </div>
+            <div class="w-9 h-9 bg-[#272727] border border-white/10 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-lg text-white/70">palette</span>
+            </div>
+        </header>
+        <!-- Popup Tabs -->
+        <div class="flex bg-[#181818] border-b border-white/10">
+            <button class="flex-1 py-3.5 px-2 text-center text-white text-xs font-semibold relative border-b-2 border-primary-container">CONTROL</button>
+            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">ANALYTICS</button>
+            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">FOCUS</button>
+            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">BOOKMARKS</button>
+        </div>
+        <!-- Popup Content -->
+        <main class="flex-1 p-4 overflow-y-auto bg-[#0f0f0f] space-y-4">
+            <!-- Speed Control -->
+            <section>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-white/90 pb-1.5 mb-2 border-b border-white/10">Playback Speed</h2>
+                <div class="p-3 bg-[#272727] border border-white/10 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <input type="range" min="0.1" max="16" value="2.5" step="0.1" class="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-container">
+                        <span class="bg-primary-container text-on-primary-container text-xs font-bold px-3 py-1.5 rounded-md">2.5x</span>
+                    </div>
+                </div>
+            </section>
+            <!-- Toggles -->
+            <section>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-white/90 pb-1.5 mb-2 border-b border-white/10">Automation</h2>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-3 bg-[#272727] border border-white/10 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center"><span class="material-symbols-outlined text-lg text-primary-container">fast_forward</span></div>
+                            <span class="text-sm font-medium text-white/90">Auto-Skip Ads</span>
+                        </div>
+                        <div class="w-10 h-5 bg-primary-container rounded-full p-0.5 flex items-center"><div class="w-4 h-4 bg-white rounded-full ml-auto"></div></div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-[#272727] border border-white/10 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center"><span class="material-symbols-outlined text-lg text-primary-container">skip_next</span></div>
+                            <span class="text-sm font-medium text-white/90">SponsorBlock</span>
+                        </div>
+                        <div class="w-10 h-5 bg-white/20 rounded-full p-0.5 flex items-center"><div class="w-4 h-4 bg-white rounded-full"></div></div>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
-    <div class="pm-body">
-      <div class="pm-row">
-        <div><div class="pm-title">Playback Speed</div><div class="pm-sub">Fine-tune from 0.25&times; to 20&times;</div></div>
-        <div class="pm-range"><input type="range" min="0" max="100" value="30" /><span class="pm-val">1.0&times;</span></div>
-      </div>
-      <div class="pm-row">
-        <div><div class="pm-title">Auto Ad Skip</div><div class="pm-sub">Dismiss ads instantly</div></div>
-        <div class="pm-toggle"></div>
-      </div>
-      <div class="pm-row">
-        <div><div class="pm-title">Loop Video</div><div class="pm-sub">Repeat on end</div></div>
-        <div class="pm-toggle off"></div>
-      </div>
-      <div class="pm-row">
-        <div><div class="pm-title">Voice Mode</div><div class="pm-sub">Real-time audio DSP</div></div>
-        <div class="pm-pill">Pikachu</div>
-      </div>
+    <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+    <!-- Floating Tech Elements -->
+    <div class="absolute top-8 left-8 p-4 glass-card rounded-lg border border-primary-container/30">
+        <span class="material-symbols-outlined text-primary-container">bolt</span>
+        <div class="text-[0.6rem] uppercase tracking-widest mt-1">Status: Active</div>
     </div>
-    <div class="pm-foot">
-      <span>v3.9.0 &nbsp;&#9679;&nbsp; Active</span>
-      <span>Site &nbsp; GitHub &nbsp; X &nbsp; Email</span>
-    </div>
-  </div>
+</div>
+</div>
+</div>
 </section>
-
-<hr />
-
-<!-- STATS -->
-<div style="max-width:1060px;margin:0 auto;padding:60px 24px 0;position:relative;z-index:1;">
-  <div class="stats">
-    <div class="stat"><div class="sn">18+</div><div class="sl">Core features</div></div>
-    <div class="stat"><div class="sn">8</div><div class="sl">Voice modes</div></div>
-    <div class="stat"><div class="sn">20&times;</div><div class="sl">Max speed</div></div>
-    <div class="stat"><div class="sn">All</div><div class="sl">Sites supported</div></div>
-  </div>
+<!-- Stats Section -->
+<section class="py-24 px-8 bg-surface-container-lowest">
+<div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+<div class="flex flex-col items-center md:items-start">
+<span class="text-4xl md:text-5xl font-black text-primary-container mb-2">15+</span>
+<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Core Features</span>
 </div>
-
-<!-- FEATURES -->
-<div class="section" id="features">
-  <div class="kicker">Features</div>
-  <h2 class="sh">Built for the way<br /><span class="dim">you actually watch.</span></h2>
-  <p class="sc">Every control you've wanted but had to live without &mdash; speed, audio DSP, filters, bookmarks, shortcuts. All in one free extension.</p>
-  <div class="bento">
-    <div class="bc featured">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
-      <h3>Precision Speed Control</h3>
-      <p>Slide from 0.25&times; to 20&times; with a smooth dial. Fine-step with +/&minus; keyboard shortcuts on any page globally.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-      <h3>Universal Hover Overlay</h3>
-      <p>Hover any &lt;video&gt; element on any website. A compact control bar floats over it instantly.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
-      <h3>Auto Ad Skip &amp; SponsorBlock</h3>
-      <p>YouTube pre-roll and mid-roll ads are skipped the moment they load. SponsorBlock silently cuts sponsor segments using community timestamps.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
-      <h3>Cloud Bookmarks</h3>
-      <p>Timestamp any moment with a label. Synced across all your Chrome sessions via the storage API.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
-      <h3>8 Voice Modes</h3>
-      <p>Real-time Web Audio DSP &mdash; Chipmunk, Pikachu, Naruto, Doraemon, Bass Boost, Robot, Echo, or Normal. Works at any speed.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-      <h3>Content Filters</h3>
-      <p>Hide feed videos by keyword, channel, or duration. Keep recommendations intentional.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <h3>Watch Statistics</h3>
-      <p>Track total watch time and session history across YouTube, Instagram, and Facebook with a live graph broken down by day and week.</p>
-    </div>
-    <div class="bc wide">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
-      <h3>Focus Mode, Automation &amp; Screen Time</h3>
-      <p>Focus Mode strips the sidebar and feed while watching. Automation handles Auto Theater, Auto Fullscreen, Default Volume, and Auto Subtitles on every load. Set a Sleep Timer to pause after N minutes, or enforce daily Screen Time Limits to keep your viewing intentional.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
-      <h3>Speed Presets</h3>
-      <p>One-click buttons for 1.25&times;, 1.5&times;, 1.75&times;, and 2&times;. No more slider-dragging for your go-to speed.</p>
-    </div>
-    <div class="bc wide">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 2v2M16 2v2M2 10h20"/></svg></div>
-      <h3>Custom Keyboard Shortcuts</h3>
-      <p>Every control has a fully remappable hotkey. Open the shortcuts tab, click a binding, press your combo. Changes apply instantly without a page refresh.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
-      <h3>Social Media Download</h3>
-      <p>Download videos directly from Instagram and Facebook with a one-click overlay button injected onto every video post.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/></svg></div>
-      <h3>Hide Messenger</h3>
-      <p>Remove the Facebook Messenger chat bubble and panel entirely with one toggle. Updates the page instantly &mdash; no reload required.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
-      <h3>Loop Segment A&rarr;B</h3>
-      <p>Set A and B markers with <code style="font-family:monospace;font-size:11px;background:rgba(255,255,255,0.1);border-radius:3px;padding:1px 5px">[</code> / <code style="font-family:monospace;font-size:11px;background:rgba(255,255,255,0.1);border-radius:3px;padding:1px 5px">]</code> keys. The video loops that exact section on repeat &mdash; clear any time with the popup or <code style="font-family:monospace;font-size:11px;background:rgba(255,255,255,0.1);border-radius:3px;padding:1px 5px">\</code>.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-      <h3>Timestamp Share Links</h3>
-      <p>Copy a shareable YouTube URL at the exact timestamp of any bookmark with one click. Recipients land at that precise moment in the video.</p>
-    </div>
-    <div class="bc">
-      <div class="bci"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-      <h3>Watched Progress Tags</h3>
-      <p>Red progress bars appear on video thumbnails for every partially-watched video. Progress is tracked silently every 5 seconds, no manual effort needed.</p>
-    </div>
-  </div>
+<div class="flex flex-col items-center md:items-start">
+<span class="text-4xl md:text-5xl font-black text-primary-container mb-2">8</span>
+<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Voice Modes</span>
 </div>
-
-<hr />
-
-<!-- OVERLAY DEMO -->
-<div class="section" id="overlay">
-  <div class="kicker">Universal Overlay</div>
-  <h2 class="sh">Hover any video.<br /><span class="dim">Get instant controls.</span></h2>
-  <p class="sc">A minimal floating bar appears when your cursor enters any video element &mdash; YouTube, Twitter, Reddit, anywhere. No extra setup.</p>
-  <div class="odemo">
-    <div class="ods">
-      <div class="ods-bg"></div>
-      <div class="ods-play"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg></div>
-      <div class="od-bar">
-        <button class="odb">&minus;</button>
-        <span class="odl">1&#xD7;</span>
-        <button class="odb">+</button>
-        <div class="ods2"></div>
-        <button class="odb" style="opacity:0.5">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible">
-            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.36"/>
-          </svg>
-        </button>
-        <span class="odv">Nrm</span>
-      </div>
-    </div>
-    <div class="odi">
-      <div class="odp"><strong>&minus; / + buttons</strong><span>Adjust speed &plusmn;0.25&times; per click. Double-click video to reset to 1&times;.</span></div>
-      <div class="odp"><strong>Loop toggle</strong><span>One click to repeat the video continuously. Highlighted when active.</span></div>
-      <div class="odp"><strong>Nrm badge</strong><span>Click to cycle: Normal &rarr; Chipmunk &rarr; Bass &rarr; Robot &rarr; Echo.</span></div>
-    </div>
-  </div>
+<div class="flex flex-col items-center md:items-start">
+<span class="text-4xl md:text-5xl font-black text-primary-container mb-2">16x</span>
+<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Max Speed</span>
 </div>
-
-<hr />
-
-<!-- VOICE MODES -->
-<div class="section" id="voices">
-  <div class="kicker">Web Audio DSP</div>
-  <h2 class="sh">Eight ways to hear<br /><span class="dim">your content.</span></h2>
-  <p class="sc">Real-time audio processing applied directly on the media element via the Web Audio API. No quality loss, zero latency spikes.</p>
-  <div class="vgrid">
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg></div><h4>Normal</h4><p>Clean passthrough. Natural pitch locked at any speed.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></div><h4>Chipmunk</h4><p>3-band EQ &mdash; bass cut, formant &amp; treble boost. Squeaky at any speed.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 13 9 20 9"/><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg></div><h4>Pikachu</h4><p>Hard bass cut &plus; bright formant &plus; electric air boost. Squeaky &amp; sharp.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></div><h4>Naruto</h4><p>Soft-clip overdrive &plus; vocal presence boost. Energetic &amp; gritty.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg></div><h4>Doraemon</h4><p>Nasal resonance &plus; 80 Hz ring-mod flutter. Warm toy-robot character.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><h4>Bass Boost</h4><p>Low-shelf gain at 200 Hz. Deeper, punchier audio.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M8 12h8M12 8v8"/></svg></div><h4>Robot</h4><p>Ring modulation oscillator. Synthetic, robotic texture.</p></div>
-    <div class="vm"><div class="vmb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></div><h4>Echo</h4><p>Delay node with feedback. Spacious room reverb effect.</p></div>
-  </div>
+<div class="flex flex-col items-center md:items-start">
+<span class="text-4xl md:text-5xl font-black text-primary-container mb-2">ALL</span>
+<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Sites Supported</span>
 </div>
-
-<hr />
-
-<!-- INSTALL -->
-<div class="section" id="install">
-  <div class="kicker">Installation</div>
-  <h2 class="sh">Running in<br /><span class="dim">four steps.</span></h2>
-  <p class="sc">Side-load directly from GitHub &mdash; no Chrome Web Store review wait required.</p>
-  <div class="igrid">
-    <div class="istep"><div class="isn">Step 01</div><h3>Clone the repo</h3><p><button class="copy-chrome-url copy-code-only" data-url="git clone https://github.com/mahmudnibir/yt-extension-enhanced" title="Click to copy"><code>git clone https://github.com/mahmudnibir/yt-extension-enhanced</code></button></p></div>
-    <div class="istep"><div class="isn">Step 02</div><h3>Open Extensions</h3><p>Go to <button class="copy-chrome-url" data-url="chrome://extensions" title="Copy chrome://extensions to clipboard"><code>chrome://extensions</code><span class="copy-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></button> and enable <strong>Developer mode</strong> via the top-right toggle.</p></div>
-    <div class="istep"><div class="isn">Step 03</div><h3>Load Unpacked</h3><p>Click <strong>Load unpacked</strong> and select the cloned project folder.</p></div>
-    <div class="istep"><div class="isn">Step 04</div><h3>Pin &amp; use</h3><p>Pin the icon to your Chrome toolbar. Open YouTube and click the icon to start.</p></div>
-  </div>
 </div>
-
-<hr />
-
-<!-- CTA -->
-<div style="padding:0 0 0;position:relative;z-index:1;">
-  <div class="cta" style="margin-bottom:90px;">
-    <h2>Take control of every video.</h2>
-    <p>Free, open-source, and running in your browser in under two minutes.</p>
-    <div class="cta-btns">
-      <a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="btn-primary">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Extension
-      </a>
-      <a href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank" class="btn-secondary">View on GitHub</a>
-    </div>
-  </div>
+</section>
+<!-- Feature Showcase (Bento Grid) -->
+<section class="py-32 px-8" id="features">
+<div class="max-w-7xl mx-auto">
+<div class="mb-20 text-center md:text-left">
+<h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase">KINETIC CAPABILITIES</h2>
+<div class="h-1 w-24 bg-primary-container"></div>
 </div>
-
-<!-- FOOTER -->
-<footer>
-  <span>MIT &copy; 2026 &nbsp;<a href="https://github.com/mahmudnibir" target="_blank" style="color:var(--text);">Mahmud Nibir</a></span>
-  <div class="fl">
-    <a href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-      GitHub
-    </a>
-    <a href="https://x.com/mahamud_nibir" target="_blank">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733-16z"/><path d="M4 20l6.768-6.768m2.46-2.46L20 4"/></svg>
-      X / Twitter
-    </a>
-    <a href="mailto:nibirbbkr@gmail.com">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      Email
-    </a>
-  </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Feature Card 1 -->
+<div class="md:col-span-2 p-8 rounded-2xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all group overflow-hidden relative">
+<div class="relative z-10 h-full flex flex-col justify-between">
+<div>
+<span class="material-symbols-outlined text-4xl text-primary-container mb-6 block" style="font-variation-settings: 'FILL' 1;">speed</span>
+<h3 class="text-2xl font-bold mb-4">Precision Speed Control</h3>
+<p class="text-on-surface-variant leading-relaxed max-w-md">Override standard playback limits with frame-perfect adjustment. From 0.1x to 16x, master your time without losing clarity.</p>
+</div>
+<div class="mt-12 flex gap-2">
+<span class="px-3 py-1 bg-surface-container-highest rounded text-[0.6rem] uppercase tracking-widest font-bold">Latency: 0ms</span>
+<span class="px-3 py-1 bg-surface-container-highest rounded text-[0.6rem] uppercase tracking-widest font-bold">Auto-Sync</span>
+</div>
+</div>
+<div class="absolute right-0 bottom-0 w-1/2 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[12rem]">timer</span>
+</div>
+</div>
+<!-- Feature Card 2 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+<span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">layers</span>
+<h3 class="text-2xl font-bold mb-4">Universal Hover Overlay</h3>
+<p class="text-on-surface-variant leading-relaxed">Instant semantic data on any element. Hover to expand content, peek at links, or translate on the fly.</p>
+</div>
+<!-- Feature Card 3 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+<span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">block</span>
+<h3 class="text-2xl font-bold mb-4">Auto Skip Ads & SponsorBlock</h3>
+<p class="text-on-surface-variant leading-relaxed">Surgical removal of distractions. Experience the web as it was meant to be: pure content, zero interruptions.</p>
+</div>
+<!-- Feature Card 4 -->
+<div class="md:col-span-2 p-8 rounded-2xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all group overflow-hidden relative">
+<div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+<div class="flex-1">
+<span class="material-symbols-outlined text-4xl text-primary-container mb-6 block" style="font-variation-settings: 'FILL' 1;">mic_external_on</span>
+<h3 class="text-2xl font-bold mb-4">AI Voice Modes</h3>
+<p class="text-on-surface-variant leading-relaxed">Eight distinct AI models optimized for auditory comprehension and focus. Let COGNIFY read the web back to you.</p>
+</div>
+<div class="w-full md:w-64 aspect-video rounded-xl bg-surface-container-lowest flex items-center justify-center p-4 border border-outline-variant/10">
+<div class="flex items-end gap-1 h-12">
+<div class="w-2 h-4 bg-primary-container rounded-full opacity-40"></div>
+<div class="w-2 h-8 bg-primary-container rounded-full"></div>
+<div class="w-2 h-12 bg-primary-container rounded-full"></div>
+<div class="w-2 h-6 bg-primary-container rounded-full opacity-60"></div>
+<div class="w-2 h-10 bg-primary-container rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Feature Card 5 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">cloud_upload</span>
+    <h3 class="text-2xl font-bold mb-4">Cloud Bookmarks</h3>
+    <p class="text-on-surface-variant leading-relaxed">Save and sync your video bookmarks across devices. Never lose your place again.</p>
+</div>
+<!-- Feature Card 6 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">hourglass_top</span>
+    <h3 class="text-2xl font-bold mb-4">Focus Mode & Screen-Time</h3>
+    <p class="text-on-surface-variant leading-relaxed">Set screen-time limits and activate Focus Mode to eliminate distractions and stay on task.</p>
+</div>
+<!-- Feature Card 7 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">query_stats</span>
+    <h3 class="text-2xl font-bold mb-4">Real-Time Analytics</h3>
+    <p class="text-on-surface-variant leading-relaxed">Get insights into your watch habits across YouTube, Instagram, and Facebook.</p>
+</div>
+<!-- Feature Card 8 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">tune</span>
+    <h3 class="text-2xl font-bold mb-4">Speed Presets</h3>
+    <p class="text-on-surface-variant leading-relaxed">Quick-access 1.25×, 1.5×, 1.75×, 2× buttons for instant playback adjustments.</p>
+</div>
+<!-- Feature Card 9 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">filter_alt</span>
+    <h3 class="text-2xl font-bold mb-4">Content Filters</h3>
+    <p class="text-on-surface-variant leading-relaxed">Hide comments, shorts, descriptions, or suggested videos for a cleaner viewing experience.</p>
+</div>
+<!-- Feature Card 10 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">width_wide</span>
+    <h3 class="text-2xl font-bold mb-4">Auto Theater Mode</h3>
+    <p class="text-on-surface-variant leading-relaxed">Automatically switches to theater view on every video load for immersive watching.</p>
+</div>
+<!-- Feature Card 11 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">fullscreen</span>
+    <h3 class="text-2xl font-bold mb-4">Auto Fullscreen</h3>
+    <p class="text-on-surface-variant leading-relaxed">Automatically enters fullscreen when playback starts — zero clicks required.</p>
+</div>
+<!-- Feature Card 12 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">volume_up</span>
+    <h3 class="text-2xl font-bold mb-4">Default Volume</h3>
+    <p class="text-on-surface-variant leading-relaxed">Enforce a consistent volume level on every video load across all sessions.</p>
+</div>
+<!-- Feature Card 13 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">closed_caption</span>
+    <h3 class="text-2xl font-bold mb-4">Auto Subtitles</h3>
+    <p class="text-on-surface-variant leading-relaxed">Automatically enable closed captions on video load for accessibility.</p>
+</div>
+<!-- Feature Card 14 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">bedtime</span>
+    <h3 class="text-2xl font-bold mb-4">Sleep Timer</h3>
+    <p class="text-on-surface-variant leading-relaxed">Pause playback after a set number of minutes — perfect for winding down.</p>
+</div>
+<!-- Feature Card 15 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">download</span>
+    <h3 class="text-2xl font-bold mb-4">Social Download</h3>
+    <p class="text-on-surface-variant leading-relaxed">One-click video download overlay on Instagram and Facebook posts.</p>
+</div>
+<!-- Feature Card 16 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">comments_disabled</span>
+    <h3 class="text-2xl font-bold mb-4">Hide Messenger</h3>
+    <p class="text-on-surface-variant leading-relaxed">Remove Facebook Messenger chat bubble and panel with a single toggle.</p>
+</div>
+<!-- Feature Card 17 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">repeat</span>
+    <h3 class="text-2xl font-bold mb-4">Loop Segment (A→B)</h3>
+    <p class="text-on-surface-variant leading-relaxed">Set A and B loop points with keyboard shortcuts for continuous segment repeat.</p>
+</div>
+<!-- Feature Card 18 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">share</span>
+    <h3 class="text-2xl font-bold mb-4">Timestamp Share Links</h3>
+    <p class="text-on-surface-variant leading-relaxed">Copy shareable YouTube URLs at exact timestamps from your bookmarks panel.</p>
+</div>
+<!-- Feature Card 19 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">linear_scale</span>
+    <h3 class="text-2xl font-bold mb-4">Watched Progress Tags</h3>
+    <p class="text-on-surface-variant leading-relaxed">Automatic red progress bars on thumbnails for partially-watched videos.</p>
+</div>
+<!-- Feature Card 20 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">keyboard</span>
+    <h3 class="text-2xl font-bold mb-4">Keyboard Shortcuts</h3>
+    <p class="text-on-surface-variant leading-relaxed">Fully customizable hotkeys for all controls — speed, volume, bookmarks, and more.</p>
+</div>
+<!-- Feature Card 21 -->
+<div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">help</span>
+    <h3 class="text-2xl font-bold mb-4">Feature Guide</h3>
+    <p class="text-on-surface-variant leading-relaxed">In-popup help button opens a scrollable guide with all setting descriptions.</p>
+</div>
+</div>
+</section>
+<!-- Overlay Demo -->
+<section class="py-32 px-8 bg-surface-container-low" id="overlay">
+<div class="max-w-4xl mx-auto">
+<div class="text-center mb-20">
+<h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase">UNIVERSAL CONTROL</h2>
+<p class="text-on-surface-variant">Hover any video element for instant access to all controls.</p>
+</div>
+</div>
+</section>
+<!-- Voice Modes -->
+<section class="py-32 px-8" id="voices">
+<div class="max-w-7xl mx-auto">
+<div class="mb-20 text-center md:text-left">
+<h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase">VOICE TRANSFORMATION</h2>
+<div class="h-1 w-24 bg-primary-container"></div>
+<p class="text-on-surface-variant mt-6">Eight distinct audio processing modes for every listening preference.</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">record_voice_over</span>
+<h4 class="text-lg font-bold mb-2">Normal</h4>
+<p class="text-sm text-on-surface-variant">Natural passthrough.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">graphic_eq</span>
+<h4 class="text-lg font-bold mb-2">Chipmunk</h4>
+<p class="text-sm text-on-surface-variant">High-pitched boost.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">bolt</span>
+<h4 class="text-lg font-bold mb-2">Pikachu</h4>
+<p class="text-sm text-on-surface-variant">Electric character.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">flare</span>
+<h4 class="text-lg font-bold mb-2">Naruto</h4>
+<p class="text-sm text-on-surface-variant">Energetic grit.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">toys</span>
+<h4 class="text-lg font-bold mb-2">Doraemon</h4>
+<p class="text-sm text-on-surface-variant">Warm toy-robot.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">equalizer</span>
+<h4 class="text-lg font-bold mb-2">Bass Boost</h4>
+<p class="text-sm text-on-surface-variant">Deep punch.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">smart_toy</span>
+<h4 class="text-lg font-bold mb-2">Robot</h4>
+<p class="text-sm text-on-surface-variant">Synthetic texture.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container border border-outline-variant/10 hover:border-primary-container/30 transition-all">
+<span class="material-symbols-outlined text-3xl text-primary-container mb-4 block">headphones</span>
+<h4 class="text-lg font-bold mb-2">Echo</h4>
+<p class="text-sm text-on-surface-variant">Spacious reverb.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Installation Guide -->
+<section class="py-32 px-8 bg-surface-container-low" id="install">
+<div class="max-w-4xl mx-auto">
+<div class="text-center mb-20">
+<h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase">TAKE COMMAND</h2>
+<p class="text-on-surface-variant">Setup finalized in under 30 seconds.</p>
+</div>
+<div class="space-y-12">
+<div class="flex gap-8 group">
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-black text-xl shrink-0">1</div>
+<div class="w-px flex-1 bg-outline-variant/30 my-4"></div>
+</div>
+<div class="pt-2">
+<h4 class="text-xl font-bold mb-2">INITIALIZE CONNECTION</h4>
+<p class="text-on-surface-variant max-w-lg">Install the extension from your browser store. Look for the COGNIFY terminal icon in your toolbar.</p>
+</div>
+</div>
+<div class="flex gap-8 group">
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full border-2 border-primary-container text-primary-container flex items-center justify-center font-black text-xl shrink-0">2</div>
+<div class="w-px flex-1 bg-outline-variant/30 my-4"></div>
+</div>
+<div class="pt-2">
+<h4 class="text-xl font-bold mb-2">CONFIGURE PROTOCOLS</h4>
+<p class="text-on-surface-variant max-w-lg">Open any video or article. Use the 'ALT + C' hotkey to activate the Command Palette and set your preferred speed and focus mode.</p>
+</div>
+</div>
+<div class="flex gap-8 group">
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full border-2 border-primary-container text-primary-container flex items-center justify-center font-black text-xl shrink-0">3</div>
+</div>
+<div class="pt-2">
+<h4 class="text-xl font-bold mb-2">EXECUTE CONTROL</h4>
+<p class="text-on-surface-variant max-w-lg">The UI automatically adapts to every site you visit, providing seamless enhancement without manual toggling.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-32 px-8 text-center relative overflow-hidden">
+<div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&amp;fit=crop&amp;q=80&amp;w=2000')] opacity-5 scale-110" data-alt="high-tech computer hardware with glowing red internal lighting and glass panels"></div>
+<div class="max-w-3xl mx-auto relative z-10">
+<h2 class="text-4xl md:text-6xl font-black mb-8 leading-tight">READY TO UPGRADE YOUR BRAIN'S BANDWIDTH?</h2>
+<a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="inline-flex items-center bg-primary-container text-on-primary-container px-12 py-6 rounded-2xl font-black text-2xl hover:scale-105 transition-transform duration-300 shadow-xl shadow-primary-container/40 group">
+                    INSTALL COGNIFY NOW
+                    <span class="material-symbols-outlined align-middle ml-2 group-hover:translate-x-2 transition-transform">east</span>
+</a>
+<p class="mt-8 text-on-surface-variant text-sm font-bold uppercase tracking-widest opacity-60">Compatible with Chrome, Edge, and Brave.</p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-[#131313] border-t-0">
+<div class="flex items-center gap-2">
+<span class="text-lg font-black text-[#E5E2E1]">COGNIFY</span>
+<span class="text-[#FF5540] font-bold text-xs">v3.8.0</span>
+</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#features">Features</a>
+<a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#overlay">Overlay</a>
+<a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#voices">Voice Modes</a>
+<a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank">GitHub</a>
+</div>
+<p class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] opacity-80">
+            MIT © 2026 MAHMUD NIBIR. ALL RIGHTS RESERVED.
+        </p>
 </footer>
-
-<script>
-  // Prevent flash of wrong theme: apply saved preference before first paint.
-  (function () {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
-  })();
-
-  // Scroll entrance animations with stagger
-  const fadeObserver = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } });
-  }, { threshold: 0.08 });
-  let fi = 0;
-  document.querySelectorAll('.bc, .vm, .istep, .stat').forEach(el => {
-    el.classList.add('fade-up');
-    el.style.transitionDelay = ((fi % 4) * 0.07) + 's';
-    fi++;
-    fadeObserver.observe(el);
-  });
-
-  // Animate overlay demo — speed value and voice badge cycle in sync with the 10s bar animation
-  const odlEl = document.querySelector('.odl');
-  if (odlEl) {
-    const demoSpeeds = ['1×', '1.5×', '2×', '1.75×'];
-    let dIdx = 0;
-    setInterval(() => {
-      dIdx = (dIdx + 1) % demoSpeeds.length;
-      odlEl.style.transition = 'opacity 0.22s';
-      odlEl.style.opacity = '0';
-      setTimeout(() => { odlEl.textContent = demoSpeeds[dIdx]; odlEl.style.opacity = '1'; }, 220);
-    }, 2500);
-  }
-  const odvEl = document.querySelector('.odv');
-  if (odvEl) {
-    const demoModes = ['Nrm', 'Chmp', 'Bass', 'Rbt'];
-    let mIdx = 0;
-    setInterval(() => {
-      mIdx = (mIdx + 1) % demoModes.length;
-      odvEl.style.transition = 'opacity 0.22s';
-      odvEl.style.opacity = '0';
-      setTimeout(() => { odvEl.textContent = demoModes[mIdx]; odvEl.style.opacity = '1'; }, 220);
-    }, 3200);
-  }
-
-  // Copy chrome:// URL buttons — copies URL to clipboard and shows brief confirmation
-  document.querySelectorAll('.copy-chrome-url').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const url = btn.dataset.url;
-      navigator.clipboard.writeText(url).then(() => {
-        btn.classList.add('copied');
-        const code = btn.querySelector('code');
-        const original = code.textContent;
-        code.textContent = 'Copied!';
-        setTimeout(() => { btn.classList.remove('copied'); code.textContent = original; }, 1800);
-      });
-    });
-  });
-
-  // Toggle between dark (default) and light theme, persisting the choice.
-  document.getElementById('themeToggle').addEventListener('click', () => {
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    if (isLight) {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light');
-      localStorage.setItem('theme', 'light');
-    }
-  });
-</script>
-</body>
-</html>
+</body></html>
