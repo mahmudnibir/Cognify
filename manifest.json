@@ -33,6 +33,13 @@
       "128": "icons/icon-128.png"
     }
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C"
+      }
+    }
+  },
   "icons": {
     "16":  "icons/icon-16.png",
     "48":  "icons/icon-48.png",

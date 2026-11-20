@@ -131,6 +131,7 @@
       --bg-card-hover: #3a3a3a;
       --accent-color: #ff0000;
       --accent-hover: #cc0000;
+      --speed-accent: #d94a4a;
       --border-color: rgba(255, 255, 255, 0.1);
       --border-color-hover: rgba(255, 255, 255, 0.15);
       --text-primary: #ffffff;
@@ -145,6 +146,8 @@
     body {
       width: 380px;
       height: 580px;
+      min-height: 580px;
+      max-height: 580px;
       overflow: hidden;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--bg-primary);
@@ -495,6 +498,7 @@
     /* Main */
     main {
       flex: 1;
+      min-height: 0;
       background: transparent;
       padding: 16px;
       overflow-y: auto;
@@ -517,6 +521,121 @@
     
     section { margin-bottom: 20px; }
     section:last-child { margin-bottom: 8px; }
+
+    .content-control-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .content-control-heading h2 {
+      flex: 1;
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .content-control-order-actions {
+      display: flex;
+      gap: 5px;
+      padding-bottom: 6px;
+    }
+
+    .content-control-order-button {
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .content-control-order-button.is-icon-only {
+      display: grid;
+      width: 28px;
+      min-width: 28px;
+      padding: 4px;
+      place-items: center;
+      border-color: transparent;
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .content-control-order-button.is-icon-only:hover {
+      border-color: transparent;
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .content-control-order-button.is-icon-only:focus-visible {
+      border-color: transparent;
+      outline: 2px solid var(--speed-accent);
+      outline-offset: 2px;
+    }
+
+    .content-control-reorder-label[hidden] {
+      display: none;
+    }
+
+    #contentControlReorderToggle[aria-pressed="true"] svg {
+      display: none;
+    }
+
+    .content-control-order-button:hover,
+    .content-control-order-button:focus-visible {
+      border-color: var(--border-color-hover);
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .content-control-order-button[hidden],
+    .content-control-order-status[hidden],
+    .content-control-drag-handle[hidden] {
+      display: none;
+    }
+
+    .content-control-drag-handle {
+      display: none;
+      width: 24px;
+      height: 32px;
+      flex: 0 0 24px;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: grab;
+    }
+
+    .content-control-drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .content-control-drag-handle:focus-visible {
+      border-color: var(--border-color-hover);
+      outline: 2px solid var(--speed-accent);
+      outline-offset: 1px;
+    }
+
+    .content-control-list.is-reordering .content-control-drag-handle {
+      display: grid;
+    }
+
+    .content-control-item.is-dragging {
+      opacity: 0.45;
+    }
+
+    .content-control-order-status {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 10px;
+      line-height: 1.4;
+    }
     
     h2 {
       color: var(--text-primary);
@@ -602,8 +721,18 @@
     .speed-control {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 7px;
       width: 100%;
+    }
+
+    .speed-section {
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .speed-section h2 {
+      padding-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .speed-main {
@@ -638,32 +767,47 @@
 
     .speed-readout {
       display: flex;
-      min-height: 44px;
+      min-height: 34px;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border: 1px solid rgba(255, 0, 0, 0.18);
-      border-radius: 9px;
-      background: rgba(255, 0, 0, 0.055);
     }
 
-    body[data-theme="light"] .speed-readout {
-      border-color: rgba(255, 0, 0, 0.16);
-      background: rgba(255, 0, 0, 0.04);
-    }
-
-    .speed-readout-label {
-      color: var(--text-secondary);
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    
     .speed-slider-container {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 2px;
       width: 100%;
+    }
+
+    .speed-scale {
+      position: relative;
+      height: 17px;
+      margin: 0 7px;
+      pointer-events: none;
+    }
+
+    .speed-scale-tick {
+      position: absolute;
+      top: 0;
+      width: 1px;
+      height: 4px;
+      transform: translateX(-50%);
+      border-radius: 1px;
+      background: var(--text-secondary);
+      opacity: 0.55;
+    }
+
+    .speed-scale-label {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--text-secondary);
+      font-size: 8px;
+      line-height: 1;
+      white-space: nowrap;
     }
     
     #speed {
@@ -695,18 +839,19 @@
     #speed::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      background: var(--accent-color);
+      background: var(--speed-accent);
       border: 0;
+      margin-top: -4px;
       box-shadow: none;
       cursor: grab;
       transition: transform 0.2s;
     }
 
     body[data-theme="light"] #speed::-webkit-slider-thumb {
-      background: var(--accent-color);
+      background: var(--speed-accent);
       box-shadow: none;
     }
     
@@ -719,10 +864,10 @@
     }
     
     #speed::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      background: var(--accent-color);
+      background: var(--speed-accent);
       border: 0;
       box-shadow: none;
       cursor: grab;
@@ -730,7 +875,7 @@
     }
 
     body[data-theme="light"] #speed::-moz-range-thumb {
-      background: var(--accent-color);
+      background: var(--speed-accent);
       box-shadow: none;
     }
     
@@ -743,52 +888,14 @@
     }
     
     #speedDisplay {
-      color: var(--accent-color);
-      font-size: 22px;
+      color: var(--text-primary);
+      font-size: 16px;
       line-height: 1;
-      font-weight: 800;
-      min-width: 76px;
-      text-align: center;
-      letter-spacing: -0.5px;
-      transition: transform 0.2s;
-    }
-
-    body[data-theme="light"] #speedDisplay {
-      color: var(--accent-color);
-    }
-    
-    .speed-labels {
-      display: flex;
-      justify-content: space-between;
-      gap: 4px;
-      padding: 0;
-      margin-top: 2px;
-    }
-    .speed-tick {
-      background: none;
-      border: none;
-      font-size: 10px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.35);
-      cursor: pointer;
-      padding: 3px 6px;
-      border-radius: 5px;
-      transition: color 0.15s, background 0.15s;
-      line-height: 1;
-    }
-    .speed-tick:hover {
-      color: rgba(255,255,255,0.8);
-      background: var(--bg-card-hover);
-    }
-    .speed-tick.active {
-      color: var(--accent-color);
-      background: rgba(255,0,0,0.10);
       font-weight: 700;
-    }
-
-    body[data-theme="light"] .speed-tick.active {
-      color: var(--accent-color);
-      background: rgba(255,0,0,0.07);
+      min-width: 60px;
+      text-align: center;
+      letter-spacing: -0.3px;
+      transition: transform 0.2s;
     }
 
     .speed-reset {
@@ -1089,20 +1196,33 @@
       appearance: none;
       transition: background 0.1s;
     }
+    #defaultVolume::-webkit-slider-runnable-track {
+      height: 8px;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+    }
+    #defaultVolume::-moz-range-track {
+      height: 8px;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+    }
     #defaultVolume::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: var(--accent-color);
+      margin-top: -3px;
       cursor: grab;
       transition: transform 0.2s;
     }
     #defaultVolume::-webkit-slider-thumb:hover { }
     #defaultVolume::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: var(--accent-color);
       border: none;
@@ -1950,59 +2070,57 @@
       gap: 12px;
     }
     
-    .footer-left {
+    .footer-brand {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 600;
     }
     
-    .version { color: rgba(255, 255, 255, 0.4); }
+    .version {
+      padding-left: 9px;
+      border-left: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-weight: 500;
+    }
     
-    .status {
-      display: flex;
+    .footer-link {
+      display: inline-flex;
       align-items: center;
       gap: 5px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-    
-    .status-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-    }
-    
-    .footer-actions {
-      display: flex;
-      gap: 8px;
-    }
-    
-    .footer-btn {
-      padding: 5px 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
+      min-height: 32px;
+      padding: 6px 8px;
       border-radius: 6px;
+      background: transparent;
       color: var(--text-secondary);
-      font-size: 9px;
-      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      font-size: 10px;
+      font-weight: 600;
       text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      transition: color 0.2s, background 0.2s;
     }
-    
-    .footer-btn:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-color-hover);
-      color: var(--text-primary);
-    }
-    
-    .footer-btn svg {
+
+    .footer-link svg {
       width: 12px;
       height: 12px;
+      flex: 0 0 12px;
+    }
+
+    .footer-link:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .footer-link:focus-visible {
+      outline: 2px solid var(--speed-accent);
+      outline-offset: 2px;
+    }
+
+    .footer-link:active {
+      background: var(--bg-card);
     }
     
     /* Bookmark library */
@@ -2046,25 +2164,6 @@
             <path d="M12 17h.01"></path>
           </svg>
         </button>
-        <button class="header-action" id="profileButton" type="button" title="Profile login coming soon" aria-label="Show profile information" aria-controls="profilePopover" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 21a8 8 0 0 0-16 0"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </button>
-        <div class="profile-popover" id="profilePopover" role="status" aria-live="polite" hidden>
-          <span class="profile-popover-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21a8 8 0 0 0-16 0"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </span>
-          <div class="profile-popover-copy">
-            <div class="profile-popover-title">Profile</div>
-            <p class="profile-popover-message">Profile login and account syncing are coming soon.</p>
-          </div>
-          <button class="profile-popover-close" id="profilePopoverClose" type="button" aria-label="Close profile information">×</button>
-        </div>
       </div>
     </header>
     
@@ -2072,18 +2171,18 @@
       <button class="tab active" data-tab="general">General</button>
       <button class="tab" data-tab="stats">Stats</button>
       <button class="tab" data-tab="bookmarks">Bookmarks</button>
-      <button class="tab" data-tab="advanced">Advanced</button>
+      <button class="tab" data-tab="advanced">Settings</button>
     </div>
     
     <main id="mainContent">
       <!-- General Tab -->
       <div class="tab-content active" id="general">
       <!-- Speed Control -->
-      <section>
+      <section class="speed-section">
         <h2>Speed Control</h2>
-        <div class="setting-item" style="align-items: stretch; padding: 14px;">
+        <div class="setting-item" style="align-items: stretch; padding: 10px;">
           <div class="setting-content">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
               <div class="setting-title" style="margin:0;font-weight:700;">Playback Speed</div>
               <button class="speed-reset" id="speedReset" type="button" title="Reset speed to 1×" aria-label="Reset playback speed to 1×">Reset</button>
             </div>
@@ -2092,19 +2191,19 @@
                 <button class="speed-step" id="speedDecrease" type="button" aria-label="Decrease playback speed" title="Decrease speed">−</button>
                 <div class="speed-readout">
                   <span id="speedDisplay">1.0×</span>
-                  <span class="speed-readout-label">Playback</span>
                 </div>
                 <button class="speed-step" id="speedIncrease" type="button" aria-label="Increase playback speed" title="Increase speed">+</button>
               </div>
               <div class="speed-slider-container">
-                <input id="speed" type="range" min="0.25" max="20" step="0.25" value="1" aria-label="Playback speed">
-              </div>
-              <div class="speed-labels">
-                <button class="speed-tick" data-speed="0.25">0.25×</button>
-                <button class="speed-tick" data-speed="1">1×</button>
-                <button class="speed-tick" data-speed="5">5×</button>
-                <button class="speed-tick" data-speed="10">10×</button>
-                <button class="speed-tick" data-speed="20">20×</button>
+                <input id="speed" type="range" min="0.25" max="16" step="0.25" value="1" aria-label="Playback speed">
+                <div class="speed-scale" aria-hidden="true">
+                  <span class="speed-scale-tick" style="left: 4.7619%;"><span class="speed-scale-label">1×</span></span>
+                  <span class="speed-scale-tick" style="left: 23.8095%;"><span class="speed-scale-label">4×</span></span>
+                  <span class="speed-scale-tick" style="left: 42.8571%;"><span class="speed-scale-label">7×</span></span>
+                  <span class="speed-scale-tick" style="left: 61.9048%;"><span class="speed-scale-label">10×</span></span>
+                  <span class="speed-scale-tick" style="left: 80.9524%;"><span class="speed-scale-label">13×</span></span>
+                  <span class="speed-scale-tick" style="left: 100%;"><span class="speed-scale-label">16×</span></span>
+                </div>
               </div>
             </div>
           </div>
@@ -2113,7 +2212,24 @@
       
       <!-- Content Control -->
       <section>
-        <h2>Content Control</h2>
+        <div class="content-control-heading">
+          <h2>Content Control</h2>
+          <div class="content-control-order-actions">
+            <button id="contentControlResetOrder" class="content-control-order-button" type="button" aria-label="Reset content control order" hidden>Reset</button>
+            <button id="contentControlReorderToggle" class="content-control-order-button is-icon-only" type="button" aria-label="Reorder content controls" title="Reorder content controls" aria-pressed="false">
+              <svg width="16" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="8" cy="6" r="1.6"></circle>
+                <circle cx="16" cy="6" r="1.6"></circle>
+                <circle cx="8" cy="12" r="1.6"></circle>
+                <circle cx="16" cy="12" r="1.6"></circle>
+                <circle cx="8" cy="18" r="1.6"></circle>
+                <circle cx="16" cy="18" r="1.6"></circle>
+              </svg>
+              <span class="content-control-reorder-label" hidden>Done</span>
+            </button>
+          </div>
+        </div>
+        <div id="contentControlList" class="content-control-list" role="list" aria-label="Content controls">
         <div class="setting-item setting-item-full">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="setting-icon">
@@ -2293,6 +2409,8 @@
             </label>
           </div>
         </div>
+        </div>
+        <p id="contentControlOrderStatus" class="content-control-order-status" role="status" aria-live="polite" hidden></p>
       </section>
       
       <!-- General Settings -->
@@ -3311,7 +3429,7 @@
 
       <div class="tab-content" id="bookmarks"></div>
 
-      <!-- Advanced Tab -->
+      <!-- Settings Tab -->
       <div class="tab-content" id="advanced">
 
       <!-- Bookmarks -->
@@ -3397,12 +3515,6 @@
         <button class="btn-import" id="startTutorialBtn" type="button">Start interactive tutorial</button>
         <button class="btn-export" id="whatsNewBtn" type="button">What's new</button>
         <div class="setting-desc"><button class="text-button" id="tipsGuideBtn" type="button">Open feature guide and tips</button></div>
-      </section>
-
-      <section>
-        <h2>Sync Settings</h2>
-        <div class="setting-desc">Create a QR code containing your non-sensitive preferences for another Cognify install.</div>
-        <button class="btn-export" id="showSyncQrBtn" type="button">Show sync QR</button>
       </section>
 
       <!-- Playback Presets -->
@@ -3580,7 +3692,7 @@
           </button>
         </div>
 
-        <!-- Full Backup / Restore -->
+        <h2>Backup &amp; Restore</h2>
         <div class="setting-item setting-item-full">
           <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
             <div class="setting-icon">
@@ -3591,12 +3703,12 @@
               </svg>
             </div>
             <div class="setting-content">
-              <div class="setting-title">Full Backup</div>
-              <div class="setting-desc">Export all settings, bookmarks & stats as JSON</div>
+              <div class="setting-title">Export all data</div>
+              <div class="setting-desc">Save your settings, bookmarks, and stats to a backup file. No login required.</div>
             </div>
           </div>
           <button id="exportBackupBtn" class="btn-export" style="width:auto;white-space:nowrap;flex-shrink:0;padding:8px 14px;">
-            Backup
+            Export
           </button>
         </div>
         <div class="setting-item setting-item-full">
@@ -3609,20 +3721,20 @@
               </svg>
             </div>
             <div class="setting-content">
-              <div class="setting-title">Restore Backup</div>
-              <div class="setting-desc">Import a previously exported backup file</div>
+              <div class="setting-title">Import a backup</div>
+              <div class="setting-desc">Restore settings, bookmarks, and stats from a Cognify backup.</div>
             </div>
           </div>
           <input type="file" id="restoreBackupFile" accept=".json" style="display:none;">
           <button id="restoreBackupBtn" class="btn-import" style="width:auto;white-space:nowrap;flex-shrink:0;padding:8px 14px;margin-top:0;">
-            Restore
+            Import
           </button>
         </div>
       </section>
 
       <!-- Cloud Sync Control -->
       <section>
-        <h2>Storage Mode</h2>
+        <h2>Bookmark Storage</h2>
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-icon">
@@ -3631,8 +3743,8 @@
               </svg>
             </div>
             <div class="setting-content">
-              <div class="setting-title">Cloud Sync</div>
-              <div class="setting-desc" id="cloudSyncDesc">Sync bookmarks across devices (~50-100 limit)</div>
+              <div class="setting-title">Chrome Sync</div>
+              <div class="setting-desc" id="cloudSyncDesc">Sync bookmarks with Chrome. No Cognify account required.</div>
             </div>
           </div>
           <div>
@@ -3668,43 +3780,15 @@
     
     <footer>
       <div class="footer-content">
-        <div class="footer-left">
-            <span class="version">v3.9.0</span>
-          <div class="status">
-            <div class="status-dot"></div>
-            Active
-          </div>
-        </div>
-        <div class="footer-actions">
-          <a href="https://mahmudnibir.github.io/Cognify/" target="_blank" class="footer-btn" title="Extension Website">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            Site
-          </a>
-          <a href="https://github.com/mahmudnibir" target="_blank" class="footer-btn" title="GitHub @mahmudnibir">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-            </svg>
-            GitHub
-          </a>
-          <a href="https://x.com/mahamud_nibir" target="_blank" class="footer-btn" title="X @mahamud_nibir">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 4l11.733 16h4.267l-11.733-16z"></path>
-              <path d="M4 20l6.768-6.768m2.46-2.46L20 4"></path>
-            </svg>
-            X
-          </a>
-          <a href="mailto:nibirbbkr@gmail.com" class="footer-btn" title="Email Developer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-              <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
-            Email
-          </a>
-        </div>
+        <div class="footer-brand">Cognify <span class="version">v3.9.0</span></div>
+        <a href="https://mahmudnibir.github.io/Cognify/" target="_blank" rel="noopener noreferrer" class="footer-link" title="Open the Cognify website in a new tab">
+          Website
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 3h7v7"></path>
+            <path d="M10 14 21 3"></path>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          </svg>
+        </a>
       </div>
     </footer>
   </div>

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Promote bookmarks to a top-level tab and keep shortcuts under Advanced.
+  // Promote bookmarks to a top-level tab and keep shortcuts under Settings.
   const bookmarkSection = document.getElementById('bookmarkSection');
   const bookmarksTab = document.getElementById('bookmarks');
   const advancedTab = document.getElementById('advanced');
@@ -7,6 +7,162 @@ document.addEventListener('DOMContentLoaded', () => {
   bookmarksTab.appendChild(bookmarkSection);
   shortcutsSection.classList.remove('tab-content');
   advancedTab.prepend(shortcutsSection);
+
+  const contentControlList = document.getElementById('contentControlList');
+  const contentControlReorderToggle = document.getElementById('contentControlReorderToggle');
+  const contentControlResetOrder = document.getElementById('contentControlResetOrder');
+  const contentControlOrderStatus = document.getElementById('contentControlOrderStatus');
+  const contentControlItems = Array.from(contentControlList.children)
+    .filter(card => card.matches('.setting-item-full') && card.style.display !== 'none')
+    .filter(card => card.querySelector('.toggle-input'));
+  contentControlItems.forEach(card => {
+    const input = card.querySelector('.toggle-input');
+    const title = card.querySelector('.setting-title')?.textContent.trim() || input.id;
+    card.classList.add('content-control-item');
+    card.dataset.controlId = input.id;
+    card.setAttribute('role', 'listitem');
+
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'content-control-drag-handle';
+    handle.hidden = true;
+    handle.draggable = false;
+    handle.setAttribute('aria-label', `Reorder ${title}`);
+    handle.title = 'Drag to move, or press Alt+Arrow Up/Down';
+    handle.innerHTML = '<svg width="12" height="18" viewBox="0 0 12 18" aria-hidden="true"><circle cx="3" cy="3" r="1.25" fill="currentColor"/><circle cx="9" cy="3" r="1.25" fill="currentColor"/><circle cx="3" cy="9" r="1.25" fill="currentColor"/><circle cx="9" cy="9" r="1.25" fill="currentColor"/><circle cx="3" cy="15" r="1.25" fill="currentColor"/><circle cx="9" cy="15" r="1.25" fill="currentColor"/></svg>';
+    card.prepend(handle);
+  });
+
+  const defaultContentControlOrder = contentControlItems.map(card => card.dataset.controlId);
+  const getContentControlItems = () => Array.from(contentControlList.children)
+    .filter(card => card.classList.contains('content-control-item'));
+  const updateContentControlPositions = () => {
+    const items = getContentControlItems();
+    items.forEach((card, index) => {
+      const handle = card.querySelector('.content-control-drag-handle');
+      const title = card.querySelector('.setting-title')?.textContent.trim() || card.dataset.controlId;
+      handle.setAttribute('aria-label', `Reorder ${title}, position ${index + 1} of ${items.length}`);
+    });
+  };
+  const applyContentControlOrder = order => {
+    const itemsById = new Map(getContentControlItems().map(card => [card.dataset.controlId, card]));
+    const requestedOrder = Array.isArray(order)
+      ? order.filter(id => typeof id === 'string' && itemsById.has(id))
+      : [];
+    const normalizedOrder = [...new Set([...requestedOrder, ...defaultContentControlOrder])];
+    normalizedOrder.forEach(id => {
+      const item = itemsById.get(id);
+      if (item) contentControlList.appendChild(item);
+    });
+    updateContentControlPositions();
+  };
+  let isReorderingContentControls = false;
+  let draggedContentControl = null;
+  let contentControlOrderChanged = false;
+  const setContentControlOrderStatus = message => {
+    contentControlOrderStatus.textContent = message;
+    contentControlOrderStatus.hidden = !isReorderingContentControls || !message;
+  };
+  const saveContentControlOrder = () => {
+    if (!globalThis.chrome?.storage?.sync) {
+      setContentControlOrderStatus('Order can only be saved in the extension.');
+      return;
+    }
+    chrome.storage.sync.set({ contentControlOrder: getContentControlItems().map(card => card.dataset.controlId) }, () => {
+      const error = chrome.runtime.lastError;
+      setContentControlOrderStatus(error ? `Could not save order: ${error.message}` : 'Order saved.');
+    });
+  };
+  const setContentControlReorderMode = enabled => {
+    isReorderingContentControls = enabled;
+    contentControlList.classList.toggle('is-reordering', enabled);
+    const reorderLabel = contentControlReorderToggle.querySelector('.content-control-reorder-label');
+    reorderLabel.hidden = !enabled;
+    contentControlReorderToggle.classList.toggle('is-icon-only', !enabled);
+    contentControlReorderToggle.setAttribute('aria-pressed', String(enabled));
+    contentControlReorderToggle.setAttribute('aria-label', enabled ? 'Finish reordering content controls' : 'Reorder content controls');
+    contentControlReorderToggle.title = enabled ? 'Finish reordering' : 'Reorder content controls';
+    contentControlResetOrder.hidden = !enabled;
+    contentControlItems.forEach(card => {
+      const handle = card.querySelector('.content-control-drag-handle');
+      handle.hidden = !enabled;
+      handle.draggable = enabled;
+    });
+    if (enabled) {
+      setContentControlOrderStatus('Drag a handle, or focus it and press Alt+Arrow Up/Down.');
+    } else {
+      setContentControlOrderStatus('');
+    }
+  };
+
+  contentControlReorderToggle.addEventListener('click', () => {
+    setContentControlReorderMode(!isReorderingContentControls);
+  });
+  contentControlResetOrder.addEventListener('click', () => {
+    applyContentControlOrder(defaultContentControlOrder);
+    saveContentControlOrder();
+  });
+  contentControlList.addEventListener('keydown', event => {
+    const handle = event.target.closest('.content-control-drag-handle');
+    if (!isReorderingContentControls || !handle || !event.altKey ||
+      (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+
+    const items = getContentControlItems();
+    const item = handle.closest('.content-control-item');
+    const index = items.indexOf(item);
+    if (event.key === 'ArrowUp' && index > 0) {
+      contentControlList.insertBefore(item, items[index - 1]);
+    } else if (event.key === 'ArrowDown' && index >= 0 && index < items.length - 1) {
+      contentControlList.insertBefore(items[index + 1], item);
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    updateContentControlPositions();
+    saveContentControlOrder();
+    handle.focus();
+  });
+  contentControlList.addEventListener('dragstart', event => {
+    const handle = event.target.closest('.content-control-drag-handle');
+    const item = handle?.closest('.content-control-item');
+    if (!isReorderingContentControls || !item) {
+      event.preventDefault();
+      return;
+    }
+    draggedContentControl = item;
+    contentControlOrderChanged = false;
+    item.classList.add('is-dragging');
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', item.dataset.controlId);
+    }
+  });
+  contentControlList.addEventListener('dragover', event => {
+    if (!draggedContentControl) return;
+    const target = event.target.closest('.content-control-item');
+    if (!target || target === draggedContentControl) return;
+
+    event.preventDefault();
+    const bounds = target.getBoundingClientRect();
+    const insertAfter = event.clientY > bounds.top + bounds.height / 2;
+    const reference = insertAfter ? target.nextElementSibling : target;
+    if (reference === draggedContentControl || draggedContentControl.nextElementSibling === reference) return;
+
+    contentControlList.insertBefore(draggedContentControl, reference);
+    contentControlOrderChanged = true;
+    updateContentControlPositions();
+  });
+  contentControlList.addEventListener('dragend', () => {
+    if (!draggedContentControl) return;
+    draggedContentControl.classList.remove('is-dragging');
+    draggedContentControl = null;
+    if (contentControlOrderChanged) {
+      updateContentControlPositions();
+      saveContentControlOrder();
+    }
+  });
+  updateContentControlPositions();
 
   document.addEventListener('click', (event) => {
     const clickedHint = event.target.closest('.info-hint');
@@ -117,28 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const profileButton = document.getElementById('profileButton');
-  const profilePopover = document.getElementById('profilePopover');
-  const profilePopoverClose = document.getElementById('profilePopoverClose');
-  const closeProfilePopover = (restoreFocus = false) => {
-    profilePopover.hidden = true;
-    profileButton.setAttribute('aria-expanded', 'false');
-    if (restoreFocus) profileButton.focus();
-  };
-  profileButton.addEventListener('click', () => {
-    const shouldOpen = profilePopover.hidden;
-    profilePopover.hidden = !shouldOpen;
-    profileButton.setAttribute('aria-expanded', String(shouldOpen));
-  });
-  profilePopoverClose.addEventListener('click', () => closeProfilePopover(true));
-  document.addEventListener('click', (event) => {
-    if (!profilePopover.hidden && !profilePopover.contains(event.target) && !profileButton.contains(event.target)) {
-      closeProfilePopover();
-    }
-  }, true);
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !profilePopover.hidden) closeProfilePopover(true);
-  });
   // ─────────────────────────────────────────────────────────────────────────
 
   // Keyboard navigation
@@ -147,7 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.setting-item-full').forEach(card => {
     card.addEventListener('click', e => {
       // Let the label/input handle itself naturally to avoid double-fire
-      if (e.target.closest('.toggle-label') || e.target.closest('.toggle-input')) return;
+      if (e.target.closest('.toggle-label') || e.target.closest('.toggle-input') ||
+        e.target.closest('.content-control-drag-handle')) return;
+      if (isReorderingContentControls && card.classList.contains('content-control-item')) return;
       const input = card.querySelector('.toggle-input');
       if (input) input.click();
     });
@@ -502,7 +638,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const startTutorialBtn = document.getElementById('startTutorialBtn');
   const whatsNewBtn = document.getElementById('whatsNewBtn');
   const tipsGuideBtn = document.getElementById('tipsGuideBtn');
-  const showSyncQrBtn = document.getElementById('showSyncQrBtn');
   let bookmarkCollections = { folders: {}, shared: [] };
   let bookmarkLibraryData = {};
 
@@ -1111,28 +1246,55 @@ document.addEventListener('DOMContentLoaded', () => {
     sleepTimerMinutes: 30,
     hideFbMessenger: false,
     watchedProgress: false,
+    contentControlOrder: defaultContentControlOrder,
+  };
+
+  const normalizePlaybackSpeed = (value) => {
+    const parsedSpeed = Number.parseFloat(value);
+    if (!Number.isFinite(parsedSpeed)) return parseFloat(defaults.speed);
+    return Math.min(16, Math.max(0.25, parsedSpeed));
+  };
+
+  const sliderFillPercent = (slider, value, thumbSize) => {
+    const minimum = Number(slider.min);
+    const maximum = Number(slider.max);
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || maximum <= minimum) return 0;
+
+    const fraction = Math.min(1, Math.max(0, (numericValue - minimum) / (maximum - minimum)));
+    const width = slider.getBoundingClientRect().width;
+    if (!width) return fraction * 100;
+
+    const thumbInset = Math.min(thumbSize / 2, width / 2);
+    return ((thumbInset + fraction * (width - thumbSize)) / width) * 100;
   };
 
   // Update speed display with enhanced formatting + progress-bar fill
   const updateSpeedDisplay = (value) => {
     const speed = parseFloat(value);
     speedDisplay.textContent = `${speed.toFixed(1)}×`;
-    // Map value within [0.25, 20] to fill percentage
-    const pct = ((speed - 0.25) / (20 - 0.25)) * 100;
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#ff0000';
+    const pct = sliderFillPercent(speedInput, speed, 14);
+    const accent = getComputedStyle(document.body).getPropertyValue('--speed-accent').trim() || '#d94a4a';
     speedInput.style.background = `linear-gradient(to right, ${accent} ${pct}%, var(--border-color) ${pct}%)`;
   };
 
   /** Updates the left-fill gradient on the volume slider to match its current value. */
   const updateVolumeFill = (value) => {
-    const pct = Math.min(100, Math.max(0, parseFloat(value)));
+    const pct = sliderFillPercent(defaultVolumeInput, value, 14);
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#ff0000';
     defaultVolumeInput.style.background = `linear-gradient(to right, ${accent} ${pct}%, var(--border-color) ${pct}%)`;
   };
 
+  updateSpeedDisplay(speedInput.value);
+  updateVolumeFill(defaultVolumeInput.value);
+
   // Load stored settings with animation
   if (globalThis.chrome?.storage?.sync) chrome.storage.sync.get(defaults, (data) => {
-    speedInput.value = data.speed;
+    applyContentControlOrder(data.contentControlOrder);
+    const storedSpeed = Number.parseFloat(data.speed);
+    const speed = normalizePlaybackSpeed(data.speed);
+    speedInput.value = speed;
+    if (speed !== storedSpeed) chrome.storage.sync.set({ speed: speed.toString() });
     skipAdsCheckbox.checked = data.skipAds;
     hideCommentsCheckbox.checked = data.hideComments || false;
     hideShortsCheckbox.checked = data.hideShorts || false;
@@ -1169,10 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.get(['universalSpeed'], (localData) => {
       universalSpeedCheckbox.checked = !!localData.universalSpeed;
     });
-    updateSpeedDisplay(data.speed);
-
-    // Sync active speed tick highlight
-    syncSpeedTicks(parseFloat(data.speed));
+    updateSpeedDisplay(speed);
   });
 
   // Auto-save function
@@ -1248,8 +1407,6 @@ document.addEventListener('DOMContentLoaded', () => {
   speedInput.addEventListener('input', (e) => {
     updateSpeedDisplay(e.target.value);
     speedDisplay.style.transform = 'scale(1)';
-    // Sync speed tick highlights
-    syncSpeedTicks(parseFloat(e.target.value));
     autoSave();
   });
 
@@ -1364,27 +1521,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Speed tick labels (replaces preset buttons)
-  function syncSpeedTicks(speed) {
-    document.querySelectorAll('.speed-tick').forEach(btn => {
-      btn.classList.toggle('active', parseFloat(btn.dataset.speed) === speed);
-    });
-  }
-  document.querySelectorAll('.speed-tick').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const val = parseFloat(btn.dataset.speed);
-      speedInput.value = val;
-      updateSpeedDisplay(val);
-      syncSpeedTicks(val);
-      autoSave();
-    });
-  });
-
   const setSpeed = (value) => {
-    const nextValue = Math.min(20, Math.max(0.25, Math.round(value * 4) / 4));
+    const nextValue = Math.min(16, Math.max(0.25, Math.round(value * 4) / 4));
     speedInput.value = nextValue;
     updateSpeedDisplay(nextValue);
-    syncSpeedTicks(nextValue);
     autoSave();
   };
   document.getElementById('speedDecrease')?.addEventListener('click', () => setSpeed(parseFloat(speedInput.value) - 0.25));
@@ -1480,9 +1620,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update cloud sync description
   function updateCloudSyncDesc(isCloudSync) {
     if (isCloudSync) {
-      cloudSyncDesc.textContent = 'Sync bookmarks across devices (~50-100 limit)';
+      cloudSyncDesc.textContent = 'Bookmarks use Chrome Sync when enabled. Sign into Chrome on each device; no Cognify account needed.';
     } else {
-      cloudSyncDesc.textContent = 'Local storage only (unlimited bookmarks)';
+      cloudSyncDesc.textContent = 'Bookmarks stay on this device. Export a backup to move them to another device.';
     }
   }
   
@@ -1572,7 +1712,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function runTutorial() {
     const steps = [
       ['Welcome to Cognify', 'Press P while watching YouTube to capture a timestamp bookmark.'],
-      ['Organize', 'Open Advanced > Bookmarks to search, filter, and move saved videos into collections.'],
+      ['Organize', 'Open the Bookmarks tab to search, filter, and move saved videos into collections.'],
       ['Make it yours', 'Choose a profile, customize shortcuts, and use the feature guide whenever you need a refresher.'],
     ];
     for (const [title, message] of steps) {
@@ -1583,7 +1723,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   startTutorialBtn?.addEventListener('click', runTutorial);
   tipsGuideBtn?.addEventListener('click', () => expandToggle.click());
-  whatsNewBtn?.addEventListener('click', () => showModal({ title: "What's new in 3.9", message: 'Collections, search filters, recommendations, profiles, theme controls, onboarding, and QR preference sync are now available.', buttons: [{ text: 'Got it', type: 'primary' }] }));
+  whatsNewBtn?.addEventListener('click', () => showModal({ title: "What's new in 3.9", message: 'Collections, search filters, recommendations, profiles, theme controls, and onboarding are now available.', buttons: [{ text: 'Got it', type: 'primary' }] }));
   if (globalThis.chrome?.storage?.sync) chrome.storage.sync.get({ tutorialComplete: false, lastSeenVersion: '' }, (data) => {
     if (!data.tutorialComplete) runTutorial();
     if (data.lastSeenVersion !== '3.9.0') {
@@ -1591,18 +1731,6 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set({ lastSeenVersion: '3.9.0' });
     }
   });
-  showSyncQrBtn?.addEventListener('click', () => {
-    chrome.storage.sync.get(['shortcuts', 'themePreference', 'profilePreset', 'speed', 'focusMode'], (settings) => {
-      const payload = encodeURIComponent(JSON.stringify({ type: 'cognify-settings', version: 1, settings }));
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${payload}`;
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.innerHTML = `<div class="modal"><div class="modal-header"><div class="modal-title">Sync preferences</div></div><div class="modal-body"><img class="sync-qr" src="${qrUrl}" alt="QR code containing Cognify preferences"><p>Scan this code from another Cognify install. Bookmark content is not included.</p></div><div class="modal-actions"><button class="modal-btn modal-btn-primary" id="qrClose">Close</button></div></div>`;
-      document.body.appendChild(overlay);
-      overlay.querySelector('#qrClose').onclick = () => overlay.remove();
-    });
-  });
-
   // Default shortcuts
   const defaultShortcuts = {
     addBookmark: 'P',
@@ -2469,47 +2597,121 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Full backup export ────────────────────────────────────────────────────
-  /** Exports all sync + local storage as a single JSON backup file. */
+  const readStorageArea = area => new Promise((resolve, reject) => {
+    area.get(null, data => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve(data);
+    });
+  });
+
+  const writeStorageArea = (area, data) => new Promise((resolve, reject) => {
+    area.set(data, () => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
+    });
+  });
+
+  /** Exports sync and local extension data as a single JSON backup file. */
   async function exportFullBackup() {
-    const [syncData, localData] = await Promise.all([
-      new Promise(r => chrome.storage.sync.get(null, r)),
-      new Promise(r => chrome.storage.local.get(null, r)),
-    ]);
-    const backup = { version: 1, date: new Date().toISOString(), sync: syncData, local: localData };
-    const a = document.createElement('a');
-    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
-    a.download = `yt_enhanced_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    try {
+      const [syncData, localData] = await Promise.all([
+        readStorageArea(chrome.storage.sync),
+        readStorageArea(chrome.storage.local),
+      ]);
+      const backup = { version: 1, date: new Date().toISOString(), sync: syncData, local: localData };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cognify_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      await showModal({
+        title: 'Backup failed',
+        message: `Could not create your backup: ${error.message}`,
+        buttons: [{ text: 'OK', type: 'primary' }],
+      });
+    }
   }
 
   // ── Full backup import ────────────────────────────────────────────────────
-  /** Reads a JSON backup file and restores both sync and local storage. */
+  /** Validates and merges a backup into both sync and local storage. */
   async function importFullBackup(e) {
-    const file = e.target.files[0];
+    const fileInput = e.target;
+    const file = fileInput.files[0];
     if (!file) return;
     try {
-      const text = await file.text();
-      const backup = JSON.parse(text);
-      if (!backup.sync && !backup.local) {
-        await showModal({ title: 'Invalid Backup', message: 'This file is not a valid Cognify backup.', buttons: [{ text: 'OK', type: 'primary' }] });
-        e.target.value = '';
+      let text;
+      try {
+        text = await file.text();
+      } catch (error) {
+        await showModal({
+          title: 'Could not read backup',
+          message: `The selected file could not be read: ${error.message}`,
+          buttons: [{ text: 'OK', type: 'primary' }],
+        });
         return;
       }
+
+      let backup;
+      try {
+        backup = JSON.parse(text);
+      } catch {
+        await showModal({
+          title: 'Invalid Backup',
+          message: 'This file is not valid JSON. Select a Cognify backup file.',
+          buttons: [{ text: 'OK', type: 'primary' }],
+        });
+        return;
+      }
+
+      const isStorageData = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+      if (!isStorageData(backup) || backup.version !== 1 || !isStorageData(backup.sync) || !isStorageData(backup.local)) {
+        await showModal({
+          title: 'Invalid Backup',
+          message: 'This file is not a supported Cognify backup.',
+          buttons: [{ text: 'OK', type: 'primary' }],
+        });
+        return;
+      }
+
+      const syncKeys = Object.keys(backup.sync);
+      const localKeys = Object.keys(backup.local);
+      const bookmarkCount = new Set([...syncKeys, ...localKeys].filter(key => key.startsWith('yt_bm_'))).size;
+      const dataCount = syncKeys.length + localKeys.length;
+      const parsedDate = new Date(backup.date);
+      const backupDate = Number.isNaN(parsedDate.getTime()) ? 'an unknown date' : parsedDate.toLocaleDateString();
       const confirmed = await showModal({
-        title: 'Restore Backup',
-        message: `Restore backup dated ${new Date(backup.date).toLocaleDateString()}? This will overwrite all current settings and statistics.`,
-        warning: '⚠️ This cannot be undone.',
-        buttons: [{ text: 'Cancel', type: 'secondary' }, { text: 'Restore', type: 'primary' }],
+        title: 'Import Backup',
+        message: `This backup from ${backupDate} contains ${bookmarkCount} bookmark entries and ${dataCount} saved values. Matching values will be replaced; data not included in the backup will be kept.`,
+        warning: 'Review the backup before restoring. This action cannot be undone.',
+        buttons: [{ text: 'Cancel', type: 'secondary' }, { text: 'Import', type: 'primary' }],
       });
-      if (!confirmed) { e.target.value = ''; return; }
-      if (backup.sync)  await new Promise(r => chrome.storage.sync.set(backup.sync, r));
-      if (backup.local) await new Promise(r => chrome.storage.local.set(backup.local, r));
-      await showModal({ title: 'Restored!', message: 'Backup restored successfully. Reloading...', buttons: [{ text: 'OK', type: 'primary' }] });
+      if (!confirmed) return;
+
+      try {
+        await writeStorageArea(chrome.storage.sync, backup.sync);
+        await writeStorageArea(chrome.storage.local, backup.local);
+      } catch (error) {
+        await showModal({
+          title: 'Restore incomplete',
+          message: `Cognify could not finish restoring the backup: ${error.message}. Some data may already have been imported.`,
+          buttons: [{ text: 'OK', type: 'primary' }],
+        });
+        return;
+      }
+
+      await showModal({
+        title: 'Backup imported',
+        message: 'Your backup was imported successfully. Cognify will reload to apply the restored settings.',
+        buttons: [{ text: 'OK', type: 'primary' }],
+      });
       window.location.reload();
-    } catch {
-      await showModal({ title: 'Error', message: 'Failed to parse backup file. Please select a valid Cognify backup JSON.', buttons: [{ text: 'OK', type: 'primary' }] });
+    } finally {
+      fileInput.value = '';
     }
-    e.target.value = '';
   }
 
   // ── Screen time limits ────────────────────────────────────────────────────

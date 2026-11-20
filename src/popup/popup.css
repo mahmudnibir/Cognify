@@ -70,6 +70,7 @@ body {
 }
 
 body[data-theme="light"] {
+    --speed-accent: #b65049;
     --bg-primary: #f6f5f2;
     --bg-secondary: #eeece8;
     --bg-tertiary: #e6e3de;
@@ -126,8 +127,7 @@ body[data-theme="light"] footer {
 body[data-theme="light"] .tab,
 body[data-theme="light"] h1,
 body[data-theme="light"] .footer-btn,
-body[data-theme="light"] .version,
-body[data-theme="light"] .status {
+body[data-theme="light"] .version {
     color: var(--text-primary) !important;
 }
 
@@ -515,8 +515,7 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 }
 
 .personalization-grid + .setting-desc + button,
-.personalization-grid + .setting-desc + button + button,
-#showSyncQrBtn {
+.personalization-grid + .setting-desc + button + button {
     min-height: 34px;
     padding: 0 11px;
     border-radius: 7px;
@@ -556,16 +555,7 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     text-decoration: underline;
 }
 
-.sync-qr {
-    display: block;
-    width: 220px;
-    height: 220px;
-    margin: 0 auto 12px;
-    padding: 8px;
-    border-radius: 8px;
-    background: #fff;
-    image-rendering: pixelated;
-}
+
 
 @media (max-width: 360px) {
     .bookmark-library-toolbar {
@@ -649,7 +639,7 @@ header {
 /* Main Content */
 main {
     padding: 16px;
-    padding-bottom: 120px;
+    padding-bottom: 16px;
 }
 
 section {
@@ -1062,15 +1052,8 @@ input[type=range]::-webkit-slider-thumb {
 
 /* Footer */
 footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 30;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 16px;
+    position: relative;
+    flex-shrink: 0;
     background: var(--surface-container);
     border-top: 1px solid rgba(96, 62, 57, 0.2);
 }

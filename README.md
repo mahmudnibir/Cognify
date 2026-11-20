@@ -12,7 +12,7 @@
 
 | Feature | Description |
 |---|---|
-| Speed Control | Playback speed from 0.25× to 20× via slider |
+| Speed Control | Playback speed from 0.25× to 16× via slider |
 | Speed Presets | Quick-access 1.25×, 1.5×, 1.75×, 2× buttons in the Advanced tab |
 | Universal Video Speed | Hover overlay on **any** video across the entire web — toggle in settings |
 | Bookmark Library | Browse bookmarked videos with thumbnails, titles, video counts, labels, and exact timestamp links; cloud sync, import & export included |
@@ -59,7 +59,7 @@
 
 ## Usage
 
-Click the **Cognify** extension icon on any supported page to open the control panel. All settings persist across sessions via Chrome's sync storage. The **Bookmarks** tab contains your saved videos and bookmark import/export. The **Advanced** tab contains keyboard shortcuts, automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, and statistics management.
+Click the **Cognify** extension icon or press **Ctrl+Shift+C** to open the control panel. If Chrome assigns that shortcut to Inspect, remap it in `chrome://extensions/shortcuts`. All settings persist across sessions via Chrome's sync storage. The **Bookmarks** tab contains your saved videos and bookmark import/export. The **Settings** tab contains keyboard shortcuts, automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, and statistics management.
 
 ---
 

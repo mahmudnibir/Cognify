@@ -25,6 +25,14 @@
   let overrideTimeout;
   let deletedBookmarks = [];
   const deletionUndoWindowMs = 10000;
+  const MIN_PLAYBACK_SPEED = 0.25;
+  const MAX_PLAYBACK_SPEED = 16;
+
+  function clampPlaybackSpeed(value) {
+    const speed = Number.parseFloat(value);
+    if (!Number.isFinite(speed)) return 1;
+    return Math.min(MAX_PLAYBACK_SPEED, Math.max(MIN_PLAYBACK_SPEED, speed));
+  }
 
   // Per-video one-shot flags — reset each time init() finds a new video
   let theaterApplied = false;
@@ -473,13 +481,13 @@
       if (typeof request.speed !== 'undefined') {
         if (videoEl && !isNaN(request.speed)) {
           const prevRate = parseFloat(videoEl.playbackRate.toFixed(2));
-          const newRate = parseFloat(parseFloat(request.speed).toFixed(2));
+          const newRate = clampPlaybackSpeed(request.speed);
           videoEl.playbackRate = newRate;
           // Only show overlay when the speed actually changed (suppress on non-speed toggles)
           if (prevRate !== newRate) {
-            showSpeedOverlay(request.speed);
+            showSpeedOverlay(newRate);
           }
-          saveSpeed(request.speed);
+          saveSpeed(newRate);
         }
       }
       sendResponse({success: true});
@@ -719,7 +727,7 @@
     // Increase speed shortcut
     if (matchesShortcut(e, shortcuts.increaseSpeed) || e.key === '=') {
       let currentSpeed = parseFloat(video.playbackRate.toFixed(2));
-      let newSpeed = Math.min(20, currentSpeed + 0.25);
+      let newSpeed = Math.min(MAX_PLAYBACK_SPEED, currentSpeed + 0.25);
       newSpeed = parseFloat(newSpeed.toFixed(2));
       video.playbackRate = newSpeed;
       showSpeedOverlay(newSpeed);
@@ -1146,6 +1154,7 @@
     chrome.storage.sync.get(["speed", "rememberSpeed", "voiceMode", "pitchCorrection", "skipAds", "sponsorBlock", "autoTheater", "autoSubtitles", "focusMode", "stableVolume", "voiceBoost", "ambientMode"], ({ speed, rememberSpeed, voiceMode, pitchCorrection, skipAds, sponsorBlock, autoTheater, autoSubtitles, focusMode, stableVolume, voiceBoost, ambientMode }) => {
       const video = document.querySelector('video');
       if (!video || !speed) return;
+      const configuredSpeed = clampPlaybackSpeed(speed);
 
       // ── Ad skipping ────────────────────────────────────────────────────────
       if (skipAds) {
@@ -1223,13 +1232,13 @@
         const videoSpeedKey = `${storageKey}_speed`;
         chrome.storage.local.get([videoSpeedKey], (res) => {
           if (res[videoSpeedKey]) {
-            video.playbackRate = parseFloat(res[videoSpeedKey]);
+            video.playbackRate = clampPlaybackSpeed(res[videoSpeedKey]);
           } else {
-            video.playbackRate = parseFloat(speed);
+            video.playbackRate = configuredSpeed;
           }
         });
       } else {
-        video.playbackRate = parseFloat(speed);
+        video.playbackRate = configuredSpeed;
       }
     }); 
   }
@@ -1257,14 +1266,15 @@
 
   // Save speed (either globally or per video)
   function saveSpeed(speed) {
+    const normalizedSpeed = clampPlaybackSpeed(speed);
     chrome.storage.sync.get(["rememberSpeed"], ({ rememberSpeed }) => {
       // Always save global speed
-      chrome.storage.sync.set({ speed: speed.toString() });
+      chrome.storage.sync.set({ speed: normalizedSpeed.toString() });
       
       // If remember speed per video is enabled, also save video-specific speed
       if (rememberSpeed && storageKey) {
         const videoSpeedKey = `${storageKey}_speed`;
-        chrome.storage.local.set({ [videoSpeedKey]: speed.toString() });
+        chrome.storage.local.set({ [videoSpeedKey]: normalizedSpeed.toString() });
       }
     });
   }

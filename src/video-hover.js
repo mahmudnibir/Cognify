@@ -279,9 +279,11 @@
     updateSpeedUI(video.playbackRate || 1);
     // Then apply + display the persisted speed
     chrome.storage.local.get([SPEED_KEY], (data) => {
-      const s = parseFloat(data[SPEED_KEY]) || 1;
+      const savedSpeed = parseFloat(data[SPEED_KEY]) || 1;
+      const s = Math.min(16, Math.max(0.25, savedSpeed));
       video.playbackRate = s;
       updateSpeedUI(s);
+      if (s !== savedSpeed) chrome.storage.local.set({ [SPEED_KEY]: s });
     });
   }
 
