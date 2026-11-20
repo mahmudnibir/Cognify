@@ -68,6 +68,8 @@
   let currentVideoId = null;
   let videoStartTime = 0;
   let lastStatsUpdate = Date.now();
+  let statisticsUpdateQueue = Promise.resolve();
+  const trackedVideoIds = new Set();
   
   // Custom shortcuts with defaults
   let shortcuts = {
@@ -292,17 +294,31 @@
   }
   
   function hideShorts() {
+    const isShortsRoute = /^\/shorts(?:\/|$)/.test(window.location.pathname);
+    if (isShortsRoute) showShortsBlockedOverlay();
+
     const style = document.getElementById('yt-hide-shorts-style') || document.createElement('style');
     style.id = 'yt-hide-shorts-style';
     style.textContent = `
+      ytd-shorts,
+      ytd-shorts-renderer,
+      ytd-reel-video-renderer,
       ytd-reel-shelf-renderer,
       ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
       ytd-guide-entry-renderer[title="Shorts"],
       ytd-guide-entry-renderer:has([title="Shorts"]),
       ytd-mini-guide-entry-renderer:has([aria-label="Shorts"]),
+      ytd-mini-guide-entry-renderer:has(a[href="/shorts"]),
+      ytd-guide-entry-renderer:has(a[href="/shorts"]),
+      ytd-guide-entry-renderer:has(a[href^="/shorts/"]),
+      ytd-mini-guide-entry-renderer:has(a[href^="/shorts/"]),
       a[href^="/shorts/"],
+      a[href="/shorts"],
+      a[href="/shorts/"],
       ytd-rich-item-renderer:has(a[href^="/shorts/"]),
       ytd-video-renderer:has(a[href*="/shorts/"]),
+      ytd-rich-grid-row:has(a[href^="/shorts/"]),
+      ytd-grid-video-renderer:has(a[href^="/shorts/"]),
       [is-shorts] {
         display: none !important;
       }
@@ -311,12 +327,68 @@
       document.head.appendChild(style);
     }
   }
+
+  function showShortsBlockedOverlay() {
+    if (document.getElementById('yt-shorts-blocked-overlay')) {
+      document.querySelectorAll('#yt-shorts-blocked-overlay video').forEach((item) => item.pause());
+      document.querySelectorAll('ytd-shorts video').forEach((item) => item.pause());
+      document.body.style.overflow = 'hidden';
+      return;
+    }
+
+    document.querySelectorAll('video').forEach((item) => item.pause());
+    document.body.style.overflow = 'hidden';
+    const overlay = document.createElement('div');
+    overlay.id = 'yt-shorts-blocked-overlay';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483647',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+      background: 'rgba(6, 6, 6, 0.94)',
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      fontFamily: 'Inter,-apple-system,Helvetica,sans-serif',
+      color: '#fff',
+      textAlign: 'center',
+    });
+    overlay.innerHTML = `
+      <div style="width:min(420px,calc(100vw - 48px));border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#151515;padding:28px 24px;box-sizing:border-box;box-shadow:0 20px 60px rgba(0,0,0,.45)">
+        <div style="display:grid;width:48px;height:48px;margin:0 auto 18px;place-items:center;border:1px solid rgba(255,85,64,.28);border-radius:50%;background:rgba(255,85,64,.09);color:#ff5540">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+            <path d="M10 8l5 4-5 4V8z"></path>
+            <path d="M3 9h18"></path>
+          </svg>
+        </div>
+        <div style="margin-bottom:8px;font-size:20px;font-weight:800;letter-spacing:-.02em">Shorts are hidden</div>
+        <div style="max-width:330px;margin:0 auto 22px;color:rgba(255,255,255,.58);font-size:13px;line-height:1.65">
+          Change the “Hide Shorts” setting in the Cognify extension before watching Shorts.
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+          <button id="yt-shorts-home-btn" type="button" style="border:1px solid rgba(255,255,255,.12);border-radius:9px;background:transparent;color:rgba(255,255,255,.72);padding:11px 16px;font:600 12px Inter,-apple-system,sans-serif;cursor:pointer">
+            Go to Home
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#yt-shorts-home-btn').addEventListener('click', () => {
+      window.location.replace('/');
+    });
+  }
   
   function showShorts() {
     const style = document.getElementById('yt-hide-shorts-style');
     if (style) {
       style.remove();
     }
+    document.getElementById('yt-shorts-blocked-overlay')?.remove();
+    document.body.style.overflow = '';
   }
   
   function hideDescription() {
@@ -2930,6 +3002,10 @@
     const observer = new MutationObserver(() => {
       if (location.href !== oldHref) {
         oldHref = location.href;
+        trackedVideoIds.clear();
+        chrome.storage.sync.get(['hideShorts'], (data) => {
+          if (data.hideShorts) hideShorts();
+        });
         
         // Clear old bookmarks and markers
         bookmarks = [];
@@ -2958,34 +3034,50 @@
   // Statistics tracking functions
   function initializeStatistics(videoId) {
     currentVideoId = videoId;
-    videoStartTime = Date.now();
+    videoStartTime = 0;
+  }
+
+  function normalizeYouTubeStatistics(stats) {
+    return {
+      totalVideos: stats?.totalVideos || 0,
+      totalWatchTime: stats?.totalWatchTime || 0,
+      totalTimeSaved: stats?.totalTimeSaved || 0,
+      speedUsage: stats?.speedUsage || {},
+      dailyStats: stats?.dailyStats || {},
+      weeklyStats: Array.isArray(stats?.weeklyStats) ? stats.weeklyStats : [],
+    };
+  }
+
+  function ensureYouTubeDailyStats(dailyStats, today) {
+    if (!dailyStats[today]) {
+      dailyStats[today] = {
+        videos: 0,
+        watchTime: 0,
+        timeSaved: 0,
+        avgSpeed: 1,
+        speedSum: 0,
+        speedCount: 0,
+        hourly: {},
+      };
+    }
+    return dailyStats[today];
   }
 
   function trackVideoStart(videoId) {
-    chrome.storage.local.get(['statistics'], (data) => {
-      const stats = data.statistics || {
-        totalVideos: 0,
-        totalWatchTime: 0,
-        totalTimeSaved: 0,
-        speedUsage: {},
-        dailyStats: {}
-      };
+    if (!videoId || trackedVideoIds.has(videoId)) return;
+    trackedVideoIds.add(videoId);
 
-      // Track unique video
-      const today = new Date().toDateString();
-      if (!stats.dailyStats[today]) {
-        stats.dailyStats[today] = {
-          videos: 0,
-          watchTime: 0,
-          timeSaved: 0,
-          avgSpeed: 1.0,
-          speedSum: 0,
-          speedCount: 0
-        };
-      }
-
-      chrome.storage.local.set({ statistics: stats });
-    });
+    statisticsUpdateQueue = statisticsUpdateQueue.then(() => new Promise((resolve) => {
+      chrome.storage.local.get(['statistics'], (data) => {
+        const stats = normalizeYouTubeStatistics(data.statistics);
+        const today = new Date().toDateString();
+        stats.totalVideos = (stats.totalVideos || 0) + 1;
+        const day = ensureYouTubeDailyStats(stats.dailyStats, today);
+        day.videos = (day.videos || 0) + 1;
+        day.videosWatched = day.videos;
+        chrome.storage.local.set({ statistics: stats }, resolve);
+      });
+    }));
   }
 
   function trackWatchTime(videoId) {
@@ -2993,69 +3085,43 @@
 
     const watchDuration = (Date.now() - videoStartTime) / 1000 / 60; // Convert to minutes
     const currentSpeed = video ? video.playbackRate : 1.0;
+    if (watchDuration <= 0) return;
 
-    chrome.storage.local.get(['statistics'], (data) => {
-      const stats = data.statistics || {
-        totalVideos: 0,
-        dailyStats: {}
-      };
+    statisticsUpdateQueue = statisticsUpdateQueue.then(() => new Promise((resolve) => {
+      chrome.storage.local.get(['statistics'], (data) => {
+        const stats = normalizeYouTubeStatistics(data.statistics);
+        stats.totalWatchTime = (stats.totalWatchTime || 0) + watchDuration;
 
-      // Update total watch time
-      stats.totalWatchTime = (stats.totalWatchTime || 0) + watchDuration;
+        const speedKey = currentSpeed.toFixed(1);
+        stats.speedUsage[speedKey] = (stats.speedUsage[speedKey] || 0) + watchDuration;
 
-      // Update speed usage
-      const speedKey = currentSpeed.toFixed(1);
-      stats.speedUsage[speedKey] = (stats.speedUsage[speedKey] || 0) + watchDuration;
+        const timeSaved = currentSpeed > 1
+          ? watchDuration * (1 - (1 / currentSpeed))
+          : 0;
+        if (timeSaved > 0) {
+          stats.totalTimeSaved = (stats.totalTimeSaved || 0) + timeSaved;
+        }
 
-      // Calculate time saved
-      const timeSaved = watchDuration * (currentSpeed - 1);
-      if (timeSaved > 0) {
-        stats.totalTimeSaved = (stats.totalTimeSaved || 0) + timeSaved;
-      }
+        const now = new Date();
+        const today = now.toDateString();
+        const day = ensureYouTubeDailyStats(stats.dailyStats, today);
+        day.watchTime = (day.watchTime || 0) + watchDuration;
+        day.hourly = day.hourly || {};
+        day.hourly[now.getHours()] = (day.hourly[now.getHours()] || 0) + watchDuration;
+        if (timeSaved > 0) day.timeSaved = (day.timeSaved || 0) + timeSaved;
+        day.speedSum = (day.speedSum || 0) + currentSpeed * watchDuration;
+        day.speedCount = (day.speedCount || 0) + watchDuration;
+        day.avgSpeed = day.speedCount > 0 ? day.speedSum / day.speedCount : 1;
 
-      // Update daily stats
-      const today = new Date().toDateString();
-      if (!stats.dailyStats[today]) {
-        stats.dailyStats[today] = {
-          videos: 0,
-          watchTime: 0,
-          timeSaved: 0,
-          speedSum: 0,
-          speedCount: 0
-        };
-      }
-
-      stats.dailyStats[today].watchTime += watchDuration;
-      if (timeSaved > 0) {
-        stats.dailyStats[today].timeSaved += timeSaved;
-      }
-      stats.dailyStats[today].speedSum += currentSpeed;
-      stats.dailyStats[today].speedCount += 1;
-      stats.dailyStats[today].avgSpeed = stats.dailyStats[today].speedSum / stats.dailyStats[today].speedCount;
-
-      chrome.storage.local.set({ statistics: stats });
-    });
+        chrome.storage.local.set({ statistics: stats }, resolve);
+      });
+    }));
 
     videoStartTime = Date.now(); // Reset for next tracking period
   }
 
   function trackVideoComplete(videoId) {
-    chrome.storage.local.get(['statistics'], (data) => {
-      const stats = data.statistics || {
-        totalVideos: 0,
-        dailyStats: {}
-      };
-
-      stats.totalVideos = (stats.totalVideos || 0) + 1;
-
-      const today = new Date().toDateString();
-      if (!stats.dailyStats[today]) {
-        stats.dailyStats[today] = { videos: 0 };
-      }
-      stats.dailyStats[today].videos = (stats.dailyStats[today].videos || 0) + 1;
-
-      chrome.storage.local.set({ statistics: stats });
-    });
+    // Videos are counted once at playback start by trackVideoStart.
   }
 
   function updateStatistics() {
@@ -3645,6 +3711,36 @@
   init();
   observeUrlChange();
   initTimeLimitHud();
+
+  if (isCtxValid()) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (!isCtxValid() || area !== 'sync' || changes.hideShorts === undefined) return;
+      if (changes.hideShorts.newValue) {
+        hideShorts();
+      } else {
+        showShorts();
+      }
+    });
+
+    chrome.storage.sync.get(['hideShorts'], (data) => {
+      if (data.hideShorts) {
+        hideShorts();
+      } else {
+        showShorts();
+      }
+    });
+
+    setInterval(() => {
+      if (!isCtxValid()) return;
+      chrome.storage.sync.get(['hideShorts'], (data) => {
+        if (data.hideShorts) {
+          hideShorts();
+        } else if (document.getElementById('yt-shorts-blocked-overlay')) {
+          showShorts();
+        }
+      });
+    }, 500);
+  }
 
   // ─── Global Error Handlers ─────────────────────────────────────────────────
   window.addEventListener('error', (event) => {

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <style>
@@ -227,31 +227,6 @@
       border-bottom: 1px solid var(--border-color);
     }
     
-    .theme-toggle {
-      width: 36px;
-      height: 36px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      color: var(--text-secondary);
-    }
-    
-    .theme-toggle:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-color-hover);
-      color: var(--text-primary);
-    }
-    
-    .theme-toggle svg {
-      width: 18px;
-      height: 18px;
-    }
-    
     .header-left {
       display: flex;
       align-items: center;
@@ -260,9 +235,248 @@
     }
 
     .header-right {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .header-action {
+      display: flex;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.18s ease;
+    }
+
+    .header-action:hover {
+      color: var(--text-primary);
+    }
+
+    .header-action:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 1px;
+    }
+
+    .header-action svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .header-action .theme-icon-moon,
+    body[data-theme="light"] .header-action .theme-icon-sun {
+      display: none;
+    }
+
+    body[data-theme="light"] .header-action .theme-icon-moon {
+      display: block;
+    }
+
+    .profile-popover {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      z-index: 60;
+      display: flex;
+      width: 250px;
+      max-width: calc(100vw - 32px);
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border-color-hover);
+      border-radius: 10px;
+      background: var(--bg-card);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+      color: var(--text-secondary);
+      text-align: left;
+    }
+
+    .profile-popover::before {
+      position: absolute;
+      top: -5px;
+      right: 10px;
+      width: 8px;
+      height: 8px;
+      border-top: 1px solid var(--border-color-hover);
+      border-left: 1px solid var(--border-color-hover);
+      background: var(--bg-card);
+      content: "";
+      transform: rotate(45deg);
+    }
+
+    .info-hint .profile-popover::before {
+      right: 4px;
+    }
+
+    .profile-popover[hidden] {
+      display: none;
+    }
+
+    .feature-guide-popover {
+      position: fixed;
+      top: 54px;
+      right: 16px;
+      width: 360px;
+      max-height: 420px;
+      align-items: stretch;
+      overflow: hidden;
+    }
+
+    .feature-guide-popover::before {
+      right: 56px;
+    }
+
+    .feature-guide-body {
+      max-height: 335px;
+      overflow-y: auto;
+      padding-right: 0;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    }
+
+    .feature-guide-body::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .feature-guide-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .feature-guide-body::-webkit-scrollbar-thumb {
+      border: 0;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    body[data-theme="light"] .feature-guide-body::-webkit-scrollbar-thumb {
+      background: rgba(45, 43, 40, 0.22);
+    }
+
+    .feature-guide-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .feature-guide-table .feature-guide-section-row th {
+      padding: 7px 7px 4px;
+      border-top: 1px solid var(--border-color);
+      color: var(--accent-color);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .feature-guide-table .feature-guide-section-row:first-child th {
+      border-top: 0;
+      padding-top: 3px;
+    }
+
+    .feature-guide-table td {
+      padding: 4px 7px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    .feature-guide-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .feature-guide-table td:first-child {
+      width: 43%;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .profile-popover-icon {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      place-items: center;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--accent-color);
+    }
+
+    .profile-popover-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .profile-popover-question {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      place-items: center;
+      color: var(--accent-color);
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .profile-popover-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-popover-title {
+      margin: 1px 0 4px;
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .profile-popover-message {
+      margin: 0;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .profile-popover-close {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font: inherit;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .profile-popover-close:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .profile-popover-close:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 1px;
+    }
+
+    body[data-theme="light"] .profile-popover-icon {
+      background: rgba(255, 0, 0, 0.1);
+      color: var(--accent-color);
     }
     
     .logo { 
@@ -391,17 +605,70 @@
       gap: 12px;
       width: 100%;
     }
+
+    .speed-main {
+      display: grid;
+      grid-template-columns: 34px minmax(92px, 1fr) 34px;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .speed-step {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .speed-step:hover,
+    .speed-step:focus-visible {
+      border-color: var(--border-color-hover);
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .speed-readout {
+      display: flex;
+      min-height: 44px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 0, 0, 0.18);
+      border-radius: 9px;
+      background: rgba(255, 0, 0, 0.055);
+    }
+
+    body[data-theme="light"] .speed-readout {
+      border-color: rgba(255, 0, 0, 0.16);
+      background: rgba(255, 0, 0, 0.04);
+    }
+
+    .speed-readout-label {
+      color: var(--text-secondary);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
     
     .speed-slider-container {
       display: flex;
       align-items: center;
-      gap: 12px;
       width: 100%;
     }
     
     #speed {
       flex: 1;
-      height: 8px;
+      height: 6px;
       background: var(--border-color);
       border-radius: 10px;
       outline: none;
@@ -410,19 +677,41 @@
       appearance: none;
       position: relative;
     }
+
+    #speed::-webkit-slider-runnable-track {
+      height: 6px;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+    }
+
+    #speed::-moz-range-track {
+      height: 6px;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+    }
     
     #speed::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: var(--accent-color);
+      border: 0;
+      box-shadow: none;
       cursor: grab;
       transition: transform 0.2s;
     }
+
+    body[data-theme="light"] #speed::-webkit-slider-thumb {
+      background: var(--accent-color);
+      box-shadow: none;
+    }
     
     #speed::-webkit-slider-thumb:hover {
+      transform: scale(1.08);
     }
     
     #speed::-webkit-slider-thumb:active {
@@ -430,16 +719,23 @@
     }
     
     #speed::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: var(--accent-color);
+      border: 0;
+      box-shadow: none;
       cursor: grab;
-      border: none;
       transition: transform 0.2s;
+    }
+
+    body[data-theme="light"] #speed::-moz-range-thumb {
+      background: var(--accent-color);
+      box-shadow: none;
     }
     
     #speed::-moz-range-thumb:hover {
+      transform: scale(1.08);
     }
     
     #speed::-moz-range-thumb:active {
@@ -447,22 +743,25 @@
     }
     
     #speedDisplay {
-      background: var(--accent-color);
-      color: white;
-      font-size: 12px;
-      font-weight: 700;
-      min-width: 48px;
-      padding: 5px 10px;
-      border-radius: 8px;
+      color: var(--accent-color);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 800;
+      min-width: 76px;
       text-align: center;
-      letter-spacing: 0.5px;
+      letter-spacing: -0.5px;
       transition: transform 0.2s;
+    }
+
+    body[data-theme="light"] #speedDisplay {
+      color: var(--accent-color);
     }
     
     .speed-labels {
       display: flex;
       justify-content: space-between;
-      padding: 2px 2px 0;
+      gap: 4px;
+      padding: 0;
       margin-top: 2px;
     }
     .speed-tick {
@@ -483,8 +782,32 @@
     }
     .speed-tick.active {
       color: var(--accent-color);
-      background: rgba(255,255,255,0.06);
+      background: rgba(255,0,0,0.10);
       font-weight: 700;
+    }
+
+    body[data-theme="light"] .speed-tick.active {
+      color: var(--accent-color);
+      background: rgba(255,0,0,0.07);
+    }
+
+    .speed-reset {
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font: inherit;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 4px 6px;
+    }
+
+    .speed-reset:hover,
+    .speed-reset:focus-visible {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      outline: none;
     }
     
     /* Toggle Switch */
@@ -905,18 +1228,6 @@
     .icon-destructive {
       background: rgba(239, 68, 68, 0.08) !important;
       color: rgba(239, 68, 68, 0.9);
-    }
-    
-    /* Info Text */
-    .info-text {
-      text-align: center;
-      color: var(--text-secondary);
-      font-size: 10px;
-      padding: 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      margin-bottom: 8px;
     }
     
     kbd {
@@ -1695,9 +2006,6 @@
     }
     
     /* Bookmark library */
-    .bookmark-subtabs { display: flex; gap: 6px; margin: 12px 0 8px; border-bottom: 1px solid rgba(96, 62, 57, 0.3); }
-    .bookmark-subtab { border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; padding: 7px 4px; }
-    .bookmark-subtab.active { border-bottom-color: var(--accent-color); color: var(--text-primary); }
     .bookmark-library { display: flex; flex-direction: column; gap: 8px; max-height: 265px; overflow-y: auto; padding-right: 2px; }
     .bookmark-library-empty { border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; padding: 14px 12px; text-align: center; }
     .bookmark-library-header { align-items: center; color: var(--text-secondary); display: flex; font-size: 10px; font-weight: 700; justify-content: space-between; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -1723,25 +2031,47 @@
         <h1>Cognify</h1>
       </div>
       <div class="header-right">
-        <button class="theme-toggle" id="headerThemeToggle" title="Toggle theme" aria-label="Toggle dark and light theme">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button class="header-action" id="headerThemeToggle" type="button" title="Switch to light theme" aria-label="Switch to light theme">
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
           </svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.5 8.5 0 1 0 20.2 15.4Z"></path>
+          </svg>
         </button>
-        <button class="theme-toggle" id="expandToggle" title="Feature guide" style="border-radius:50%;color:var(--accent-color);font-size:15px;font-weight:700;letter-spacing:-0.5px;">?</button>
-        <button class="theme-toggle" id="profileButton" title="Profile login coming soon" aria-label="Open profile login" style="border-radius:50%;color:var(--accent-color);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button class="header-action" id="expandToggle" type="button" title="Feature guide" aria-label="Open feature guide" aria-controls="featureGuidePopover" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.8c-1.2 1.1-1.9 1.5-1.9 3"></path>
+            <path d="M12 17h.01"></path>
+          </svg>
+        </button>
+        <button class="header-action" id="profileButton" type="button" title="Profile login coming soon" aria-label="Show profile information" aria-controls="profilePopover" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M20 21a8 8 0 0 0-16 0"></path>
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </button>
+        <div class="profile-popover" id="profilePopover" role="status" aria-live="polite" hidden>
+          <span class="profile-popover-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21a8 8 0 0 0-16 0"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </span>
+          <div class="profile-popover-copy">
+            <div class="profile-popover-title">Profile</div>
+            <p class="profile-popover-message">Profile login and account syncing are coming soon.</p>
+          </div>
+          <button class="profile-popover-close" id="profilePopoverClose" type="button" aria-label="Close profile information">×</button>
+        </div>
       </div>
     </header>
     
     <div class="tabs">
       <button class="tab active" data-tab="general">General</button>
       <button class="tab" data-tab="stats">Stats</button>
-      <button class="tab" data-tab="shortcuts">Shortcuts</button>
+      <button class="tab" data-tab="bookmarks">Bookmarks</button>
       <button class="tab" data-tab="advanced">Advanced</button>
     </div>
     
@@ -1751,19 +2081,23 @@
       <!-- Speed Control -->
       <section>
         <h2>Speed Control</h2>
-        <div class="setting-item">
-          <div class="setting-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
+        <div class="setting-item" style="align-items: stretch; padding: 14px;">
           <div class="setting-content">
-            <div class="setting-title">Playback Speed</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div class="setting-title" style="margin:0;font-weight:700;">Playback Speed</div>
+              <button class="speed-reset" id="speedReset" type="button" title="Reset speed to 1×" aria-label="Reset playback speed to 1×">Reset</button>
+            </div>
             <div class="speed-control">
+              <div class="speed-main">
+                <button class="speed-step" id="speedDecrease" type="button" aria-label="Decrease playback speed" title="Decrease speed">−</button>
+                <div class="speed-readout">
+                  <span id="speedDisplay">1.0×</span>
+                  <span class="speed-readout-label">Playback</span>
+                </div>
+                <button class="speed-step" id="speedIncrease" type="button" aria-label="Increase playback speed" title="Increase speed">+</button>
+              </div>
               <div class="speed-slider-container">
-                <input id="speed" type="range" min="0.25" max="20" step="0.25" value="1">
-                <span id="speedDisplay">1.0×</span>
+                <input id="speed" type="range" min="0.25" max="20" step="0.25" value="1" aria-label="Playback speed">
               </div>
               <div class="speed-labels">
                 <button class="speed-tick" data-speed="0.25">0.25×</button>
@@ -1915,7 +2249,7 @@
         </div>
 
         <!-- Hide FB Messenger -->
-        <div class="setting-item setting-item-full">
+        <div class="setting-item setting-item-full" id="hideFbMessengerFeature" style="display:none;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="setting-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1964,7 +2298,7 @@
       <!-- General Settings -->
       <section>
         <h2>General Settings</h2>
-        <div class="setting-item setting-item-full">
+        <div class="setting-item setting-item-full" id="autoSkipAdsFeature" style="display:none;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="setting-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1985,7 +2319,7 @@
         </div>
 
         <!-- SponsorBlock -->
-        <div class="setting-item setting-item-full">
+        <div class="setting-item setting-item-full" id="sponsorBlockFeature" style="display:none;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="setting-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2116,9 +2450,19 @@
       <div class="tab-content" id="shortcuts">
       <!-- Keyboard Shortcuts -->
       <section>
-        <h2>Keyboard Shortcuts</h2>
-        <div class="info-text">
-          Click on a shortcut to record a new key combination. Press ESC to cancel.
+        <div class="info-hint-heading">
+          <h2>Keyboard Shortcuts</h2>
+          <details class="info-hint">
+            <summary aria-label="Show keyboard shortcut instructions" aria-controls="keyboardShortcutHint">?</summary>
+            <div class="profile-popover info-hint-card" id="keyboardShortcutHint" role="status" aria-live="polite">
+              <span class="profile-popover-question" aria-hidden="true">?</span>
+              <div class="profile-popover-copy">
+                <div class="profile-popover-title">Keyboard shortcuts</div>
+                <p class="profile-popover-message">Click a shortcut to record a new key combination. Press <kbd>ESC</kbd> to cancel.</p>
+              </div>
+              <button class="profile-popover-close info-hint-close" type="button" aria-label="Close keyboard shortcut instructions">×</button>
+            </div>
+          </details>
         </div>
         <div class="setting-item setting-item-full">
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -2391,7 +2735,7 @@
             <span>YouTube</span>
           </button>
           <!-- Instagram -->
-          <button class="platform-tab" data-platform="instagram">
+          <button class="platform-tab" data-platform="instagram" style="display:none;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
               <circle cx="12" cy="12" r="4"></circle>
@@ -2400,7 +2744,7 @@
             <span>Instagram</span>
           </button>
           <!-- Facebook -->
-          <button class="platform-tab" data-platform="facebook">
+          <button class="platform-tab" data-platform="facebook" style="display:none;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
             </svg>
@@ -2558,7 +2902,7 @@
         </div>
 
         <!-- ── Instagram Panel ── -->
-        <div class="platform-panel" id="panel-instagram">
+        <div class="platform-panel" id="panel-instagram" style="display:none;">
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon">
@@ -2729,7 +3073,7 @@
         </div>
 
         <!-- ── Facebook Panel ── -->
-        <div class="platform-panel" id="panel-facebook">
+        <div class="platform-panel" id="panel-facebook" style="display:none;">
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon">
@@ -2922,7 +3266,7 @@
         </div>
 
         <!-- Instagram -->
-        <div class="limit-card" id="igLimitCard">
+        <div class="limit-card" id="igLimitCard" style="display:none;">
           <div class="limit-platform-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
           </div>
@@ -2940,7 +3284,7 @@
         </div>
 
         <!-- Facebook -->
-        <div class="limit-card" id="fbLimitCard">
+        <div class="limit-card" id="fbLimitCard" style="display:none;">
           <div class="limit-platform-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
           </div>
@@ -2965,36 +3309,52 @@
 
       </div>
 
+      <div class="tab-content" id="bookmarks"></div>
+
       <!-- Advanced Tab -->
       <div class="tab-content" id="advanced">
 
       <!-- Bookmarks -->
-      <section>
-        <h2>Bookmarks</h2>
-        <div class="info-text">
-          Press <kbd>P</kbd> on any video to add bookmarks
+      <section id="bookmarkSection">
+        <div class="info-hint-heading">
+          <h2>Bookmarks</h2>
+          <details class="info-hint">
+            <summary aria-label="Show bookmark shortcut tip" aria-controls="bookmarkShortcutHint">?</summary>
+            <div class="profile-popover info-hint-card" id="bookmarkShortcutHint" role="status" aria-live="polite">
+              <span class="profile-popover-question" aria-hidden="true">?</span>
+              <div class="profile-popover-copy">
+                <div class="profile-popover-title">Bookmark shortcut</div>
+                <p class="profile-popover-message">Press <kbd>P</kbd> while watching any video to save a timestamp bookmark.</p>
+              </div>
+              <button class="profile-popover-close info-hint-close" type="button" aria-label="Close bookmark shortcut tip">×</button>
+            </div>
+          </details>
         </div>
-        <div class="bookmark-subtabs" role="tablist" aria-label="Bookmark views">
-          <button class="bookmark-subtab active" id="bookmarkLibraryTab" role="tab" aria-selected="true">Bookmark library</button>
-          <button class="bookmark-subtab" id="bookmarkBackupTab" role="tab" aria-selected="false">Import / export</button>
-        </div>
-        <div id="bookmarkLibraryPanel" class="bookmark-library-panel" role="tabpanel" aria-labelledby="bookmarkLibraryTab">
+        <div class="bookmark-library-panel">
           <div class="bookmark-library-header">
             <span>Saved videos</span>
-            <span id="bookmarkVideoCount" class="bookmark-video-total">0 videos</span>
-          </div>
-          <div class="bookmark-tools" aria-label="Bookmark search and filters">
-            <input id="bookmarkSearch" type="search" placeholder="Search titles, notes, channels" aria-label="Search bookmarks">
-            <input id="bookmarkLabelFilter" type="search" placeholder="Label" aria-label="Filter by label">
-            <input id="bookmarkChannelFilter" type="search" placeholder="Channel" aria-label="Filter by channel">
-            <div class="cognify-select" id="bookmarkDurationPicker">
-              <button class="cognify-select-trigger" id="bookmarkDurationTrigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span id="bookmarkDurationLabel">Any duration</span><span class="cognify-select-arrow" aria-hidden="true"></span></button>
-              <div class="cognify-select-options" id="bookmarkDurationOptions" role="listbox" aria-label="Filter by duration" hidden></div>
+            <div class="bookmark-library-header-actions">
+              <span id="bookmarkVideoCount" class="bookmark-video-total">0 videos</span>
+              <details class="bookmark-more">
+                <summary aria-label="More bookmark actions" title="More bookmark actions">•••</summary>
+                <div class="bookmark-more-menu">
+                  <button class="bookmark-menu-action" id="newBookmarkFolderBtn" type="button">New collection</button>
+                  <button class="bookmark-menu-action" id="shareBookmarkCollectionBtn" type="button">Share collection</button>
+                  <div class="bookmark-menu-divider"></div>
+                  <button class="bookmark-menu-action" id="exportBookmarksBtn" type="button">Export bookmarks</button>
+                  <input type="file" id="importBookmarksFile" accept=".json" hidden>
+                  <button class="bookmark-menu-action" id="importBookmarksBtn" type="button">Import bookmarks</button>
+                </div>
+              </details>
             </div>
-            <select id="bookmarkDurationFilter" aria-hidden="true" tabindex="-1" hidden><option value="">Any duration</option><option value="600">Under 10 min</option><option value="1800">Under 30 min</option><option value="3600">Under 1 hour</option></select>
-            <input id="bookmarkDateFilter" type="date" aria-label="Bookmarks since date">
           </div>
-          <div class="bookmark-library-actions">
+          <div class="bookmark-library-search-row">
+            <input id="bookmarkSearch" class="bookmark-library-search" type="search" placeholder="Search titles, notes, channels" aria-label="Search bookmarks">
+            <button id="bookmarkFilterToggle" class="bookmark-filter-toggle" type="button" aria-controls="bookmarkFilters" aria-expanded="false">
+              Filters <span id="bookmarkFilterCount" class="bookmark-filter-count" hidden></span>
+            </button>
+          </div>
+          <div class="bookmark-library-toolbar">
             <div class="cognify-select" id="bookmarkFolderPicker">
               <button class="cognify-select-trigger" id="bookmarkFolderTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
                 <span id="bookmarkFolderLabel">All collections</span><span class="cognify-select-arrow" aria-hidden="true"></span>
@@ -3002,32 +3362,28 @@
               <div class="cognify-select-options" id="bookmarkFolderOptions" role="listbox" aria-label="Bookmark collection" hidden></div>
             </div>
             <select id="bookmarkFolderSelect" aria-hidden="true" tabindex="-1" hidden><option value="all">All collections</option></select>
-            <button class="btn-import" id="newBookmarkFolderBtn" type="button">New collection</button>
-            <button class="btn-export" id="shareBookmarkCollectionBtn" type="button">Share collection</button>
+            <select id="bookmarkSortFilter" aria-label="Sort bookmarks">
+              <option value="most">Most bookmarks</option>
+              <option value="recent">Recently saved</option>
+              <option value="title">Title A-Z</option>
+            </select>
           </div>
-          <div id="bookmarkRecommendations" class="bookmark-recommendations" hidden></div>
+          <div id="bookmarkFilters" class="bookmark-filters" hidden>
+            <div class="bookmark-tools" aria-label="Filter bookmarks">
+              <input id="bookmarkLabelFilter" type="search" placeholder="Label" aria-label="Filter by label">
+              <input id="bookmarkChannelFilter" type="search" placeholder="Channel" aria-label="Filter by channel">
+              <div class="cognify-select" id="bookmarkDurationPicker">
+                <button class="cognify-select-trigger" id="bookmarkDurationTrigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span id="bookmarkDurationLabel">Any duration</span><span class="cognify-select-arrow" aria-hidden="true"></span></button>
+                <div class="cognify-select-options" id="bookmarkDurationOptions" role="listbox" aria-label="Filter by duration" hidden></div>
+              </div>
+              <select id="bookmarkDurationFilter" aria-hidden="true" tabindex="-1" hidden><option value="">Any duration</option><option value="600">Under 10 min</option><option value="1800">Under 30 min</option><option value="3600">Under 1 hour</option></select>
+              <input id="bookmarkDateFilter" type="date" aria-label="Bookmarks since date">
+            </div>
+          </div>
+          <div id="bookmarkActiveFilters" class="bookmark-active-filters" aria-label="Active bookmark filters" aria-live="polite" hidden></div>
           <div id="bookmarkLibrary" class="bookmark-library" aria-live="polite">
             <div class="bookmark-library-empty">Loading saved videos...</div>
           </div>
-        </div>
-        <div id="bookmarkBackupPanel" class="bookmark-backup-panel" role="tabpanel" aria-labelledby="bookmarkBackupTab" hidden>
-          <button class="btn-export" id="exportBookmarksBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Export Bookmarks
-          </button>
-          <input type="file" id="importBookmarksFile" accept=".json" style="display:none;">
-          <button class="btn-import" id="importBookmarksBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 16 12 21 17 16"></polyline>
-              <line x1="12" y1="9" x2="12" y2="21"></line>
-            </svg>
-            Import Bookmarks
-          </button>
         </div>
       </section>
 

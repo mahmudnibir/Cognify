@@ -154,9 +154,54 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 }
 
 .shortcut-conflict { color: var(--error); font-size: 10px; margin-top: 4px; }
+
+.info-hint-heading {
+    position: relative;
+}
+
+.info-hint-heading h2 {
+    padding-right: 28px;
+}
+
+.info-hint {
+    position: absolute;
+    top: -2px;
+    right: 4px;
+    z-index: 5;
+}
+
+.info-hint summary {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    list-style: none;
+    user-select: none;
+}
+
+.info-hint summary::-webkit-details-marker {
+    display: none;
+}
+
+.info-hint summary:hover,
+.info-hint[open] summary {
+    border-color: var(--border-color-hover);
+    color: var(--text-primary);
+}
+
+.info-hint summary:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 /* Advanced feature controls */
 .bookmark-tools,
-.bookmark-library-actions,
 .personalization-grid {
     display: grid;
     gap: 8px;
@@ -167,13 +212,32 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.bookmark-tools input:first-child {
-    grid-column: 1 / -1;
+.bookmark-library-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.bookmark-library-search-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 8px;
+}
+
+.bookmark-library-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
 }
 
 .bookmark-tools input,
 .bookmark-tools select,
-.bookmark-library-actions select,
+.bookmark-library-search,
+.bookmark-library-toolbar select,
 .personalization-grid select {
     min-width: 0;
     width: 100%;
@@ -189,6 +253,163 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
 }
 
+.bookmark-filter-toggle {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+}
+
+.bookmark-filter-toggle:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-color-hover);
+}
+
+.bookmark-filter-toggle:focus-visible {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, .12);
+    outline: none;
+}
+
+.bookmark-more {
+    position: relative;
+    min-width: 0;
+}
+
+.bookmark-more summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 15px;
+    letter-spacing: 1px;
+    list-style: none;
+}
+
+.bookmark-more summary::-webkit-details-marker {
+    display: none;
+}
+
+.bookmark-more summary:hover,
+.bookmark-more[open] summary {
+    border-color: var(--border-color-hover);
+    background: var(--bg-card-hover);
+}
+
+.bookmark-more summary:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.bookmark-more-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 40;
+    display: grid;
+    width: 180px;
+    gap: 3px;
+    padding: 6px;
+    border: 1px solid var(--border-color-hover);
+    border-radius: 8px;
+    background: var(--bg-card);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .35);
+}
+
+.bookmark-menu-action {
+    padding: 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    text-align: left;
+}
+
+.bookmark-menu-action:hover,
+.bookmark-menu-action:focus-visible {
+    background: var(--bg-card-hover);
+    outline: none;
+}
+
+.bookmark-menu-divider {
+    height: 1px;
+    margin: 3px 4px;
+    background: var(--border-color);
+}
+
+.bookmark-filter-count:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--accent-color);
+    color: white;
+    font-size: 9px;
+}
+
+.bookmark-filters[hidden] {
+    display: none;
+}
+
+.bookmark-filters {
+    margin: 0 0 10px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+}
+
+.bookmark-active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 8px;
+}
+
+.bookmark-active-filters[hidden] {
+    display: none;
+}
+
+.bookmark-filter-chip {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 9px;
+}
+
+.bookmark-filter-chip:hover,
+.bookmark-filter-chip:focus-visible {
+    border-color: var(--border-color-hover);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.bookmark-tools {
+    margin: 0;
+}
+
 .bookmark-tools input::placeholder {
     color: var(--text-secondary);
     opacity: .72;
@@ -196,7 +417,8 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 
 .bookmark-tools input:hover,
 .bookmark-tools select:hover,
-.bookmark-library-actions select:hover,
+.bookmark-library-search:hover,
+.bookmark-library-toolbar select:hover,
 .personalization-grid select:hover {
     background: var(--bg-card-hover);
     border-color: var(--border-color-hover);
@@ -204,15 +426,11 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 
 .bookmark-tools input:focus,
 .bookmark-tools select:focus,
-.bookmark-library-actions select:focus,
+.bookmark-library-search:focus,
+.bookmark-library-toolbar select:focus,
 .personalization-grid select:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 2px rgba(255, 0, 0, .12);
-}
-
-.bookmark-library-actions {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
 }
 
 .cognify-select {
@@ -234,6 +452,7 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     cursor: pointer;
     font: inherit;
     font-size: 11px;
+    white-space: nowrap;
     text-align: left;
     transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
 }
@@ -295,8 +514,6 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     color: var(--text-primary);
 }
 
-.bookmark-library-actions .btn-import,
-.bookmark-library-actions .btn-export,
 .personalization-grid + .setting-desc + button,
 .personalization-grid + .setting-desc + button + button,
 #showSyncQrBtn {
@@ -305,18 +522,6 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     border-radius: 7px;
     font-size: 10px;
     white-space: nowrap;
-}
-
-.bookmark-recommendations {
-    margin: 8px 0 10px;
-    padding: 9px 10px;
-    border: 1px solid rgba(255, 0, 0, .22);
-    border-left: 3px solid var(--accent-color);
-    border-radius: 7px;
-    background: rgba(255, 0, 0, .06);
-    color: var(--text-secondary);
-    font-size: 10px;
-    line-height: 1.45;
 }
 
 .personalization-grid {
@@ -363,22 +568,15 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 }
 
 @media (max-width: 360px) {
-    .bookmark-library-actions {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .bookmark-library-actions select {
-        grid-column: 1 / -1;
-    }
-
-    .bookmark-library-actions button {
-        width: 100%;
+    .bookmark-library-toolbar {
+        gap: 6px;
     }
 }
 
 body[data-theme="light"] .bookmark-tools input,
 body[data-theme="light"] .bookmark-tools select,
-body[data-theme="light"] .bookmark-library-actions select,
+body[data-theme="light"] .bookmark-library-search,
+body[data-theme="light"] .bookmark-library-toolbar select,
 body[data-theme="light"] .personalization-grid select {
     color: var(--on-surface);
 }

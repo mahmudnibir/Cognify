@@ -4,8 +4,8 @@ const {
   sortBookmarks,
   getBookmarkStorageKey,
   getBookmarkVideos,
+  sortBookmarkVideos,
   filterBookmarkVideos,
-  getBookmarkRecommendations,
   findShortcutConflict,
 } = require('../src/bookmark-utils.js');
 
@@ -29,9 +29,16 @@ const videos = getBookmarkVideos({
   yt_bm_alpha: [{ time: 12, title: 'Algebra lesson', label: 'formula', channel: 'Study Lab', duration: 900, createdAt: '2026-08-20T10:00:00Z' }],
   yt_bm_beta: [{ time: 4, title: 'Career talk', channel: 'Work Lab', duration: 2400 }],
 });
+const sortableVideos = [
+  { videoId: 'old', title: 'Zulu', bookmarks: [{}, {}, {}], lastViewedAt: 10 },
+  { videoId: 'new', title: 'Alpha', bookmarks: [{}], lastViewedAt: 50 },
+  { videoId: 'middle', title: 'Beta', bookmarks: [{}, {}], lastViewedAt: 20 },
+];
+assert.deepEqual(sortBookmarkVideos(sortableVideos, 'recent').map(video => video.videoId), ['new', 'middle', 'old']);
+assert.deepEqual(sortBookmarkVideos(sortableVideos, 'title').map(video => video.videoId), ['new', 'middle', 'old']);
+assert.deepEqual(sortBookmarkVideos(sortableVideos).map(video => video.videoId), ['old', 'middle', 'new']);
 assert.equal(filterBookmarkVideos(videos, { label: 'formula', channel: 'study' }).length, 1);
 assert.equal(filterBookmarkVideos(videos, { maxDuration: 1000 }).length, 1);
-assert.equal(getBookmarkRecommendations(videos, ['alpha'])[0].videoId, 'beta');
 assert.equal(findShortcutConflict({ addBookmark: 'P', showHelp: 'Shift+?' }, 'p', 'showHelp'), 'addBookmark');
 assert.equal(findShortcutConflict({ addBookmark: 'P' }, 'L', 'showHelp'), null);
 

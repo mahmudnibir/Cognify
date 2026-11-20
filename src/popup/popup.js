@@ -1,4 +1,46 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Promote bookmarks to a top-level tab and keep shortcuts under Advanced.
+  const bookmarkSection = document.getElementById('bookmarkSection');
+  const bookmarksTab = document.getElementById('bookmarks');
+  const advancedTab = document.getElementById('advanced');
+  const shortcutsSection = document.getElementById('shortcuts');
+  bookmarksTab.appendChild(bookmarkSection);
+  shortcutsSection.classList.remove('tab-content');
+  advancedTab.prepend(shortcutsSection);
+
+  document.addEventListener('click', (event) => {
+    const clickedHint = event.target.closest('.info-hint');
+    document.querySelectorAll('.info-hint[open]').forEach((hint) => {
+      if (hint !== clickedHint) hint.open = false;
+    });
+    const clickedMenu = event.target.closest('.bookmark-more');
+    document.querySelectorAll('.bookmark-more[open]').forEach((menu) => {
+      if (menu !== clickedMenu) menu.open = false;
+    });
+  }, true);
+  document.querySelectorAll('.bookmark-more-menu').forEach((menu) => {
+    menu.addEventListener('click', (event) => {
+      if (event.target.closest('.bookmark-menu-action')) menu.closest('.bookmark-more').open = false;
+    });
+  });
+  document.addEventListener('scroll', () => {
+    document.querySelectorAll('.info-hint[open]').forEach((hint) => { hint.open = false; });
+    document.querySelectorAll('.bookmark-more[open]').forEach((menu) => { menu.open = false; });
+  }, true);
+  document.querySelectorAll('.info-hint-close').forEach((button) => {
+    button.addEventListener('click', () => {
+      const hint = button.closest('.info-hint');
+      hint.open = false;
+      hint.querySelector('summary').focus();
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const openHint = document.querySelector('.info-hint[open]');
+    if (!openHint) return;
+    openHint.open = false;
+    openHint.querySelector('summary').focus();
+  });
 
   // ── ? Help modal ───────────────────────────────────────────────────────────────────────
   // The ? button in the header opens a scrollable panel listing every setting
@@ -21,50 +63,81 @@ document.addEventListener('DOMContentLoaded', () => {
       if (items.length) sections.push({ heading: heading.textContent.trim(), items });
     });
 
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `
-      <div class="modal" style="max-height:80vh;display:flex;flex-direction:column;">
-        <div class="modal-header">
-          <div class="modal-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </div>
-          <div class="modal-title">Feature Guide</div>
-        </div>
-        <div class="modal-body" id="helpGuideBody" style="overflow-y:auto;flex:1;">
-          ${sections.map(s => `
-            <div style="margin-bottom:14px;">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.35);margin-bottom:6px;">${s.heading}</div>
-              ${s.items.map(it => `
-                <div style="display:flex;gap:8px;margin-bottom:5px;align-items:baseline;">
-                  <span style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;white-space:nowrap;">${it.title}</span>
-                  <span style="color:rgba(255,255,255,0.4);font-size:10px;flex:1;">— ${it.desc}</span>
-                </div>
-              `).join('')}
-            </div>
-          `).join('')}
-        </div>
-        <div class="modal-actions">
-          <button class="modal-btn modal-btn-neutral" id="helpClose">Close</button>
+    const existingGuide = document.getElementById('featureGuidePopover');
+    if (existingGuide) existingGuide.remove();
+
+    const guide = document.createElement('div');
+    guide.id = 'featureGuidePopover';
+    guide.className = 'profile-popover feature-guide-popover';
+    guide.setAttribute('role', 'status');
+    guide.setAttribute('aria-live', 'polite');
+    guide.innerHTML = `
+      <span class="profile-popover-question" aria-hidden="true">?</span>
+      <div class="profile-popover-copy">
+        <div class="profile-popover-title">Feature guide</div>
+        <div class="feature-guide-body">
+          <table class="feature-guide-table">
+            ${sections.map(s => `
+              <tbody>
+                <tr class="feature-guide-section-row">
+                  <th colspan="2">${s.heading}</th>
+                </tr>
+                ${s.items.map(it => `
+                  <tr>
+                    <td>${it.title}</td>
+                    <td>${it.desc}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            `).join('')}
+          </table>
         </div>
       </div>
+      <button class="profile-popover-close" id="featureGuideClose" type="button" aria-label="Close feature guide">×</button>
     `;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#helpClose').addEventListener('click', () => overlay.remove());
-    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(guide);
+    expandToggle.setAttribute('aria-expanded', 'true');
+    guide.querySelector('#featureGuideClose').addEventListener('click', () => {
+      guide.remove();
+      expandToggle.setAttribute('aria-expanded', 'false');
+      expandToggle.focus();
+    });
+    document.addEventListener('click', function closeGuide(event) {
+      if (event.target.closest('#featureGuidePopover') || event.target.closest('#expandToggle')) return;
+      guide.remove();
+      expandToggle.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', closeGuide, true);
+    }, true);
+    document.addEventListener('keydown', function closeGuideOnEscape(event) {
+      if (event.key !== 'Escape') return;
+      guide.remove();
+      expandToggle.setAttribute('aria-expanded', 'false');
+      expandToggle.focus();
+      document.removeEventListener('keydown', closeGuideOnEscape);
+    });
   });
 
   const profileButton = document.getElementById('profileButton');
+  const profilePopover = document.getElementById('profilePopover');
+  const profilePopoverClose = document.getElementById('profilePopoverClose');
+  const closeProfilePopover = (restoreFocus = false) => {
+    profilePopover.hidden = true;
+    profileButton.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) profileButton.focus();
+  };
   profileButton.addEventListener('click', () => {
-    showModal({
-      title: 'Profile Login',
-      message: 'Profile login and account syncing are coming soon.',
-      buttons: [{ text: 'Close', type: 'primary' }]
-    });
+    const shouldOpen = profilePopover.hidden;
+    profilePopover.hidden = !shouldOpen;
+    profileButton.setAttribute('aria-expanded', String(shouldOpen));
+  });
+  profilePopoverClose.addEventListener('click', () => closeProfilePopover(true));
+  document.addEventListener('click', (event) => {
+    if (!profilePopover.hidden && !profilePopover.contains(event.target) && !profileButton.contains(event.target)) {
+      closeProfilePopover();
+    }
+  }, true);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !profilePopover.hidden) closeProfilePopover(true);
   });
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -406,12 +479,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const importBookmarksBtn = document.getElementById('importBookmarksBtn');
   const importBookmarksFile = document.getElementById('importBookmarksFile');
   const bookmarkLibrary = document.getElementById('bookmarkLibrary');
-  const bookmarkLibraryTab = document.getElementById('bookmarkLibraryTab');
-  const bookmarkBackupTab = document.getElementById('bookmarkBackupTab');
-  const bookmarkLibraryPanel = document.getElementById('bookmarkLibraryPanel');
-  const bookmarkBackupPanel = document.getElementById('bookmarkBackupPanel');
   const bookmarkVideoCount = document.getElementById('bookmarkVideoCount');
   const bookmarkSearch = document.getElementById('bookmarkSearch');
+  const bookmarkActiveFilters = document.getElementById('bookmarkActiveFilters');
+  const bookmarkFilterToggle = document.getElementById('bookmarkFilterToggle');
+  const bookmarkFilters = document.getElementById('bookmarkFilters');
+  const bookmarkFilterCount = document.getElementById('bookmarkFilterCount');
+  const bookmarkSortFilter = document.getElementById('bookmarkSortFilter');
   const bookmarkLabelFilter = document.getElementById('bookmarkLabelFilter');
   const bookmarkChannelFilter = document.getElementById('bookmarkChannelFilter');
   const bookmarkDurationFilter = document.getElementById('bookmarkDurationFilter');
@@ -423,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const bookmarkFolderOptions = document.getElementById('bookmarkFolderOptions');
   const newBookmarkFolderBtn = document.getElementById('newBookmarkFolderBtn');
   const shareBookmarkCollectionBtn = document.getElementById('shareBookmarkCollectionBtn');
-  const bookmarkRecommendations = document.getElementById('bookmarkRecommendations');
   const profilePreset = document.getElementById('profilePreset');
   const themePreference = document.getElementById('themePreference');
   const startTutorialBtn = document.getElementById('startTutorialBtn');
@@ -514,15 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bookmarkFolderOptions.appendChild(option);
       });
     }
-  }
-
-  function renderBookmarkRecommendations(videos) {
-    if (!bookmarkRecommendations) return;
-    const recommendations = CognifyBookmarkUtils.getBookmarkRecommendations(videos, []);
-    bookmarkRecommendations.hidden = recommendations.length === 0;
-    bookmarkRecommendations.textContent = recommendations.length
-      ? `Recommended from your viewing patterns: ${recommendations.map((video) => video.title).join(' · ')}`
-      : '';
   }
 
   function closeBookmarkManageMenus() {
@@ -650,15 +714,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function renderBookmarkFilterChips() {
+    if (!bookmarkActiveFilters) return;
+    const filters = [];
+    const addFilter = (label, value, clear) => {
+      if (value) filters.push({ label, value, clear });
+    };
+    const addTextFilter = (label, control) => {
+      const value = String(control?.value || '').trim();
+      addFilter(label, value, () => {
+        control.value = '';
+        control.dispatchEvent(new Event('input'));
+      });
+    };
+
+    addTextFilter('Search', bookmarkSearch);
+    addTextFilter('Label', bookmarkLabelFilter);
+    addTextFilter('Channel', bookmarkChannelFilter);
+
+    if (bookmarkDurationFilter?.value) {
+      const selectedOption = bookmarkDurationFilter.options[bookmarkDurationFilter.selectedIndex];
+      addFilter('Duration', selectedOption?.textContent || bookmarkDurationFilter.value, () => {
+        bookmarkDurationFilter.value = '';
+        bookmarkDurationFilter.dispatchEvent(new Event('change'));
+      });
+    }
+
+    addTextFilter('Since', bookmarkDateFilter);
+    if (bookmarkFolderSelect?.value && bookmarkFolderSelect.value !== 'all') {
+      addFilter('Collection', bookmarkFolderLabel.textContent, () => {
+        bookmarkFolderSelect.value = 'all';
+        refreshBookmarkFolderOptions();
+        bookmarkFolderSelect.dispatchEvent(new Event('change'));
+      });
+    }
+
+    bookmarkActiveFilters.textContent = '';
+    bookmarkActiveFilters.hidden = filters.length === 0;
+    filters.forEach(({ label, value, clear }) => {
+      const chip = document.createElement('button');
+      chip.className = 'bookmark-filter-chip';
+      chip.type = 'button';
+      chip.textContent = `${label}: ${value} ×`;
+      chip.setAttribute('aria-label', `Remove ${label} filter: ${value}`);
+      chip.addEventListener('click', clear);
+      bookmarkActiveFilters.appendChild(chip);
+    });
+  }
+
   function renderBookmarkLibrary(data) {
     if (!bookmarkLibrary) return;
     bookmarkLibraryData = data || {};
     bookmarkLibrary.textContent = '';
     showBookmarkUndoNotice();
+    renderBookmarkFilterChips();
+    const activeFilterCount = [bookmarkLabelFilter, bookmarkChannelFilter, bookmarkDurationFilter, bookmarkDateFilter]
+      .filter((control) => control && String(control.value || '').trim())
+      .length;
+    bookmarkFilterCount.textContent = activeFilterCount ? String(activeFilterCount) : '';
+    bookmarkFilterCount.hidden = activeFilterCount === 0;
     let videos = CognifyBookmarkUtils.getBookmarkVideos(data)
       .filter((video) => !bookmarkFolderSelect || bookmarkFolderSelect.value === 'all' || bookmarkCollections.folders[video.videoId] === bookmarkFolderSelect.value)
-      .filter(video => video.bookmarks.length)
-      .sort((a, b) => b.bookmarks.length - a.bookmarks.length);
+      .filter(video => video.bookmarks.length);
     videos = CognifyBookmarkUtils.filterBookmarkVideos(videos, {
       query: bookmarkSearch?.value,
       label: bookmarkLabelFilter?.value,
@@ -666,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
       maxDuration: bookmarkDurationFilter?.value,
       since: bookmarkDateFilter?.value,
     });
-    renderBookmarkRecommendations(videos);
+    videos = CognifyBookmarkUtils.sortBookmarkVideos(videos, bookmarkSortFilter?.value);
     if (bookmarkVideoCount) {
       bookmarkVideoCount.textContent = `${videos.length} video${videos.length === 1 ? '' : 's'}`;
     }
@@ -861,21 +978,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function showBookmarkView(view) {
-    const isLibrary = view === 'library';
-    bookmarkLibraryTab.classList.toggle('active', isLibrary);
-    bookmarkBackupTab.classList.toggle('active', !isLibrary);
-    bookmarkLibraryTab.setAttribute('aria-selected', String(isLibrary));
-    bookmarkBackupTab.setAttribute('aria-selected', String(!isLibrary));
-    bookmarkLibraryPanel.hidden = !isLibrary;
-    bookmarkBackupPanel.hidden = isLibrary;
-  }
-
-  bookmarkLibraryTab.addEventListener('click', () => showBookmarkView('library'));
-  bookmarkBackupTab.addEventListener('click', () => showBookmarkView('backup'));
+  bookmarkFilterToggle.addEventListener('click', () => {
+    bookmarkFilters.hidden = !bookmarkFilters.hidden;
+    bookmarkFilterToggle.setAttribute('aria-expanded', String(!bookmarkFilters.hidden));
+  });
   [bookmarkSearch, bookmarkLabelFilter, bookmarkChannelFilter, bookmarkDurationFilter, bookmarkDateFilter, bookmarkFolderSelect]
     .filter(Boolean)
     .forEach((control) => control.addEventListener('input', () => renderBookmarkLibrary(bookmarkLibraryData)));
+  bookmarkDurationFilter?.addEventListener('change', () => renderBookmarkLibrary(bookmarkLibraryData));
+  bookmarkSortFilter?.addEventListener('change', () => renderBookmarkLibrary(bookmarkLibraryData));
   bookmarkFolderSelect?.addEventListener('change', () => renderBookmarkLibrary(bookmarkLibraryData));
   bookmarkFolderTrigger?.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -897,8 +1008,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cleanName = String(name || '').trim().slice(0, 40);
     if (!cleanName) return;
     bookmarkCollections.folders[cleanName] = bookmarkCollections.folders[cleanName] || '';
-    refreshBookmarkFolderOptions();
     bookmarkFolderSelect.value = cleanName;
+    refreshBookmarkFolderOptions();
     saveBookmarkCollections(() => renderBookmarkLibrary(bookmarkLibraryData));
   });
   shareBookmarkCollectionBtn?.addEventListener('click', () => {
@@ -1269,7 +1380,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Export Bookmarks button (Advanced tab)
+  const setSpeed = (value) => {
+    const nextValue = Math.min(20, Math.max(0.25, Math.round(value * 4) / 4));
+    speedInput.value = nextValue;
+    updateSpeedDisplay(nextValue);
+    syncSpeedTicks(nextValue);
+    autoSave();
+  };
+  document.getElementById('speedDecrease')?.addEventListener('click', () => setSpeed(parseFloat(speedInput.value) - 0.25));
+  document.getElementById('speedIncrease')?.addEventListener('click', () => setSpeed(parseFloat(speedInput.value) + 0.25));
+  document.getElementById('speedReset')?.addEventListener('click', () => setSpeed(1));
+
+  // Export Bookmarks action (Bookmarks menu)
   if (exportBookmarksBtn) {
     exportBookmarksBtn.addEventListener('click', () => exportBookmarks());
   }
@@ -1413,7 +1535,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function applyTheme(preference) {
     const prefersLight = window.matchMedia?.('(prefers-color-scheme: light)').matches;
-    document.body.dataset.theme = preference === 'system' ? (prefersLight ? 'light' : 'dark') : preference;
+    const activeTheme = preference === 'system' ? (prefersLight ? 'light' : 'dark') : preference;
+    document.body.dataset.theme = activeTheme;
+    const themeToggle = document.getElementById('headerThemeToggle');
+    if (themeToggle) {
+      const nextTheme = activeTheme === 'light' ? 'dark' : 'light';
+      themeToggle.title = `Switch to ${nextTheme} theme`;
+      themeToggle.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
+    }
   }
 
   if (globalThis.chrome?.storage?.sync) chrome.storage.sync.get({ themePreference: 'system', profilePreset: '' }, (data) => {

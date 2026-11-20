@@ -59,7 +59,7 @@
 
 ## Usage
 
-Click the **Cognify** extension icon on any supported page to open the control panel. All settings persist across sessions via Chrome's sync storage. The **Advanced** tab contains automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, bookmark import/export, and statistics management.
+Click the **Cognify** extension icon on any supported page to open the control panel. All settings persist across sessions via Chrome's sync storage. The **Bookmarks** tab contains your saved videos and bookmark import/export. The **Advanced** tab contains keyboard shortcuts, automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, and statistics management.
 
 ---
 

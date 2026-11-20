@@ -48,6 +48,17 @@ function getBookmarkVideos(data) {
     .filter((video) => video.bookmarks.length);
 }
 
+function sortBookmarkVideos(videos, sortBy = 'most') {
+  const sortedVideos = Array.isArray(videos) ? [...videos] : [];
+  const compareTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' });
+  const compareRecent = (a, b) => (Number(b.lastViewedAt) || 0) - (Number(a.lastViewedAt) || 0);
+  const compareBookmarkCount = (a, b) => b.bookmarks.length - a.bookmarks.length;
+
+  if (sortBy === 'title') return sortedVideos.sort(compareTitle);
+  if (sortBy === 'recent') return sortedVideos.sort((a, b) => compareRecent(a, b) || compareBookmarkCount(a, b) || compareTitle(a, b));
+  return sortedVideos.sort((a, b) => compareBookmarkCount(a, b) || compareRecent(a, b) || compareTitle(a, b));
+}
+
 function filterBookmarkVideos(videos, filters = {}) {
   const query = String(filters.query || '').trim().toLowerCase();
   const label = String(filters.label || '').trim().toLowerCase();
@@ -66,15 +77,6 @@ function filterBookmarkVideos(videos, filters = {}) {
   });
 }
 
-function getBookmarkRecommendations(videos, viewedVideoIds = []) {
-  const viewed = new Set(Array.isArray(viewedVideoIds) ? viewedVideoIds : []);
-  return (Array.isArray(videos) ? videos : [])
-    .filter((video) => !viewed.has(video.videoId))
-    .slice()
-    .sort((a, b) => (b.bookmarks.length - a.bookmarks.length) || (b.lastViewedAt - a.lastViewedAt))
-    .slice(0, 3);
-}
-
 function findShortcutConflict(shortcuts, candidate, action) {
   const normalized = String(candidate || '').trim().toLowerCase();
   if (!normalized) return null;
@@ -87,8 +89,8 @@ const bookmarkUtils = {
   findBookmarkIndex,
   findRelativeBookmarkIndex,
   getBookmarkVideos,
+  sortBookmarkVideos,
   filterBookmarkVideos,
-  getBookmarkRecommendations,
   findShortcutConflict,
 };
 
