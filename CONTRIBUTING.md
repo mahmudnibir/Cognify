@@ -21,9 +21,9 @@ Thanks for taking the time to contribute! All improvements are welcome — bug f
 |---|---|
 | `manifest.json` | Extension manifest (MV3) |
 | `popup.html` / `popup.js` | Extension popup UI |
-| `content.js` | YouTube-specific features (ad-skip, bookmarks, stats) |
-| `video-hover.js` | Universal hover overlay for all sites |
-| `background.js` | Service worker (storage, messaging) |
+| `content.js` | YouTube playback controls, bookmarks, and stats |
+| `edge-hud.js` | YouTube screen-time HUD |
+| `background.js` | Service worker (YouTube time tracking, storage, messaging) |
 | `index.html` | GitHub Pages landing site |
 
 ---

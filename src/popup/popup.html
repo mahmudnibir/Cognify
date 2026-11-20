@@ -241,7 +241,7 @@
       position: relative;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .header-action {
@@ -1627,52 +1627,6 @@
       margin-top: 8px;
     }
 
-    /* Platform Stats Tabs */
-    .platform-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-    .platform-tab {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      padding: 10px 6px 8px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.18s;
-      position: relative;
-      color: var(--text-secondary);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-    }
-    .platform-tab svg { opacity: 0.55; transition: opacity 0.18s; }
-    .platform-tab:hover { border-color: var(--border-color-hover); color: var(--text-primary); }
-    .platform-tab:hover svg { opacity: 0.85; }
-    .platform-tab.active {
-      border-color: var(--border-color-hover);
-      background: var(--icon-bg);
-      color: var(--text-primary);
-    }
-    .platform-tab.active svg { opacity: 1; }
-    .pro-badge {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      font-size: 7px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      background: var(--accent-color);
-      color: #fff;
-      padding: 1px 4px;
-      border-radius: 3px;
-      line-height: 1.4;
-    }
     .platform-panel { display: none; }
     .platform-panel.active { display: block; }
 
@@ -1775,13 +1729,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(81, 200, 183, 0.12);
     }
     
     .modal-icon svg {
       width: 22px;
       height: 22px;
+      stroke: var(--bookmark-time-color);
+    }
+
+    .modal-overlay[data-modal-variant="warning"] .modal-icon,
+    .modal-overlay[data-modal-variant="error"] .modal-icon {
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .modal-overlay[data-modal-variant="warning"] .modal-icon svg,
+    .modal-overlay[data-modal-variant="error"] .modal-icon svg {
       stroke: #ef4444;
+    }
+
+    .modal-overlay[data-modal-variant="success"] .modal-icon {
+      background: rgba(81, 200, 183, 0.12);
     }
     
     .modal-title {
@@ -1925,135 +1893,6 @@
     #helpGuideBody::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
     #helpGuideBody { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
     
-    /* Developer Tools Button */
-    .dev-btn {
-      padding: 8px 16px;
-      background: linear-gradient(135deg, var(--accent-color), rgba(255, 85, 64, 0.8));
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    
-    .dev-btn:hover {
-      background: linear-gradient(135deg, var(--accent-hover), rgba(255, 85, 64, 1));
-      box-shadow: 0 4px 12px rgba(255, 85, 64, 0.3);
-    }
-    
-    .dev-btn:active {
-      transform: scale(0.98);
-    }
-    
-    /* Error Log Modal */
-    .error-log-modal {
-      max-width: 600px;
-      width: 95%;
-      max-height: 70vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .error-log-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    .error-log-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    
-    .error-log-count {
-      background: var(--accent-color);
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 12px;
-      min-width: 30px;
-      text-align: center;
-    }
-    
-    .error-log-list {
-      flex: 1;
-      overflow-y: auto;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
-      max-height: 300px;
-    }
-    
-    .error-log-empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 120px;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 13px;
-      text-align: center;
-      padding: 16px;
-    }
-    
-    .error-log-item {
-      padding: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-      font-size: 11px;
-      line-height: 1.5;
-    }
-    
-    .error-log-item:last-child {
-      border-bottom: none;
-    }
-    
-    .error-log-time {
-      color: rgba(255, 85, 64, 0.8);
-      font-weight: 600;
-      font-size: 10px;
-    }
-    
-    .error-log-source {
-      color: rgba(121, 194, 255, 0.8);
-      font-weight: 600;
-      font-size: 10px;
-      margin-top: 2px;
-    }
-    
-    .error-log-message {
-      color: rgba(255, 255, 255, 0.9);
-      margin-top: 4px;
-      word-break: break-word;
-      white-space: pre-wrap;
-    }
-    
-    .error-log-list::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    .error-log-list::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    
-    .error-log-list::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 3px;
-    }
-    
-    .error-log-list::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.25);
-    }
-    
     /* Footer */
     footer {
       border-top: 1px solid var(--border-color);
@@ -2124,19 +1963,132 @@
     }
     
     /* Bookmark library */
+    .bookmark-library-header-actions {
+      align-items: center;
+      display: flex;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+
+    .bookmark-library-manage {
+      position: relative;
+    }
+
+    .bookmark-manage-toggle {
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color-hover);
+      border-radius: 7px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      justify-content: center;
+      height: 30px;
+      padding: 0;
+      transition: background 0.18s, border-color 0.18s, color 0.18s;
+      width: 30px;
+    }
+
+    .bookmark-manage-toggle svg {
+      height: 16px;
+      width: 16px;
+    }
+
+    .bookmark-manage-toggle:hover,
+    .bookmark-manage-toggle[aria-expanded="true"] {
+      background: var(--bg-card-hover);
+      border-color: var(--border-color-hover);
+      color: var(--text-primary);
+    }
+
+    .bookmark-manage-toggle:focus-visible {
+      outline: 2px solid var(--speed-accent);
+      outline-offset: 2px;
+    }
+
+    .bookmark-library-manage-menu {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 9px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      min-width: 176px;
+      padding: 5px;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 200;
+    }
+
+    .bookmark-menu-action {
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: block;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      min-height: 32px;
+      padding: 7px 9px;
+      text-align: left;
+      text-transform: none;
+      width: 100%;
+    }
+
+    .bookmark-menu-action:hover,
+    .bookmark-menu-action:focus-visible {
+      background: var(--bg-card-hover);
+      outline: none;
+    }
+
+    .bookmark-menu-action:focus-visible {
+      box-shadow: inset 0 0 0 1px var(--speed-accent);
+    }
+
+    .bookmark-menu-divider {
+      border-top: 1px solid var(--border-color);
+      margin: 4px 5px;
+    }
+
     .bookmark-library { display: flex; flex-direction: column; gap: 8px; max-height: 265px; overflow-y: auto; padding-right: 2px; }
     .bookmark-library-empty { border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; padding: 14px 12px; text-align: center; }
     .bookmark-library-header { align-items: center; color: var(--text-secondary); display: flex; font-size: 10px; font-weight: 700; justify-content: space-between; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .bookmark-video-total { background: var(--icon-bg); border: 1px solid var(--border-color); border-radius: 999px; color: var(--text-primary); padding: 4px 8px; }
+    .bookmark-video-total { align-items: center; background: var(--icon-bg); border: 1px solid var(--border-color); border-radius: 999px; color: var(--text-primary); display: inline-flex; min-height: 28px; padding: 0 8px; }
+    .bookmark-bulk-actions { align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 7px; display: flex; gap: 6px; justify-content: space-between; padding: 7px 8px; }
+    .bookmark-bulk-actions[hidden] { display: none; }
+    .bookmark-bulk-count { color: var(--text-secondary); font-size: 10px; font-weight: 600; }
+    .bookmark-bulk-button { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 5px; color: var(--text-primary); cursor: pointer; font-size: 10px; padding: 5px 7px; }
+    .bookmark-bulk-button:hover, .bookmark-bulk-button:focus-visible { background: var(--bg-card-hover); outline: none; }
+    .bookmark-video.is-selected, .bookmark-video.is-selected:hover { background: var(--bg-card-hover); border-color: var(--accent-color); }
+    .bookmark-video-select { align-items: center; align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border-color-hover); border-radius: 50%; color: var(--text-secondary); cursor: pointer; display: none; flex: 0 0 16px; height: 16px; justify-content: center; margin-left: 2px; margin-top: auto; padding: 0; transition: background 0.15s, border-color 0.15s; width: 16px; }
+    .bookmark-library.is-selecting .bookmark-video-select { display: inline-flex; }
+    .bookmark-video-select svg { height: 9px; opacity: 0; transform: scale(0.7); transition: opacity 0.15s, transform 0.15s; width: 9px; }
+    .bookmark-video-select:hover { border-color: var(--accent-color); }
+    .bookmark-video-select:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    .bookmark-video-select[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); }
+    .bookmark-video-select[aria-pressed="true"] svg { opacity: 1; transform: scale(1); }
     .bookmark-video { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; gap: 10px; min-width: 0; padding: 8px; transition: background 0.2s, border-color 0.2s; }
     .bookmark-video:hover, .bookmark-video:focus-visible { background: var(--bg-card-hover); border-color: var(--border-color-hover); outline: none; }
+    .bookmark-thumbnail-column { display: flex; flex: 0 0 92px; flex-direction: column; gap: 4px; min-width: 0; }
     .bookmark-thumbnail { background: var(--bg-card); border-radius: 5px; flex: 0 0 92px; height: 52px; object-fit: cover; width: 92px; }
     .bookmark-video-body { min-width: 0; flex: 1; padding-right: 30px; }
     .bookmark-video-title { color: var(--text-primary); display: block; font-size: 11px; font-weight: 700; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bookmark-video-count { color: var(--text-secondary); font-size: 9px; margin-top: 2px; }
     .bookmark-times { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .bookmark-time { background: rgba(255, 0, 0, 0.12); border: 1px solid rgba(255, 0, 0, 0.25); border-radius: 4px; color: var(--accent-color); cursor: pointer; font-size: 9px; padding: 3px 5px; }
-    .bookmark-time:hover, .bookmark-time:focus-visible { background: rgba(255, 0, 0, 0.25); outline: none; }
+    .bookmark-time-actions { position: relative; }
+    .bookmark-time { align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); cursor: pointer; display: inline-flex; font-size: 9px; gap: 5px; max-width: 100%; padding: 4px 6px; transition: background 0.15s, border-color 0.15s; }
+    .bookmark-time-value { color: var(--bookmark-time-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .bookmark-time:hover, .bookmark-time:focus-visible { background: var(--bg-card-hover); border-color: var(--border-color-hover); outline: none; }
+    .bookmark-time-menu { background: var(--bg-card); border: 1px solid var(--border-color-hover); border-radius: 6px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); display: grid; left: 0; min-width: 136px; padding: 4px; position: absolute; top: calc(100% + 4px); z-index: 20; }
+    .bookmark-time-menu[hidden] { display: none !important; }
+    .bookmark-time-action { background: transparent; border: 0; border-radius: 4px; color: var(--text-primary); cursor: pointer; font: inherit; font-size: 10px; padding: 6px 8px; text-align: left; white-space: nowrap; }
+    .bookmark-time-action:hover, .bookmark-time-action:focus-visible { background: var(--bg-card-hover); outline: none; }
+    .bookmark-dialog .modal-title { margin: 0; }
+    .bookmark-dialog-input, .bookmark-dialog-select { font-family: inherit; }
+    .bookmark-dialog-select { cursor: pointer; }
+    .bookmark-dialog-textarea { font-family: inherit; min-height: 90px; resize: vertical; }
+    .bookmark-dialog-feedback { color: var(--text-secondary); font-size: 11px; line-height: 1.4; margin-top: 8px; min-height: 15px; }
   </style>
 </head>
 <body>
@@ -2364,29 +2316,6 @@
           </div>
         </div>
 
-        <!-- Hide FB Messenger -->
-        <div class="setting-item setting-item-full" id="hideFbMessengerFeature" style="display:none;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="setting-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                <line x1="9" y1="10" x2="15" y2="10"></line>
-                <line x1="9" y1="14" x2="13" y2="14"></line>
-              </svg>
-            </div>
-            <div class="setting-content">
-              <div class="setting-title">Hide Messenger</div>
-              <div class="setting-desc">Remove the Messenger chat bubble and panel from Facebook</div>
-            </div>
-          </div>
-          <div>
-            <input id="hideFbMessenger" type="checkbox" class="toggle-input">
-            <label for="hideFbMessenger" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
         <!-- Watched Progress Tags -->
         <div class="setting-item setting-item-full">
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -2475,28 +2404,6 @@
           <div>
             <input id="autoTheater" type="checkbox" class="toggle-input">
             <label for="autoTheater" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Universal Video Speed -->
-        <div class="setting-item setting-item-full">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="setting-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polygon points="10 8 16 12 10 16 10 8"></polygon>
-              </svg>
-            </div>
-            <div class="setting-content">
-              <div class="setting-title">Universal Video Speed</div>
-              <div class="setting-desc">Hover over any video on the web to control its speed</div>
-            </div>
-          </div>
-          <div>
-            <input id="universalSpeed" type="checkbox" class="toggle-input">
-            <label for="universalSpeed" class="toggle-label">
               <div class="toggle-thumb"></div>
             </label>
           </div>
@@ -2840,37 +2747,8 @@
 
       <!-- Platform Statistics -->
       <section>
-        <h2>Platform Statistics</h2>
+        <h2>YouTube Statistics</h2>
 
-        <!-- Platform selector -->
-        <div class="platform-tabs">
-          <!-- YouTube -->
-          <button class="platform-tab active" data-platform="youtube">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"></path>
-              <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"></polygon>
-            </svg>
-            <span>YouTube</span>
-          </button>
-          <!-- Instagram -->
-          <button class="platform-tab" data-platform="instagram" style="display:none;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-              <circle cx="12" cy="12" r="4"></circle>
-              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"></circle>
-            </svg>
-            <span>Instagram</span>
-          </button>
-          <!-- Facebook -->
-          <button class="platform-tab" data-platform="facebook" style="display:none;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-            </svg>
-            <span>Facebook</span>
-          </button>
-        </div>
-
-        <!-- ── YouTube Panel ── -->
         <div class="platform-panel active" id="panel-youtube">
           <div class="stats-grid">
             <div class="stat-card">
@@ -3019,346 +2897,6 @@
           </div>
         </div>
 
-        <!-- ── Instagram Panel ── -->
-        <div class="platform-panel" id="panel-instagram" style="display:none;">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="ig-total-reels">0</div>
-                <div class="stat-label">Total Reels</div>
-                <span class="stat-delta flat" id="igDeltaReels"></span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="ig-total-time">0h 0m</div>
-                <div class="stat-label">Total Time</div>
-                <span class="stat-delta flat" id="igDeltaTime"></span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                  <circle cx="12" cy="12" r="4"></circle>
-                  <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"></circle>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="ig-today-reels">0</div>
-                <div class="stat-label">Reels Today</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                  <polyline points="17 6 23 6 23 12"></polyline>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="ig-today-time">0m</div>
-                <div class="stat-label">Time Today</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="ig-chat-time-today">0m</div>
-                <div class="stat-label">Chat Time Today</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <polyline points="19 12 12 19 5 12"></polyline>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="ig-scroll-count">0</div>
-                <div class="stat-label">Scrolls Today</div>
-              </div>
-            </div>
-          </div>
-          <div style="margin-top:14px;">
-            <!-- Instagram Activity Graph -->
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-              <label class="prod-range-label">Range:</label>
-              <div class="vm-select vm-select-down" id="igRangeSelect" style="flex: 1;">
-                <div class="vm-trigger" id="igRangeTrigger">
-                  <span id="igRangeLabel">Last 7 days</span>
-                  <svg class="vm-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="vm-options" id="igRangeOptions">
-                  <div class="vm-option" data-value="1d">Last 24 hours</div>
-                  <div class="vm-option" data-value="3d">Last 3 days</div>
-                  <div class="vm-option vm-active" data-value="7d">Last 7 days</div>
-                  <div class="vm-option" data-value="1m">Last 1 month</div>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-card" style="padding: 8px 8px 4px; margin-bottom: 12px;">
-              <canvas id="igStatsGraph" height="120" style="width: 100%; display: block; border-radius: 6px;"></canvas>
-            </div>
-            <div class="dashboard-card">
-              <div class="dashboard-header">
-                <div class="dashboard-title">Today's Activity</div>
-                <div class="dashboard-date" id="ig-today-date"></div>
-              </div>
-              <div class="dashboard-stats">
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Reels</div>
-                  <div class="dashboard-stat-value" id="ig-day-reels">0</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Time on Site</div>
-                  <div class="dashboard-stat-value" id="ig-day-time">0m</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Chat Time</div>
-                  <div class="dashboard-stat-value" id="ig-day-chat">0m</div>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-card">
-              <div class="dashboard-header">
-                <div class="dashboard-title">This Week</div>
-              </div>
-              <div class="dashboard-stats">
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Reels</div>
-                  <div class="dashboard-stat-value" id="ig-week-reels">0</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Time on Site</div>
-                  <div class="dashboard-stat-value" id="ig-week-time">0h</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Chat Time</div>
-                  <div class="dashboard-stat-value" id="ig-week-chat">0h</div>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-actions">
-              <button class="btn-export" id="refreshIgStats">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-                Refresh Stats
-              </button>
-              <div class="kebab-wrapper">
-                <button class="btn-kebab" id="igKebab" aria-label="More options">
-                  <span></span><span></span><span></span>
-                </button>
-                <div class="kebab-menu" id="igKebabMenu">
-                  <button class="kebab-item" id="exportIgCsv">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Export CSV
-                  </button>
-                  <button class="kebab-item kebab-item-danger" id="resetIgStats">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-                    </svg>
-                    Reset Stats
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Facebook Panel ── -->
-        <div class="platform-panel" id="panel-facebook" style="display:none;">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="fb-total-videos">0</div>
-                <div class="stat-label">Total Videos</div>
-                <span class="stat-delta flat" id="fbDeltaVideos"></span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="fb-total-time">0h 0m</div>
-                <div class="stat-label">Total Time</div>
-                <span class="stat-delta flat" id="fbDeltaTime"></span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="fb-today-videos">0</div>
-                <div class="stat-label">Videos Today</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                  <polyline points="17 6 23 6 23 12"></polyline>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="fb-today-time">0m</div>
-                <div class="stat-label">Time Today</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="fb-chat-time-today">0m</div>
-                <div class="stat-label">Chat Time Today</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <polyline points="19 12 12 19 5 12"></polyline>
-                </svg>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value" id="fb-scroll-count">0</div>
-                <div class="stat-label">Scrolls Today</div>
-              </div>
-            </div>
-          </div>
-          <div style="margin-top:14px;">
-            <!-- Facebook Activity Graph -->
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-              <label class="prod-range-label">Range:</label>
-              <div class="vm-select vm-select-down" id="fbRangeSelect" style="flex: 1;">
-                <div class="vm-trigger" id="fbRangeTrigger">
-                  <span id="fbRangeLabel">Last 7 days</span>
-                  <svg class="vm-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="vm-options" id="fbRangeOptions">
-                  <div class="vm-option" data-value="1d">Last 24 hours</div>
-                  <div class="vm-option" data-value="3d">Last 3 days</div>
-                  <div class="vm-option vm-active" data-value="7d">Last 7 days</div>
-                  <div class="vm-option" data-value="1m">Last 1 month</div>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-card" style="padding: 8px 8px 4px; margin-bottom: 12px;">
-              <canvas id="fbStatsGraph" height="120" style="width: 100%; display: block; border-radius: 6px;"></canvas>
-            </div>
-            <div class="dashboard-card">
-              <div class="dashboard-header">
-                <div class="dashboard-title">Today's Activity</div>
-                <div class="dashboard-date" id="fb-today-date"></div>
-              </div>
-              <div class="dashboard-stats">
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Videos</div>
-                  <div class="dashboard-stat-value" id="fb-day-videos">0</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Time on Site</div>
-                  <div class="dashboard-stat-value" id="fb-day-time">0m</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Chat Time</div>
-                  <div class="dashboard-stat-value" id="fb-day-chat">0m</div>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-card">
-              <div class="dashboard-header">
-                <div class="dashboard-title">This Week</div>
-              </div>
-              <div class="dashboard-stats">
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Videos</div>
-                  <div class="dashboard-stat-value" id="fb-week-videos">0</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Time on Site</div>
-                  <div class="dashboard-stat-value" id="fb-week-time">0h</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-label">Chat Time</div>
-                  <div class="dashboard-stat-value" id="fb-week-chat">0h</div>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-actions">
-              <button class="btn-export" id="refreshFbStats">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-                Refresh Stats
-              </button>
-              <div class="kebab-wrapper">
-                <button class="btn-kebab" id="fbKebab" aria-label="More options">
-                  <span></span><span></span><span></span>
-                </button>
-                <div class="kebab-menu" id="fbKebabMenu">
-                  <button class="kebab-item" id="exportFbCsv">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Export CSV
-                  </button>
-                  <button class="kebab-item kebab-item-danger" id="resetFbStats">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                    Reset Stats
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </section>
 
       <!-- Screen Time Limits -->
@@ -3378,42 +2916,6 @@
           <div>
             <input type="checkbox" id="ytLimitEnabled" class="toggle-input" tabindex="-1">
             <label for="ytLimitEnabled" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Instagram -->
-        <div class="limit-card" id="igLimitCard" style="display:none;">
-          <div class="limit-platform-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
-          </div>
-          <span class="limit-platform-name">Instagram</span>
-          <div class="limit-time-input">
-            <input type="number" id="igDailyLimit" min="5" max="1440" value="60" disabled>
-            <span class="limit-unit">min/session</span>
-          </div>
-          <div>
-            <input type="checkbox" id="igLimitEnabled" class="toggle-input" tabindex="-1">
-            <label for="igLimitEnabled" class="toggle-label">
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Facebook -->
-        <div class="limit-card" id="fbLimitCard" style="display:none;">
-          <div class="limit-platform-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-          </div>
-          <span class="limit-platform-name">Facebook</span>
-          <div class="limit-time-input">
-            <input type="number" id="fbDailyLimit" min="5" max="1440" value="60" disabled>
-            <span class="limit-unit">min/session</span>
-          </div>
-          <div>
-            <input type="checkbox" id="fbLimitEnabled" class="toggle-input" tabindex="-1">
-            <label for="fbLimitEnabled" class="toggle-label">
               <div class="toggle-thumb"></div>
             </label>
           </div>
@@ -3442,7 +2944,7 @@
               <span class="profile-popover-question" aria-hidden="true">?</span>
               <div class="profile-popover-copy">
                 <div class="profile-popover-title">Bookmark shortcut</div>
-                <p class="profile-popover-message">Press <kbd>P</kbd> while watching any video to save a timestamp bookmark.</p>
+                <p class="profile-popover-message">Press <kbd>P</kbd> while watching a YouTube video to save a timestamp bookmark.</p>
               </div>
               <button class="profile-popover-close info-hint-close" type="button" aria-label="Close bookmark shortcut tip">×</button>
             </div>
@@ -3453,9 +2955,18 @@
             <span>Saved videos</span>
             <div class="bookmark-library-header-actions">
               <span id="bookmarkVideoCount" class="bookmark-video-total">0 videos</span>
-              <details class="bookmark-more">
-                <summary aria-label="More bookmark actions" title="More bookmark actions">•••</summary>
-                <div class="bookmark-more-menu">
+              <div class="bookmark-library-manage">
+                <button class="bookmark-manage-toggle" id="bookmarkManageToggle" type="button" aria-label="Manage bookmarks" title="Manage bookmarks" aria-controls="bookmarkManageMenu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6h5m4 0h7M4 12h9m4 0h3M4 18h2m4 0h10"></path>
+                    <circle cx="11" cy="6" r="2"></circle>
+                    <circle cx="15" cy="12" r="2"></circle>
+                    <circle cx="8" cy="18" r="2"></circle>
+                  </svg>
+                </button>
+                <div class="bookmark-library-manage-menu" id="bookmarkManageMenu" hidden>
+                  <button class="bookmark-menu-action" id="bookmarkSelectionModeToggle" type="button" aria-label="Select videos" aria-pressed="false" title="Select videos"><span id="bookmarkSelectionModeLabel">Select videos</span></button>
+                  <div class="bookmark-menu-divider"></div>
                   <button class="bookmark-menu-action" id="newBookmarkFolderBtn" type="button">New collection</button>
                   <button class="bookmark-menu-action" id="shareBookmarkCollectionBtn" type="button">Share collection</button>
                   <div class="bookmark-menu-divider"></div>
@@ -3463,7 +2974,7 @@
                   <input type="file" id="importBookmarksFile" accept=".json" hidden>
                   <button class="bookmark-menu-action" id="importBookmarksBtn" type="button">Import bookmarks</button>
                 </div>
-              </details>
+              </div>
             </div>
           </div>
           <div class="bookmark-library-search-row">
@@ -3480,11 +2991,24 @@
               <div class="cognify-select-options" id="bookmarkFolderOptions" role="listbox" aria-label="Bookmark collection" hidden></div>
             </div>
             <select id="bookmarkFolderSelect" aria-hidden="true" tabindex="-1" hidden><option value="all">All collections</option></select>
-            <select id="bookmarkSortFilter" aria-label="Sort bookmarks">
+            <div class="cognify-select" id="bookmarkSortPicker">
+              <button class="cognify-select-trigger" id="bookmarkSortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span id="bookmarkSortLabel">Most bookmarks</span><span class="cognify-select-arrow" aria-hidden="true"></span>
+              </button>
+              <div class="cognify-select-options" id="bookmarkSortOptions" role="listbox" aria-label="Sort bookmarks" hidden></div>
+            </div>
+            <select id="bookmarkSortFilter" aria-hidden="true" tabindex="-1" hidden>
               <option value="most">Most bookmarks</option>
               <option value="recent">Recently saved</option>
               <option value="title">Title A-Z</option>
             </select>
+          </div>
+          <div class="bookmark-bulk-actions" id="bookmarkBulkActions" hidden>
+            <span class="bookmark-bulk-count" id="bookmarkSelectionCount" aria-live="polite">0 videos selected</span>
+            <div>
+              <button class="bookmark-bulk-button" id="bookmarkBulkAddToCollection" type="button">Add to collection</button>
+              <button class="bookmark-bulk-button" id="bookmarkClearSelection" type="button">Clear</button>
+            </div>
           </div>
           <div id="bookmarkFilters" class="bookmark-filters" hidden>
             <div class="bookmark-tools" aria-label="Filter bookmarks">
@@ -3495,7 +3019,17 @@
                 <div class="cognify-select-options" id="bookmarkDurationOptions" role="listbox" aria-label="Filter by duration" hidden></div>
               </div>
               <select id="bookmarkDurationFilter" aria-hidden="true" tabindex="-1" hidden><option value="">Any duration</option><option value="600">Under 10 min</option><option value="1800">Under 30 min</option><option value="3600">Under 1 hour</option></select>
-              <input id="bookmarkDateFilter" type="date" aria-label="Bookmarks since date">
+              <div class="bookmark-date-picker" id="bookmarkDatePicker">
+                <button class="bookmark-date-trigger" id="bookmarkDateTrigger" type="button" aria-haspopup="dialog" aria-controls="bookmarkDatePopover" aria-expanded="false">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2.25" y="3.5" width="11.5" height="10.25" rx="2"></rect>
+                    <path d="M5 2.25v2.5M11 2.25v2.5M2.5 6.5h11"></path>
+                  </svg>
+                  <span id="bookmarkDateLabel">Any date</span>
+                </button>
+                <div class="bookmark-date-popover" id="bookmarkDatePopover" role="dialog" aria-label="Choose a date" hidden></div>
+              </div>
+              <input id="bookmarkDateFilter" type="date" aria-hidden="true" tabindex="-1" hidden>
             </div>
           </div>
           <div id="bookmarkActiveFilters" class="bookmark-active-filters" aria-label="Active bookmark filters" aria-live="polite" hidden></div>
@@ -3756,25 +3290,6 @@
         </div>
       </section>
 
-      <!-- Error Log Section (Development) -->
-      <section>
-        <h2>Developer Tools</h2>
-        <div class="setting-item setting-item-full">
-          <div class="setting-info">
-            <div class="setting-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                <polyline points="17 6 23 6 23 12"></polyline>
-              </svg>
-            </div>
-            <div class="setting-content">
-              <div class="setting-title">Error Logs</div>
-              <div class="setting-desc">View extension errors and debug information</div>
-            </div>
-          </div>
-          <button id="errorLogBtn" class="dev-btn">View Logs</button>
-        </div>
-      </section>
       </div>
     </main>
     

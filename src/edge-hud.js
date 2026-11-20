@@ -2,16 +2,16 @@
  * edge-hud.js
  *
  * Draggable, edge-docked screen-time HUD widget.
- * Injected before content.js (YouTube) and social-download.js (FB / IG).
- * Both scripts share one instance via window.__ytExtEdgeHud.
+ * Injected before content.js on YouTube. Both scripts share one instance via
+ * window.__ytExtEdgeHud.
  *
  * Collapsed — a rounded tab peeking TAB_W px from the screen edge.
  *             Shows a glowing colour dot + vertical mini-time ("4m").
  * Expanded  — hover slides out the full card:
- *               • Platform badge + SCREEN TIME header
+ *               • YouTube badge + SCREEN TIME header
  *               • Circular arc gauge (% used, colour-coded green→amber→red)
  *               • "Xm used · Ym left" text + progress bar
- *               • Focus Controls toggles (platform-aware)
+ *               • YouTube focus-control toggles
  *               • Drag-hint footer
  * Drag      — drag the tab vertically to reposition along the edge.
  *             Crossing 35% / 65% of viewport width flips the side.
@@ -32,7 +32,6 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let _pos      = { edge: 'right', offset: 0 };  // 0 = first-time, will be centered on create
   let _posReady = false;
-  let _label    = 'YT';
   let _expanded = false;
   let _dragging = false;
   let _queue    = null;
@@ -43,21 +42,12 @@
   let _statSessionsEl, _statTodayEl, _statStreakEl;
   let _collapseTimer = null;  // debounce handle for mouseleave → collapse
 
-  // ── Platform focus-control definitions ────────────────────────────────────
-  const CONTROLS = {
-    YT: [
-      { key: 'focusMode',           label: 'Focus Mode'         },
-      { key: 'hideShorts',          label: 'Hide Shorts'        },
-      { key: 'hideComments',        label: 'Hide Comments'      },
-      { key: 'hideSuggestions',     label: 'Hide Suggestions'   },
-    ],
-    FB: [
-      { key: 'hideFbMessenger',     label: 'Hide Messenger'     },
-      { key: 'hideFbNotifications', label: 'Hide Notifications' },
-      { key: 'hideFbReels',         label: 'Hide Reels'         },
-    ],
-    IG: [],
-  };
+  const CONTROLS = [
+    { key: 'focusMode',      label: 'Focus Mode' },
+    { key: 'hideShorts',     label: 'Hide Shorts' },
+    { key: 'hideComments',   label: 'Hide Comments' },
+    { key: 'hideSuggestions', label: 'Hide Suggestions' },
+  ];
 
   // ── Utilities ──────────────────────────────────────────────────────────────
 
@@ -90,7 +80,7 @@
   }
 
   /**
-   * Reads stats for the current platform from chrome.storage.local and
+   * Reads YouTube stats from chrome.storage.local and
    * updates the three stat tiles (Sessions / Today / Streak).
    * Also computes a consecutive-day streak by scanning the last 30 days.
    */
@@ -100,12 +90,12 @@
     for (let i = 0; i < 30; i++) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-      keys.push(`ytExtStats_${_label}_${ds}`);
+      keys.push(`ytExtStats_YT_${ds}`);
     }
     try {
       chrome.storage.local.get(keys, (data) => {
         void chrome.runtime.lastError;
-        const todayKey = `ytExtStats_${_label}_${_todayStr()}`;
+        const todayKey = `ytExtStats_YT_${_todayStr()}`;
         const today    = data[todayKey] || { sessions: 0, totalSec: 0 };
         _statSessionsEl.textContent = today.sessions || '0';
         _statTodayEl.textContent    = today.totalSec > 0 ? _fmt(today.totalSec) : '0s';
@@ -221,7 +211,7 @@
    */
   function _refreshControls() {
     if (!_ctrlsEl) return;
-    const defs    = CONTROLS[_label] || [];
+    const defs    = CONTROLS;
     const section = document.getElementById('yt-ext-hud-ctrl-section');
 
     if (!defs.length) {
@@ -265,7 +255,7 @@
           const next = !on;
           // Persist — the regular storage.onChanged listeners in content scripts pick this up
           chrome.storage.sync.set({ [key]: next }, () => { void chrome.runtime.lastError; });
-          // Also dispatch a window event so content.js / social-download.js apply instantly
+          // Also dispatch a window event so content.js applies instantly
           window.dispatchEvent(new CustomEvent('yt-ext-edge-toggle', { detail: { key, value: next } }));
           _refreshControls(); // optimistic UI
         });
@@ -465,7 +455,7 @@
           border:1px solid rgba(255,255,255,0.18);
           border-radius:4px;padding:2px 6px;
           color:rgba(255,255,255,0.70);
-        ">${_label}</span>
+        ">YT</span>
       </div>
 
       <!-- Arc gauge + stats row -->
@@ -619,12 +609,6 @@
       });
     }
 
-    // Hide focus section if this platform has no controls (IG)
-    const ctrlSection = _hud.querySelector('#yt-ext-hud-ctrl-section');
-    if (!(CONTROLS[_label] || []).length && ctrlSection) {
-      ctrlSection.style.display = 'none';
-    }
-
     // First-time install: center vertically so the widget is visible immediately
     if (!_pos.offset) _pos.offset = Math.round(window.innerHeight * 0.38);
     _applyPos();
@@ -698,17 +682,8 @@
      * Create (first call) or update the HUD.
      * @param {number} usedSec  - seconds elapsed this session
      * @param {number} limitMin - session limit in minutes
-     * @param {string} label    - 'YT' | 'FB' | 'IG'
      */
-    render(usedSec, limitMin, label) {
-      if (label && label !== _label) {
-        _label = label;
-        const badge = document.getElementById('yt-ext-hud-badge');
-        if (badge) badge.textContent = label;
-        const sec = document.getElementById('yt-ext-hud-ctrl-section');
-        if (sec) sec.style.display = (CONTROLS[label] || []).length ? '' : 'none';
-        if (_expanded) _refreshControls();
-      }
+    render(usedSec, limitMin) {
       const _go = () => _doRender(usedSec, limitMin);
       if (!_posReady) {
         _queue = _go;
@@ -726,10 +701,10 @@
 
     /**
      * Increment the session counter for today's stats bucket.
-     * Called by content.js / social-download.js when a fresh session starts.
+     * Called by content.js when a fresh session starts.
      */
     incrementSession() {
-      const key = `ytExtStats_${_label}_${_todayStr()}`;
+      const key = `ytExtStats_YT_${_todayStr()}`;
       try {
         chrome.storage.local.get([key], (d) => {
           void chrome.runtime.lastError;
@@ -747,7 +722,7 @@
      * @param {number} usedSec - total seconds used in the current session
      */
     recordStat(usedSec) {
-      const key = `ytExtStats_${_label}_${_todayStr()}`;
+      const key = `ytExtStats_YT_${_todayStr()}`;
       try {
         chrome.storage.local.get([key], (d) => {
           void chrome.runtime.lastError;

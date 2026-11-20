@@ -1,27 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Cognify – Smart Study Automation for Your Browser",
+  "name": "Cognify – YouTube Focus & Playback Controls",
   "version": "3.9.0",
-  "description": "Cognify supercharges your browser with smart study automation — screen-time limits, focus mode, ad-skip, cloud-synced bookmarks, universal video controls, and real-time watch analytics across YouTube, Instagram, and Facebook.",
+  "description": "YouTube playback controls, bookmarks, focus tools, screen-time limits, and watch statistics.",
   "author": "Mahmud Nibir",
   "homepage_url": "https://github.com/mahmudnibir/yt-extension-enhanced",
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "downloads", "webRequest", "contextMenus"],
-  "host_permissions": ["*://www.youtube.com/*", "<all_urls>"],
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://www.youtube.com/*"],
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*"],
+      "matches": ["https://www.youtube.com/*"],
       "js": ["src/edge-hud.js", "src/content.js", "src/download.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["<all_urls>"],
-      "js": ["src/video-hover.js"],
-      "run_at": "document_idle",
-      "all_frames": true
-    },
-    {
-      "matches": ["*://www.instagram.com/*", "*://www.facebook.com/*", "*://www.fb.com/*"],
-      "js": ["src/edge-hud.js", "src/social-download.js"],
       "run_at": "document_idle"
     }
   ],
@@ -36,7 +25,7 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Shift+C"
+        "default": "Ctrl+Shift+Y"
       }
     }
   },

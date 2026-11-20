@@ -164,24 +164,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   updateContentControlPositions();
 
+  const bookmarkManageToggle = document.getElementById('bookmarkManageToggle');
+  const bookmarkManageMenu = document.getElementById('bookmarkManageMenu');
+  const closeBookmarkManageMenu = () => {
+    bookmarkManageMenu.hidden = true;
+    bookmarkManageToggle.setAttribute('aria-expanded', 'false');
+  };
+  bookmarkManageToggle.addEventListener('click', () => {
+    const shouldOpen = bookmarkManageMenu.hidden;
+    bookmarkManageMenu.hidden = !shouldOpen;
+    bookmarkManageToggle.setAttribute('aria-expanded', String(shouldOpen));
+  });
   document.addEventListener('click', (event) => {
     const clickedHint = event.target.closest('.info-hint');
     document.querySelectorAll('.info-hint[open]').forEach((hint) => {
       if (hint !== clickedHint) hint.open = false;
     });
-    const clickedMenu = event.target.closest('.bookmark-more');
-    document.querySelectorAll('.bookmark-more[open]').forEach((menu) => {
-      if (menu !== clickedMenu) menu.open = false;
-    });
+    closeBookmarkTimestampMenus(event.target.closest('.bookmark-time-actions'));
+    if (!event.target.closest('.bookmark-library-manage')) closeBookmarkManageMenu();
   }, true);
-  document.querySelectorAll('.bookmark-more-menu').forEach((menu) => {
-    menu.addEventListener('click', (event) => {
-      if (event.target.closest('.bookmark-menu-action')) menu.closest('.bookmark-more').open = false;
-    });
+  bookmarkManageMenu.addEventListener('click', (event) => {
+    if (event.target.closest('.bookmark-menu-action')) closeBookmarkManageMenu();
   });
   document.addEventListener('scroll', () => {
     document.querySelectorAll('.info-hint[open]').forEach((hint) => { hint.open = false; });
-    document.querySelectorAll('.bookmark-more[open]').forEach((menu) => { menu.open = false; });
+    closeBookmarkManageMenu();
   }, true);
   document.querySelectorAll('.info-hint-close').forEach((button) => {
     button.addEventListener('click', () => {
@@ -192,6 +199,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
+    if (!bookmarkManageMenu.hidden) {
+      closeBookmarkManageMenu();
+      bookmarkManageToggle.focus();
+      return;
+    }
+    const openTimestampMenu = document.querySelector('.bookmark-time-menu:not([hidden])');
+    if (openTimestampMenu) {
+      const trigger = openTimestampMenu.closest('.bookmark-time-actions')?.querySelector('.bookmark-time');
+      closeBookmarkTimestampMenus();
+      trigger?.focus();
+      return;
+    }
     const openHint = document.querySelector('.info-hint[open]');
     if (!openHint) return;
     openHint.open = false;
@@ -332,70 +351,6 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
     const prodStatsGraph = document.getElementById('prodStatsGraph');
     let prodStatsData = {};
-
-    // Range-selector proxies for Instagram and Facebook graphs (same pattern as prodRange)
-    const igRange = (() => {
-      const container = document.getElementById('igRangeSelect');
-      const trigger   = document.getElementById('igRangeTrigger');
-      const label     = document.getElementById('igRangeLabel');
-      const optEls    = document.querySelectorAll('#igRangeOptions .vm-option');
-      let _val = '7d';
-      const _handlers = [];
-      trigger.addEventListener('click', (e) => { e.stopPropagation(); container.classList.toggle('open'); });
-      document.addEventListener('click', () => container.classList.remove('open'));
-      optEls.forEach(opt => {
-        opt.addEventListener('click', (e) => {
-          e.stopPropagation();
-          proxy.value = opt.dataset.value;
-          container.classList.remove('open');
-          _handlers.forEach(fn => fn());
-        });
-      });
-      const proxy = {
-        get value() { return _val; },
-        set value(v) {
-          _val = v;
-          const matched = container.querySelector(`[data-value="${v}"]`);
-          label.textContent = matched ? matched.textContent : v;
-          optEls.forEach(o => o.classList.toggle('vm-active', o.dataset.value === v));
-        },
-        addEventListener(type, fn) { if (type === 'change') _handlers.push(fn); },
-      };
-      return proxy;
-    })();
-
-    const fbRange = (() => {
-      const container = document.getElementById('fbRangeSelect');
-      const trigger   = document.getElementById('fbRangeTrigger');
-      const label     = document.getElementById('fbRangeLabel');
-      const optEls    = document.querySelectorAll('#fbRangeOptions .vm-option');
-      let _val = '7d';
-      const _handlers = [];
-      trigger.addEventListener('click', (e) => { e.stopPropagation(); container.classList.toggle('open'); });
-      document.addEventListener('click', () => container.classList.remove('open'));
-      optEls.forEach(opt => {
-        opt.addEventListener('click', (e) => {
-          e.stopPropagation();
-          proxy.value = opt.dataset.value;
-          container.classList.remove('open');
-          _handlers.forEach(fn => fn());
-        });
-      });
-      const proxy = {
-        get value() { return _val; },
-        set value(v) {
-          _val = v;
-          const matched = container.querySelector(`[data-value="${v}"]`);
-          label.textContent = matched ? matched.textContent : v;
-          optEls.forEach(o => o.classList.toggle('vm-active', o.dataset.value === v));
-        },
-        addEventListener(type, fn) { if (type === 'change') _handlers.push(fn); },
-      };
-      return proxy;
-    })();
-
-    let igStatsData = {};
-    let fbStatsData = {};
 
     // Helper: get range dates
     function getRangeDates(range) {
@@ -579,16 +534,6 @@ document.addEventListener('DOMContentLoaded', () => {
       prodRange.addEventListener('change', updateProdGraph);
     }
 
-    // Update helpers for social platform graphs
-    function updateIgGraph() {
-      drawGraph(igStatsData, igRange.value, document.getElementById('igStatsGraph'), 'videosWatched');
-    }
-    function updateFbGraph() {
-      drawGraph(fbStatsData, fbRange.value, document.getElementById('fbStatsGraph'), 'videosWatched');
-    }
-    igRange.addEventListener('change', updateIgGraph);
-    fbRange.addEventListener('change', updateFbGraph);
-
   const speedInput = document.getElementById('speed');
   const speedDisplay = document.getElementById('speedDisplay');
   const skipAdsCheckbox = document.getElementById('skipAds');
@@ -596,12 +541,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const hideShortsCheckbox = document.getElementById('hideShorts');
   const hideDescriptionCheckbox = document.getElementById('hideDescription');
   const hideSuggestionsCheckbox = document.getElementById('hideSuggestions');
-  const hideFbMessengerCheckbox = document.getElementById('hideFbMessenger');
   const rememberSpeedCheckbox = document.getElementById('rememberSpeed');
   const cloudSyncCheckbox = document.getElementById('cloudSync');
   const cloudSyncDesc = document.getElementById('cloudSyncDesc');
   const loopVideoCheckbox = document.getElementById('loopVideo');
-  const universalSpeedCheckbox = document.getElementById('universalSpeed');
   const voiceModeDesc = document.getElementById('voiceModeDesc');
   const defaultVolumeEnabledCheckbox = document.getElementById('defaultVolumeEnabled');
   const defaultVolumeInput = document.getElementById('defaultVolume');
@@ -616,6 +559,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const importBookmarksFile = document.getElementById('importBookmarksFile');
   const bookmarkLibrary = document.getElementById('bookmarkLibrary');
   const bookmarkVideoCount = document.getElementById('bookmarkVideoCount');
+  const bookmarkSelectionModeToggle = document.getElementById('bookmarkSelectionModeToggle');
+  const bookmarkSelectionModeLabel = document.getElementById('bookmarkSelectionModeLabel');
+  const bookmarkBulkActions = document.getElementById('bookmarkBulkActions');
+  const bookmarkSelectionCount = document.getElementById('bookmarkSelectionCount');
+  const bookmarkBulkAddToCollection = document.getElementById('bookmarkBulkAddToCollection');
+  const bookmarkClearSelection = document.getElementById('bookmarkClearSelection');
   const bookmarkSearch = document.getElementById('bookmarkSearch');
   const bookmarkActiveFilters = document.getElementById('bookmarkActiveFilters');
   const bookmarkFilterToggle = document.getElementById('bookmarkFilterToggle');
@@ -626,6 +575,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const bookmarkChannelFilter = document.getElementById('bookmarkChannelFilter');
   const bookmarkDurationFilter = document.getElementById('bookmarkDurationFilter');
   const bookmarkDateFilter = document.getElementById('bookmarkDateFilter');
+  const bookmarkDatePicker = document.getElementById('bookmarkDatePicker');
+  const bookmarkDateTrigger = document.getElementById('bookmarkDateTrigger');
+  const bookmarkDateLabel = document.getElementById('bookmarkDateLabel');
+  const bookmarkDatePopover = document.getElementById('bookmarkDatePopover');
   const bookmarkFolderSelect = document.getElementById('bookmarkFolderSelect');
   const bookmarkFolderPicker = document.getElementById('bookmarkFolderPicker');
   const bookmarkFolderTrigger = document.getElementById('bookmarkFolderTrigger');
@@ -638,8 +591,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const startTutorialBtn = document.getElementById('startTutorialBtn');
   const whatsNewBtn = document.getElementById('whatsNewBtn');
   const tipsGuideBtn = document.getElementById('tipsGuideBtn');
-  let bookmarkCollections = { folders: {}, shared: [] };
+  let bookmarkCollections = { collections: [], memberships: {}, shared: [] };
   let bookmarkLibraryData = {};
+  let bookmarkSelectionMode = false;
+  const selectedBookmarkVideos = new Set();
+  let bookmarkCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let bookmarkCalendarFocusDate = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
 
   function setupCustomSelect(select, pickerId, triggerId, labelId, optionsId) {
     const picker = document.getElementById(pickerId);
@@ -682,19 +639,269 @@ document.addEventListener('DOMContentLoaded', () => {
     sync();
   }
 
+  function parseBookmarkDate(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+    if (!match) return null;
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  function getBookmarkDateValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatBookmarkDate(date) {
+    return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+  }
+
+  function positionBookmarkDatePopover() {
+    if (!bookmarkDateTrigger || !bookmarkDatePopover || bookmarkDatePopover.hidden) return;
+    const triggerRect = bookmarkDateTrigger.getBoundingClientRect();
+    const width = Math.min(270, window.innerWidth - 24);
+    const left = Math.max(12, Math.min(triggerRect.right - width, window.innerWidth - width - 12));
+    const popoverHeight = bookmarkDatePopover.getBoundingClientRect().height;
+    const below = triggerRect.bottom + 6;
+    const top = below + popoverHeight <= window.innerHeight - 12
+      ? below
+      : Math.max(12, triggerRect.top - popoverHeight - 6);
+    bookmarkDatePopover.style.left = `${left}px`;
+    bookmarkDatePopover.style.top = `${top}px`;
+  }
+
+  function renderBookmarkDateCalendar() {
+    if (!bookmarkDatePopover) return;
+    const monthStart = new Date(bookmarkCalendarMonth.getFullYear(), bookmarkCalendarMonth.getMonth(), 1);
+    const selectedDate = parseBookmarkDate(bookmarkDateFilter?.value);
+    const today = new Date();
+    const todayValue = getBookmarkDateValue(today);
+    const selectedValue = selectedDate ? getBookmarkDateValue(selectedDate) : '';
+    const focusValue = getBookmarkDateValue(bookmarkCalendarFocusDate);
+    const monthTitle = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(monthStart);
+    bookmarkDatePopover.textContent = '';
+
+    const header = document.createElement('div');
+    header.className = 'bookmark-calendar-header';
+    const monthLabel = document.createElement('span');
+    monthLabel.className = 'bookmark-calendar-month';
+    monthLabel.id = 'bookmarkCalendarMonth';
+    monthLabel.textContent = monthTitle;
+    const previousButton = document.createElement('button');
+    previousButton.className = 'bookmark-calendar-nav bookmark-calendar-previous';
+    previousButton.type = 'button';
+    previousButton.setAttribute('aria-label', 'Previous month');
+    previousButton.textContent = '‹';
+    const nextButton = document.createElement('button');
+    nextButton.className = 'bookmark-calendar-nav bookmark-calendar-next';
+    nextButton.type = 'button';
+    nextButton.setAttribute('aria-label', 'Next month');
+    nextButton.textContent = '›';
+    header.append(previousButton, monthLabel, nextButton);
+    bookmarkDatePopover.appendChild(header);
+    bookmarkDatePopover.setAttribute('aria-labelledby', monthLabel.id);
+
+    const weekdays = document.createElement('div');
+    weekdays.className = 'bookmark-calendar-weekdays';
+    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach((weekday) => {
+      const label = document.createElement('span');
+      label.textContent = weekday;
+      weekdays.appendChild(label);
+    });
+    bookmarkDatePopover.appendChild(weekdays);
+
+    const days = document.createElement('div');
+    days.className = 'bookmark-calendar-days';
+    const firstDayOffset = (monthStart.getDay() + 6) % 7;
+    const gridStart = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1 - firstDayOffset);
+    for (let index = 0; index < 42; index += 1) {
+      const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
+      const dateValue = getBookmarkDateValue(date);
+      const isCurrentMonth = date.getMonth() === monthStart.getMonth();
+      const dayButton = document.createElement('button');
+      dayButton.className = 'bookmark-calendar-day';
+      dayButton.type = 'button';
+      dayButton.textContent = String(date.getDate());
+      dayButton.dataset.date = dateValue;
+      dayButton.tabIndex = dateValue === focusValue ? 0 : -1;
+      dayButton.setAttribute('aria-label', new Intl.DateTimeFormat(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }).format(date));
+      dayButton.setAttribute('aria-pressed', String(dateValue === selectedValue));
+      if (!isCurrentMonth) dayButton.classList.add('is-outside-month');
+      if (dateValue === todayValue) dayButton.classList.add('is-today');
+      if (dateValue === selectedValue) dayButton.classList.add('is-selected');
+      dayButton.addEventListener('click', () => {
+        bookmarkDateFilter.value = dateValue;
+        bookmarkDateLabel.textContent = formatBookmarkDate(date);
+        bookmarkCalendarFocusDate = date;
+        setBookmarkDatePickerOpen(false, true);
+        bookmarkDateFilter.dispatchEvent(new Event('input'));
+      });
+      dayButton.addEventListener('keydown', (event) => {
+        const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+        let nextDate;
+        if (Object.prototype.hasOwnProperty.call(offsets, event.key)) {
+          nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + offsets[event.key]);
+        } else if (event.key === 'Home' || event.key === 'End') {
+          const weekdayOffset = (date.getDay() + 6) % 7;
+          nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + (event.key === 'Home' ? -weekdayOffset : 6 - weekdayOffset));
+        } else if (event.key === 'PageUp' || event.key === 'PageDown') {
+          const monthDelta = event.key === 'PageUp' ? -1 : 1;
+          const targetMonth = new Date(date.getFullYear(), date.getMonth() + monthDelta, 1);
+          const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+          nextDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), Math.min(date.getDate(), lastDay));
+        } else {
+          return;
+        }
+        event.preventDefault();
+        bookmarkCalendarFocusDate = nextDate;
+        bookmarkCalendarMonth = new Date(nextDate.getFullYear(), nextDate.getMonth(), 1);
+        renderBookmarkDateCalendar();
+        bookmarkDatePopover.querySelector(`[data-date="${getBookmarkDateValue(nextDate)}"]`)?.focus();
+      });
+      days.appendChild(dayButton);
+    }
+    bookmarkDatePopover.appendChild(days);
+
+    const footer = document.createElement('div');
+    footer.className = 'bookmark-calendar-footer';
+    const clearButton = document.createElement('button');
+    clearButton.className = 'bookmark-calendar-footer-button';
+    clearButton.type = 'button';
+    clearButton.textContent = 'Clear';
+    clearButton.disabled = !bookmarkDateFilter?.value;
+    clearButton.addEventListener('click', () => {
+      bookmarkDateFilter.value = '';
+      bookmarkDateLabel.textContent = 'Any date';
+      setBookmarkDatePickerOpen(false, true);
+      bookmarkDateFilter.dispatchEvent(new Event('input'));
+    });
+    const todayButton = document.createElement('button');
+    todayButton.className = 'bookmark-calendar-footer-button is-primary';
+    todayButton.type = 'button';
+    todayButton.textContent = 'Today';
+    todayButton.addEventListener('click', () => {
+      const selectedToday = new Date();
+      bookmarkDateFilter.value = getBookmarkDateValue(selectedToday);
+      bookmarkDateLabel.textContent = formatBookmarkDate(selectedToday);
+      bookmarkCalendarFocusDate = selectedToday;
+      setBookmarkDatePickerOpen(false, true);
+      bookmarkDateFilter.dispatchEvent(new Event('input'));
+    });
+    footer.append(clearButton, todayButton);
+    bookmarkDatePopover.appendChild(footer);
+
+    const changeMonth = (amount, focusSelector) => {
+      const targetMonth = new Date(bookmarkCalendarMonth.getFullYear(), bookmarkCalendarMonth.getMonth() + amount, 1);
+      const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+      bookmarkCalendarFocusDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), Math.min(bookmarkCalendarFocusDate.getDate(), lastDay));
+      bookmarkCalendarMonth = targetMonth;
+      renderBookmarkDateCalendar();
+      bookmarkDatePopover.querySelector(focusSelector)?.focus();
+      positionBookmarkDatePopover();
+    };
+    previousButton.addEventListener('click', () => changeMonth(-1, '.bookmark-calendar-previous'));
+    nextButton.addEventListener('click', () => changeMonth(1, '.bookmark-calendar-next'));
+  }
+
+  function setBookmarkDatePickerOpen(open, restoreFocus = false) {
+    if (!bookmarkDatePopover || !bookmarkDatePicker || !bookmarkDateTrigger) return;
+    bookmarkDatePopover.hidden = !open;
+    bookmarkDatePicker.classList.toggle('open', open);
+    bookmarkDateTrigger.setAttribute('aria-expanded', String(open));
+    if (open) {
+      const selected = parseBookmarkDate(bookmarkDateFilter?.value);
+      bookmarkCalendarFocusDate = selected || new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+      bookmarkCalendarMonth = new Date(bookmarkCalendarFocusDate.getFullYear(), bookmarkCalendarFocusDate.getMonth(), 1);
+      renderBookmarkDateCalendar();
+      positionBookmarkDatePopover();
+      bookmarkDatePopover.querySelector(`[data-date="${getBookmarkDateValue(bookmarkCalendarFocusDate)}"]`)?.focus();
+    } else if (restoreFocus) {
+      bookmarkDateTrigger.focus();
+    }
+  }
+
+  bookmarkDateTrigger?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setBookmarkDatePickerOpen(bookmarkDatePopover.hidden);
+  });
+  bookmarkDatePopover?.addEventListener('click', (event) => event.stopPropagation());
+  bookmarkDatePopover?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setBookmarkDatePickerOpen(false, true);
+    }
+  });
+  window.addEventListener('resize', positionBookmarkDatePopover);
+
   setupCustomSelect(bookmarkDurationFilter, 'bookmarkDurationPicker', 'bookmarkDurationTrigger', 'bookmarkDurationLabel', 'bookmarkDurationOptions');
+  setupCustomSelect(bookmarkSortFilter, 'bookmarkSortPicker', 'bookmarkSortTrigger', 'bookmarkSortLabel', 'bookmarkSortOptions');
   setupCustomSelect(profilePreset, 'profilePicker', 'profileTrigger', 'profileLabel', 'profileOptions');
   setupCustomSelect(themePreference, 'themePicker', 'themeTrigger', 'themeLabel', 'themeOptions');
 
   function saveBookmarkCollections(callback) {
-    getBookmarkLibraryStorage((storage) => storage.set({ bookmarkCollections }, callback));
+    getBookmarkLibraryStorage((storage) => storage.set({ bookmarkCollections }, () => {
+      callback?.(chrome.runtime.lastError?.message || null);
+    }));
   }
 
-  function refreshBookmarkFolderOptions() {
+  function closeBookmarkTimestampMenus(exceptContainer = null) {
+    document.querySelectorAll('.bookmark-time-menu:not([hidden])').forEach((menu) => {
+      if (menu.closest('.bookmark-time-actions') === exceptContainer) return;
+      menu.hidden = true;
+      menu.closest('.bookmark-time-actions')?.querySelector('.bookmark-time')?.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function updateBookmarkSelectionUI() {
+    const count = selectedBookmarkVideos.size;
+    bookmarkLibrary?.classList.toggle('is-selecting', bookmarkSelectionMode);
+    if (bookmarkBulkActions && bookmarkSelectionCount) {
+      bookmarkBulkActions.hidden = count === 0;
+      bookmarkSelectionCount.textContent = `${count} video${count === 1 ? '' : 's'} selected`;
+    }
+  }
+
+  function setBookmarkSelectionMode(enabled) {
+    bookmarkSelectionMode = enabled;
+    if (!enabled) selectedBookmarkVideos.clear();
+    if (bookmarkSelectionModeLabel) bookmarkSelectionModeLabel.textContent = enabled ? 'Cancel selection' : 'Select videos';
+    bookmarkSelectionModeToggle?.setAttribute('aria-label', enabled ? 'Cancel video selection' : 'Select videos');
+    bookmarkSelectionModeToggle?.setAttribute('title', enabled ? 'Cancel video selection' : 'Select videos');
+    bookmarkSelectionModeToggle?.setAttribute('aria-pressed', String(enabled));
+    bookmarkLibrary?.querySelectorAll('.bookmark-video').forEach((card) => {
+      const selected = selectedBookmarkVideos.has(card.dataset.videoId);
+      card.setAttribute('role', enabled ? 'group' : 'link');
+      card.classList.toggle('is-selected', selected);
+      const button = card.querySelector('.bookmark-video-select');
+      button?.setAttribute('aria-pressed', String(selected));
+      button?.setAttribute('aria-label', `${selected ? 'Deselect' : 'Select'} ${card.dataset.videoTitle || 'video'}`);
+      button?.setAttribute('title', `${selected ? 'Deselect' : 'Select'} video`);
+    });
+    updateBookmarkSelectionUI();
+  }
+
+  function toggleBookmarkVideoSelection(videoId, card) {
+    if (selectedBookmarkVideos.has(videoId)) selectedBookmarkVideos.delete(videoId);
+    else selectedBookmarkVideos.add(videoId);
+    const selected = selectedBookmarkVideos.has(videoId);
+    card?.classList.toggle('is-selected', selected);
+    const button = card?.querySelector('.bookmark-video-select');
+    button?.setAttribute('aria-pressed', String(selected));
+    button?.setAttribute('aria-label', `${selected ? 'Deselect' : 'Select'} ${card?.dataset.videoTitle || 'video'}`);
+    button?.setAttribute('title', `${selected ? 'Deselect' : 'Select'} video`);
+    updateBookmarkSelectionUI();
+  }
+
+  function refreshBookmarkFolderOptions(preferredSelection) {
     if (!bookmarkFolderSelect) return;
-    const selected = bookmarkFolderSelect.value || 'all';
+    const selected = preferredSelection || bookmarkFolderSelect.value || 'all';
     bookmarkFolderSelect.textContent = '';
-    const folders = [['all', 'All collections'], ...Object.keys(bookmarkCollections.folders || {}).map((name) => [name, name])];
+    const folders = [['all', 'All collections'], ...bookmarkCollections.collections.map((name) => [name, name])];
     folders.forEach(([value, label]) => {
         const option = document.createElement('option');
         option.value = value;
@@ -736,7 +943,6 @@ document.addEventListener('DOMContentLoaded', () => {
       closeBookmarkManageMenus();
     }
   });
-  document.addEventListener('scroll', closeBookmarkManageMenus, true);
   const sponsorBlockCheckbox      = document.getElementById('sponsorBlock');
   const sleepTimerEnabledCheckbox = document.getElementById('sleepTimerEnabled');
   const sleepTimerRow             = document.getElementById('sleepTimerRow');
@@ -875,7 +1081,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    addTextFilter('Since', bookmarkDateFilter);
+    if (bookmarkDateFilter?.value) {
+      const selectedDate = parseBookmarkDate(bookmarkDateFilter.value);
+      addFilter('Since', selectedDate ? formatBookmarkDate(selectedDate) : bookmarkDateFilter.value, () => {
+        bookmarkDateFilter.value = '';
+        bookmarkDateLabel.textContent = 'Any date';
+        bookmarkDateFilter.dispatchEvent(new Event('input'));
+      });
+    }
     if (bookmarkFolderSelect?.value && bookmarkFolderSelect.value !== 'all') {
       addFilter('Collection', bookmarkFolderLabel.textContent, () => {
         bookmarkFolderSelect.value = 'all';
@@ -908,8 +1121,16 @@ document.addEventListener('DOMContentLoaded', () => {
       .length;
     bookmarkFilterCount.textContent = activeFilterCount ? String(activeFilterCount) : '';
     bookmarkFilterCount.hidden = activeFilterCount === 0;
-    let videos = CognifyBookmarkUtils.getBookmarkVideos(data)
-      .filter((video) => !bookmarkFolderSelect || bookmarkFolderSelect.value === 'all' || bookmarkCollections.folders[video.videoId] === bookmarkFolderSelect.value)
+    const allVideos = CognifyBookmarkUtils.getBookmarkVideos(data);
+    if (!allVideos.length && bookmarkSelectionMode) setBookmarkSelectionMode(false);
+    if (bookmarkSelectionModeToggle) bookmarkSelectionModeToggle.hidden = allVideos.length === 0;
+    const availableVideoIds = new Set(allVideos.map((video) => video.videoId));
+    selectedBookmarkVideos.forEach((videoId) => {
+      if (!availableVideoIds.has(videoId)) selectedBookmarkVideos.delete(videoId);
+    });
+    updateBookmarkSelectionUI();
+    let videos = allVideos
+      .filter((video) => !bookmarkFolderSelect || bookmarkFolderSelect.value === 'all' || (bookmarkCollections.memberships[video.videoId] || []).includes(bookmarkFolderSelect.value))
       .filter(video => video.bookmarks.length);
     videos = CognifyBookmarkUtils.filterBookmarkVideos(videos, {
       query: bookmarkSearch?.value,
@@ -936,12 +1157,31 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'bookmark-video';
       card.style.position = 'relative';
       card.tabIndex = 0;
-      card.setAttribute('role', 'link');
+      card.setAttribute('role', bookmarkSelectionMode ? 'group' : 'link');
       card.title = 'Open video in a new tab';
+      const videoTitle = bookmarks.find((mark) => mark.title)?.title || `YouTube video (${videoId})`;
+      card.dataset.videoId = videoId;
+      card.dataset.videoTitle = videoTitle;
       const videoUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
       const openVideo = () => chrome.tabs.create({ url: videoUrl });
       card.addEventListener('click', (event) => {
-        if (!event.target.closest('.bookmark-time')) openVideo();
+        if (bookmarkSelectionMode) {
+          if (!event.target.closest('button, input, select, textarea')) toggleBookmarkVideoSelection(videoId, card);
+          return;
+        }
+        if (!event.target.closest('.bookmark-time-actions, .bookmark-video-select, .bookmark-manage-button, .bookmark-manage-menu')) openVideo();
+      });
+      const selectionButton = document.createElement('button');
+      selectionButton.className = 'bookmark-video-select';
+      selectionButton.type = 'button';
+      selectionButton.setAttribute('aria-pressed', String(selectedBookmarkVideos.has(videoId)));
+      selectionButton.setAttribute('aria-label', `${selectedBookmarkVideos.has(videoId) ? 'Deselect' : 'Select'} ${videoTitle}`);
+      selectionButton.title = `${selectedBookmarkVideos.has(videoId) ? 'Deselect' : 'Select'} video`;
+      selectionButton.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8 3 3 6-6"></path></svg>';
+      card.classList.toggle('is-selected', selectedBookmarkVideos.has(videoId));
+      selectionButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (bookmarkSelectionMode) toggleBookmarkVideoSelection(videoId, card);
       });
       const manageButton = document.createElement('button');
       manageButton.className = 'bookmark-manage-button';
@@ -975,6 +1215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!wasOpen) {
           menu.hidden = false;
           menu.style.display = 'grid';
+          menu.scrollTop = 0;
         }
       });
       card.appendChild(manageButton);
@@ -987,20 +1228,23 @@ document.addEventListener('DOMContentLoaded', () => {
         borderRadius: '5px',
         display: 'none',
         gap: '3px',
+        maxHeight: '200px',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
         padding: '4px',
         position: 'absolute',
         right: '8px',
         top: '36px',
         zIndex: '2'
       });
-      const addManageAction = (label, action) => {
+      const addManageAction = (label, action, isDestructive = false) => {
         const actionButton = document.createElement('button');
         actionButton.type = 'button';
         actionButton.textContent = label;
         Object.assign(actionButton.style, {
           background: 'transparent',
           border: 'none',
-          color: 'var(--text-primary)',
+          color: isDestructive ? 'var(--accent-color)' : 'var(--text-primary)',
           cursor: 'pointer',
           fontSize: '10px',
           padding: '6px 8px',
@@ -1014,24 +1258,74 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         menu.appendChild(actionButton);
       };
+      const addManageSection = (label) => {
+        const heading = document.createElement('div');
+        heading.textContent = label;
+        Object.assign(heading.style, {
+          color: 'var(--text-secondary)',
+          fontSize: '9px',
+          fontWeight: '700',
+          padding: '5px 8px 2px',
+          textTransform: 'uppercase'
+        });
+        menu.appendChild(heading);
+      };
+      const addManageDivider = () => {
+        const divider = document.createElement('div');
+        Object.assign(divider.style, {
+          borderTop: '1px solid var(--border-color)',
+          margin: '3px 5px'
+        });
+        menu.appendChild(divider);
+      };
+
+      addManageSection('Collections');
+      const videoCollections = bookmarkCollections.memberships[videoId] || [];
+      if (bookmarkCollections.collections.length) {
+        bookmarkCollections.collections.forEach((folder) => {
+          const isAssigned = videoCollections.includes(folder);
+          addManageAction(`${isAssigned ? 'Remove from' : 'Add to'} ${folder}`, () => {
+            const previousMemberships = [...videoCollections];
+            if (isAssigned) CognifyBookmarkUtils.removeVideoFromCollection(bookmarkCollections, videoId, folder);
+            else CognifyBookmarkUtils.addVideoToCollection(bookmarkCollections, videoId, folder);
+            saveBookmarkCollections((error) => {
+              if (error) {
+                if (previousMemberships.length) bookmarkCollections.memberships[videoId] = previousMemberships;
+                else delete bookmarkCollections.memberships[videoId];
+                showModal({ title: 'Could not save collection', message: error, buttons: [{ text: 'OK', type: 'primary' }] });
+                return;
+              }
+              renderBookmarkLibrary(bookmarkLibraryData);
+            });
+          });
+        });
+      } else {
+        const emptyCollections = document.createElement('div');
+        emptyCollections.textContent = 'Create a collection from Manage bookmarks first.';
+        Object.assign(emptyCollections.style, {
+          color: 'var(--text-secondary)',
+          fontSize: '10px',
+          padding: '5px 8px',
+          whiteSpace: 'normal'
+        });
+        menu.appendChild(emptyCollections);
+      }
+
+      addManageDivider();
+      addManageSection('Delete bookmarks');
       bookmarks.forEach((bookmark) => {
         addManageAction(`Delete ${formatBookmarkTime(bookmark.time)}`, () => {
           deleteBookmarkLibraryItems(videoId, [Number(bookmark.time)]);
-        });
+        }, true);
       });
-      Object.keys(bookmarkCollections.folders || {}).forEach((folder) => {
-        addManageAction(`Move to ${folder}`, () => {
-          bookmarkCollections.folders[videoId] = folder;
-          saveBookmarkCollections(() => renderBookmarkLibrary(bookmarkLibraryData));
-        });
-      });
-      addManageAction('Delete all for this video', () => deleteBookmarkLibraryItems(videoId, bookmarks.map(bookmark => Number(bookmark.time))));
+      addManageAction('Delete all for this video', () => deleteBookmarkLibraryItems(videoId, bookmarks.map(bookmark => Number(bookmark.time))), true);
       menu.addEventListener('click', (event) => event.stopPropagation());
       card.appendChild(menu);
       card.addEventListener('keydown', (event) => {
-        if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('.bookmark-time')) {
+        if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button, input, select, textarea')) {
           event.preventDefault();
-          openVideo();
+          if (bookmarkSelectionMode) toggleBookmarkVideoSelection(videoId, card);
+          else openVideo();
         }
       });
       const thumbnail = document.createElement('img');
@@ -1040,31 +1334,69 @@ document.addEventListener('DOMContentLoaded', () => {
       thumbnail.alt = '';
       thumbnail.loading = 'lazy';
       thumbnail.onerror = () => { thumbnail.src = '../../icons/icon-48.png'; };
+      const thumbnailColumn = document.createElement('div');
+      thumbnailColumn.className = 'bookmark-thumbnail-column';
+      thumbnailColumn.append(thumbnail, selectionButton);
       const body = document.createElement('div');
       body.className = 'bookmark-video-body';
       const title = document.createElement('span');
       title.className = 'bookmark-video-title';
-      title.textContent = bookmarks.find(mark => mark.title)?.title || `YouTube video (${videoId})`;
+      title.textContent = videoTitle;
       title.title = title.textContent;
       const count = document.createElement('div');
       count.className = 'bookmark-video-count';
       count.textContent = `${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}`;
       const times = document.createElement('div');
       times.className = 'bookmark-times';
-      bookmarks.forEach(mark => {
+      bookmarks.forEach((mark, index) => {
+        const timeActions = document.createElement('div');
+        timeActions.className = 'bookmark-time-actions';
         const button = document.createElement('button');
         button.className = 'bookmark-time';
         button.type = 'button';
-        button.textContent = mark.label ? `${formatBookmarkTime(mark.time)} · ${mark.label}` : formatBookmarkTime(mark.time);
-        button.title = 'Open this bookmark on YouTube';
-        button.addEventListener('click', (event) => {
-          event.stopPropagation();
+        const timeValue = document.createElement('span');
+        timeValue.className = 'bookmark-time-value';
+        timeValue.textContent = formatBookmarkTime(mark.time);
+        button.appendChild(timeValue);
+        button.title = `Actions for bookmark at ${formatBookmarkTime(mark.time)}`;
+        button.setAttribute('aria-label', `Show actions for bookmark at ${formatBookmarkTime(mark.time)}`);
+        button.setAttribute('aria-expanded', 'false');
+        const timeMenu = document.createElement('div');
+        timeMenu.className = 'bookmark-time-menu';
+        timeMenu.id = `bookmark-time-menu-${videoId}-${index}`;
+        timeMenu.hidden = true;
+        button.setAttribute('aria-controls', timeMenu.id);
+        const addTimestampAction = (label, action) => {
+          const actionButton = document.createElement('button');
+          actionButton.className = 'bookmark-time-action';
+          actionButton.type = 'button';
+          actionButton.textContent = label;
+          actionButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            closeBookmarkTimestampMenus();
+            action();
+          });
+          timeMenu.appendChild(actionButton);
+        };
+        addTimestampAction(`Open video at ${formatBookmarkTime(mark.time)}`, () => {
           chrome.tabs.create({ url: `${videoUrl}&t=${Math.floor(Number(mark.time))}s` });
         });
-        times.appendChild(button);
+        addTimestampAction(mark.label ? 'Edit note' : 'Add note', () => {
+          openBookmarkNoteDialog(videoId, Number(mark.time), mark.label || '', button);
+        });
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const shouldOpen = timeMenu.hidden;
+          closeBookmarkTimestampMenus();
+          timeMenu.hidden = !shouldOpen;
+          button.setAttribute('aria-expanded', String(shouldOpen));
+        });
+        timeMenu.addEventListener('click', (event) => event.stopPropagation());
+        timeActions.append(button, timeMenu);
+        times.appendChild(timeActions);
       });
       body.append(title, count, times);
-      card.append(thumbnail, body);
+      card.append(thumbnailColumn, body);
       bookmarkLibrary.appendChild(card);
     });
   }
@@ -1081,13 +1413,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sharedCollection) {
         try {
           const imported = JSON.parse(decodeURIComponent(sharedCollection));
-          if (imported?.name && imported.bookmarks && typeof imported.bookmarks === 'object') {
+          const importedName = typeof imported?.name === 'string' ? imported.name.trim().slice(0, 40) : '';
+          if (importedName && imported.bookmarks && typeof imported.bookmarks === 'object') {
             storage.get(['bookmarkCollections'], (existing) => {
-              const existingCollections = existing.bookmarkCollections || { folders: {}, shared: [] };
-              const mergedCollections = {
-                folders: { ...(existingCollections.folders || {}), [imported.name]: imported.name },
-                shared: existingCollections.shared || [],
-              };
+              const mergedCollections = CognifyBookmarkUtils.normalizeBookmarkCollections(existing.bookmarkCollections);
+              if (!mergedCollections.collections.includes(importedName)) mergedCollections.collections.push(importedName);
+              Object.keys(imported.bookmarks).forEach((key) => {
+                if (key.startsWith('yt_bm_')) {
+                  CognifyBookmarkUtils.addVideoToCollection(mergedCollections, key.slice(6), importedName);
+                }
+              });
               storage.set({ ...imported.bookmarks, bookmarkCollections: mergedCollections }, () => {
                 history.replaceState({}, document.title, location.pathname);
                 loadBookmarkLibrary();
@@ -1104,9 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
           renderBookmarkLibrary({});
           return;
         }
-        bookmarkCollections = data.bookmarkCollections && typeof data.bookmarkCollections === 'object'
-          ? { folders: data.bookmarkCollections.folders || {}, shared: data.bookmarkCollections.shared || [] }
-          : { folders: {}, shared: [] };
+        bookmarkCollections = CognifyBookmarkUtils.normalizeBookmarkCollections(data.bookmarkCollections);
         refreshBookmarkFolderOptions();
         renderBookmarkLibrary(data);
       });
@@ -1123,6 +1456,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bookmarkDurationFilter?.addEventListener('change', () => renderBookmarkLibrary(bookmarkLibraryData));
   bookmarkSortFilter?.addEventListener('change', () => renderBookmarkLibrary(bookmarkLibraryData));
   bookmarkFolderSelect?.addEventListener('change', () => renderBookmarkLibrary(bookmarkLibraryData));
+  bookmarkSelectionModeToggle?.addEventListener('click', () => setBookmarkSelectionMode(!bookmarkSelectionMode));
   bookmarkFolderTrigger?.addEventListener('click', (event) => {
     event.stopPropagation();
     const isOpen = !bookmarkFolderOptions.hidden;
@@ -1131,34 +1465,409 @@ document.addEventListener('DOMContentLoaded', () => {
     bookmarkFolderTrigger.setAttribute('aria-expanded', String(!isOpen));
   });
   bookmarkFolderOptions?.addEventListener('click', (event) => event.stopPropagation());
-  document.addEventListener('click', () => {
+  document.addEventListener('click', (event) => {
     if (!bookmarkFolderOptions?.hidden) {
       bookmarkFolderOptions.hidden = true;
       bookmarkFolderPicker?.classList.remove('open');
       bookmarkFolderTrigger?.setAttribute('aria-expanded', 'false');
     }
+    if (!bookmarkDatePicker?.contains(event.target) && !bookmarkDatePopover?.hidden) {
+      setBookmarkDatePickerOpen(false);
+    }
   });
-  newBookmarkFolderBtn?.addEventListener('click', () => {
-    const name = window.prompt('Collection name');
-    const cleanName = String(name || '').trim().slice(0, 40);
-    if (!cleanName) return;
-    bookmarkCollections.folders[cleanName] = bookmarkCollections.folders[cleanName] || '';
-    bookmarkFolderSelect.value = cleanName;
-    refreshBookmarkFolderOptions();
-    saveBookmarkCollections(() => renderBookmarkLibrary(bookmarkLibraryData));
-  });
-  shareBookmarkCollectionBtn?.addEventListener('click', () => {
-    const folder = bookmarkFolderSelect.value;
-    if (!folder || folder === 'all') {
-      showModal({ title: 'Choose a collection', message: 'Select a collection before creating a share link.', buttons: [{ text: 'OK', type: 'primary' }] });
+
+  function openNewCollectionDialog(returnFocusElement = bookmarkManageToggle) {
+    const previousSelection = bookmarkFolderSelect.value || 'all';
+    const dialog = createBookmarkDialog('New collection', 'Choose a clear name for the videos you want to organize.', returnFocusElement);
+    const label = document.createElement('label');
+    label.className = 'modal-label';
+    label.textContent = 'Collection name';
+    const input = document.createElement('input');
+    input.className = 'modal-input bookmark-dialog-input';
+    input.type = 'text';
+    input.maxLength = 40;
+    input.placeholder = 'e.g. Biology exam review';
+    label.htmlFor = 'bookmarkCollectionNameInput';
+    input.id = 'bookmarkCollectionNameInput';
+    const feedback = document.createElement('div');
+    feedback.className = 'bookmark-dialog-feedback';
+    dialog.body.append(label, input, feedback);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'modal-btn modal-btn-secondary';
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', dialog.close);
+    const createButton = document.createElement('button');
+    createButton.className = 'modal-btn modal-btn-primary';
+    createButton.type = 'button';
+    createButton.textContent = 'Create collection';
+    const createCollection = () => {
+      if (createButton.disabled) return;
+      const name = input.value.trim().slice(0, 40);
+      if (!name) {
+        feedback.textContent = 'Enter a collection name.';
+        input.focus();
+        return;
+      }
+      if (name.toLowerCase() === 'all') {
+        feedback.textContent = '"All collections" is reserved. Choose another name.';
+        input.focus();
+        return;
+      }
+      if (bookmarkCollections.collections.includes(name)) {
+        feedback.textContent = 'That collection already exists.';
+        input.focus();
+        return;
+      }
+
+      const previousCollections = [...bookmarkCollections.collections];
+      bookmarkCollections.collections.push(name);
+      refreshBookmarkFolderOptions(previousSelection);
+      input.disabled = true;
+      cancelButton.disabled = true;
+      createButton.disabled = true;
+      dialog.modal.dataset.busy = 'true';
+      saveBookmarkCollections((error) => {
+        if (!dialog.overlay.isConnected) return;
+        if (error) {
+          bookmarkCollections.collections = previousCollections;
+          refreshBookmarkFolderOptions(previousSelection);
+          input.disabled = false;
+          cancelButton.disabled = false;
+          delete dialog.modal.dataset.busy;
+          createButton.disabled = false;
+          feedback.textContent = `Could not save this collection: ${error}`;
+          return;
+        }
+        dialog.close();
+        renderBookmarkLibrary(bookmarkLibraryData);
+      });
+    };
+    createButton.addEventListener('click', createCollection);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        createCollection();
+      }
+    });
+    dialog.actions.append(cancelButton, createButton);
+    input.focus();
+  }
+
+  function openBookmarkNoteDialog(videoId, time, currentNote, returnFocusElement) {
+    const dialog = createBookmarkDialog(
+      currentNote ? 'Edit bookmark note' : 'Add bookmark note',
+      'Add a short reminder to this timestamp.',
+      returnFocusElement
+    );
+    const label = document.createElement('label');
+    label.className = 'modal-label';
+    label.textContent = 'Note';
+    const textarea = document.createElement('textarea');
+    textarea.className = 'modal-input bookmark-dialog-textarea';
+    textarea.maxLength = 300;
+    textarea.value = currentNote;
+    textarea.placeholder = 'What should you remember here?';
+    label.htmlFor = 'bookmarkNoteInput';
+    textarea.id = 'bookmarkNoteInput';
+    const feedback = document.createElement('div');
+    feedback.className = 'bookmark-dialog-feedback';
+    dialog.body.append(label, textarea, feedback);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'modal-btn modal-btn-secondary';
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', dialog.close);
+    const saveButton = document.createElement('button');
+    saveButton.className = 'modal-btn modal-btn-primary';
+    saveButton.type = 'button';
+    saveButton.textContent = 'Save note';
+    const saveNote = () => {
+      if (saveButton.disabled) return;
+      const storageKey = `yt_bm_${videoId}`;
+      const note = textarea.value.trim().slice(0, 300);
+      textarea.disabled = true;
+      cancelButton.disabled = true;
+      saveButton.disabled = true;
+      dialog.modal.dataset.busy = 'true';
+      getBookmarkLibraryStorage((storage) => storage.get([storageKey], (result) => {
+        const readError = chrome.runtime.lastError?.message;
+        if (readError) {
+          textarea.disabled = false;
+          cancelButton.disabled = false;
+          delete dialog.modal.dataset.busy;
+          saveButton.disabled = false;
+          feedback.textContent = `Could not load this bookmark: ${readError}`;
+          return;
+        }
+        const currentBookmarks = Array.isArray(result[storageKey]) ? result[storageKey] : [];
+        if (!currentBookmarks.some((bookmark) => Number(bookmark.time) === time)) {
+          textarea.disabled = false;
+          cancelButton.disabled = false;
+          delete dialog.modal.dataset.busy;
+          saveButton.disabled = false;
+          feedback.textContent = 'This timestamp no longer exists. Reopen the bookmarks list and try again.';
+          return;
+        }
+        const updatedBookmarks = currentBookmarks.map((bookmark) => (
+          Number(bookmark.time) === time ? { ...bookmark, label: note } : bookmark
+        ));
+        storage.set({ [storageKey]: updatedBookmarks }, () => {
+          const writeError = chrome.runtime.lastError?.message;
+          if (writeError) {
+            textarea.disabled = false;
+            cancelButton.disabled = false;
+            delete dialog.modal.dataset.busy;
+            saveButton.disabled = false;
+            feedback.textContent = `Could not save this note: ${writeError}`;
+            return;
+          }
+          dialog.close();
+          loadBookmarkLibrary();
+        });
+      }));
+    };
+    saveButton.addEventListener('click', saveNote);
+    textarea.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        saveNote();
+      }
+    });
+    dialog.actions.append(cancelButton, saveButton);
+    textarea.focus();
+  }
+
+  function openBookmarkCollectionAssignmentDialog() {
+    const videoIds = [...selectedBookmarkVideos];
+    if (!videoIds.length) return;
+    const dialog = createBookmarkDialog(
+      'Add selected videos to a collection',
+      `${videoIds.length} selected video${videoIds.length === 1 ? '' : 's'} will be added to the collection you choose.`,
+      bookmarkFolderTrigger
+    );
+    const selectLabel = document.createElement('label');
+    selectLabel.className = 'modal-label';
+    selectLabel.textContent = 'Collection';
+    const select = document.createElement('select');
+    select.className = 'modal-input bookmark-dialog-select';
+    select.setAttribute('aria-label', 'Choose a collection');
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose a collection';
+    select.appendChild(placeholder);
+    bookmarkCollections.collections.forEach((name) => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+    const createOption = document.createElement('option');
+    createOption.value = '__create_collection__';
+    createOption.textContent = 'Create a new collection…';
+    select.appendChild(createOption);
+    selectLabel.appendChild(select);
+    const createField = document.createElement('div');
+    createField.hidden = true;
+    const createLabel = document.createElement('label');
+    createLabel.className = 'modal-label';
+    createLabel.textContent = 'New collection name';
+    const createInput = document.createElement('input');
+    createInput.className = 'modal-input bookmark-dialog-input';
+    createInput.type = 'text';
+    createInput.maxLength = 40;
+    createInput.placeholder = 'e.g. Biology exam review';
+    createLabel.htmlFor = 'bookmarkBulkCollectionNameInput';
+    createInput.id = 'bookmarkBulkCollectionNameInput';
+    createField.append(createLabel, createInput);
+    const feedback = document.createElement('div');
+    feedback.className = 'bookmark-dialog-feedback';
+    dialog.body.append(selectLabel, createField, feedback);
+
+    const syncCreateField = () => {
+      createField.hidden = select.value !== createOption.value;
+      if (!createField.hidden) createInput.focus();
+    };
+    select.addEventListener('change', syncCreateField);
+    if (!bookmarkCollections.collections.length) {
+      select.value = createOption.value;
+      syncCreateField();
+    }
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'modal-btn modal-btn-secondary';
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', dialog.close);
+    const addButton = document.createElement('button');
+    addButton.className = 'modal-btn modal-btn-primary';
+    addButton.type = 'button';
+    addButton.textContent = 'Add videos';
+    addButton.addEventListener('click', () => {
+      const isCreating = select.value === createOption.value;
+      const collectionName = (isCreating ? createInput.value : select.value).trim().slice(0, 40);
+      if (!collectionName) {
+        feedback.textContent = isCreating ? 'Enter a collection name.' : 'Choose a collection.';
+        (isCreating ? createInput : select).focus();
+        return;
+      }
+      if (collectionName.toLowerCase() === 'all') {
+        feedback.textContent = '"All collections" is reserved. Choose another name.';
+        createInput.focus();
+        return;
+      }
+      if (isCreating && bookmarkCollections.collections.includes(collectionName)) {
+        feedback.textContent = 'That collection already exists. Choose it from the list instead.';
+        createInput.focus();
+        return;
+      }
+
+      const previousCollections = [...bookmarkCollections.collections];
+      const previousMemberships = new Map(videoIds.map((videoId) => [
+        videoId,
+        [...(bookmarkCollections.memberships[videoId] || [])],
+      ]));
+      if (isCreating) bookmarkCollections.collections.push(collectionName);
+      videoIds.forEach((videoId) => {
+        CognifyBookmarkUtils.addVideoToCollection(bookmarkCollections, videoId, collectionName);
+      });
+      cancelButton.disabled = true;
+      addButton.disabled = true;
+      select.disabled = true;
+      createInput.disabled = true;
+      dialog.modal.dataset.busy = 'true';
+      saveBookmarkCollections((error) => {
+        if (!dialog.overlay.isConnected) return;
+        if (error) {
+          bookmarkCollections.collections = previousCollections;
+          previousMemberships.forEach((memberships, videoId) => {
+            if (memberships.length) bookmarkCollections.memberships[videoId] = memberships;
+            else delete bookmarkCollections.memberships[videoId];
+          });
+          refreshBookmarkFolderOptions();
+          cancelButton.disabled = false;
+          select.disabled = false;
+          createInput.disabled = false;
+          delete dialog.modal.dataset.busy;
+          addButton.disabled = false;
+          feedback.textContent = `Could not save collection changes: ${error}`;
+          return;
+        }
+        refreshBookmarkFolderOptions();
+        selectedBookmarkVideos.clear();
+        updateBookmarkSelectionUI();
+        dialog.close();
+        renderBookmarkLibrary(bookmarkLibraryData);
+      });
+    });
+    dialog.actions.append(cancelButton, addButton);
+    if (createField.hidden) select.focus();
+  }
+
+  function openShareCollectionDialog(returnFocusElement = bookmarkManageToggle) {
+    if (!bookmarkCollections.collections.length) {
+      showToast('Create a collection first using Manage → New collection.', 'info');
       return;
     }
-    const shared = Object.entries(bookmarkLibraryData)
-      .filter(([key]) => key.startsWith('yt_bm_') && bookmarkCollections.folders[key.slice(6)] === folder)
-      .reduce((result, [key, value]) => ({ ...result, [key]: value }), {});
-    const link = `${location.origin}${location.pathname}?collection=${encodeURIComponent(JSON.stringify({ name: folder, bookmarks: shared }))}`;
-    navigator.clipboard.writeText(link).then(() => showModal({ title: 'Collection link copied', message: 'Anyone with this link can import a read-only copy of the collection.', buttons: [{ text: 'OK', type: 'primary' }] })).catch(() => showModal({ title: 'Share link', message: link, buttons: [{ text: 'Close', type: 'primary' }] }));
+
+    const dialog = createBookmarkDialog(
+      'Share a collection',
+      'Download a JSON file and send it to someone with Cognify installed. They can import it from Manage → Import bookmarks. Cognify does not upload your data.',
+      returnFocusElement
+    );
+    const label = document.createElement('label');
+    label.className = 'modal-label';
+    label.htmlFor = 'bookmarkShareCollectionSelect';
+    label.textContent = 'Collection';
+    const select = document.createElement('select');
+    select.className = 'modal-input bookmark-dialog-select';
+    select.id = 'bookmarkShareCollectionSelect';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose a collection';
+    select.appendChild(placeholder);
+
+    bookmarkCollections.collections.forEach((name) => {
+      const videoCount = Object.keys(CognifyBookmarkUtils.createBookmarkCollectionShare(
+        name,
+        bookmarkLibraryData,
+        bookmarkCollections
+      )?.bookmarks || {}).length;
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = `${name} (${videoCount} video${videoCount === 1 ? '' : 's'})`;
+      select.appendChild(option);
+    });
+
+    const activeCollection = bookmarkFolderSelect?.value;
+    if (bookmarkCollections.collections.includes(activeCollection)) select.value = activeCollection;
+    const feedback = document.createElement('div');
+    feedback.className = 'bookmark-dialog-feedback';
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'modal-btn modal-btn-secondary';
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', dialog.close);
+    const downloadButton = document.createElement('button');
+    downloadButton.className = 'modal-btn modal-btn-primary';
+    downloadButton.type = 'button';
+    downloadButton.textContent = 'Download file';
+    downloadButton.disabled = true;
+    const getCollectionShare = (name) => CognifyBookmarkUtils.createBookmarkCollectionShare(
+      name,
+      bookmarkLibraryData,
+      bookmarkCollections
+    );
+    const updateShareFeedback = () => {
+      const count = Object.keys(getCollectionShare(select.value)?.bookmarks || {}).length;
+      feedback.textContent = !select.value
+        ? 'Choose a collection to continue.'
+        : count
+          ? `${count} saved video${count === 1 ? '' : 's'} will be included.`
+          : 'This collection has no saved videos to share yet.';
+      downloadButton.disabled = !select.value || count === 0;
+    };
+    downloadButton.addEventListener('click', () => {
+      const name = select.value;
+      const collectionShare = getCollectionShare(name);
+      if (!collectionShare || !Object.keys(collectionShare.bookmarks).length) {
+        updateShareFeedback();
+        return;
+      }
+
+      try {
+        const content = JSON.stringify(collectionShare, null, 2);
+        const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
+        const link = document.createElement('a');
+        const fileName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'collection';
+        link.href = url;
+        link.download = `cognify-${fileName}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        dialog.close();
+        showToast(`Downloaded "${name}" to your Downloads folder. Send the JSON file; recipients import it from Manage → Import bookmarks.`, 'success');
+      } catch (error) {
+        feedback.textContent = `Could not create the collection file: ${error.message}`;
+      }
+    });
+    select.addEventListener('change', updateShareFeedback);
+    dialog.body.append(label, select, feedback);
+    dialog.actions.append(cancelButton, downloadButton);
+    updateShareFeedback();
+    select.focus();
+  }
+
+  bookmarkBulkAddToCollection?.addEventListener('click', openBookmarkCollectionAssignmentDialog);
+  bookmarkClearSelection?.addEventListener('click', () => {
+    selectedBookmarkVideos.clear();
+    renderBookmarkLibrary(bookmarkLibraryData);
   });
+  newBookmarkFolderBtn?.addEventListener('click', () => openNewCollectionDialog());
+  shareBookmarkCollectionBtn?.addEventListener('click', () => openShareCollectionDialog());
   loadBookmarkLibrary();
 
   /**
@@ -1244,7 +1953,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sponsorBlock: false,
     sleepTimerEnabled: false,
     sleepTimerMinutes: 30,
-    hideFbMessenger: false,
     watchedProgress: false,
     contentControlOrder: defaultContentControlOrder,
   };
@@ -1320,17 +2028,12 @@ document.addEventListener('DOMContentLoaded', () => {
     focusModeCheckbox.checked = data.focusMode || false;
     if (sponsorBlockCheckbox) sponsorBlockCheckbox.checked = data.sponsorBlock || false;
     if (sleepTimerEnabledCheckbox) sleepTimerEnabledCheckbox.checked = data.sleepTimerEnabled || false;
-    if (hideFbMessengerCheckbox) hideFbMessengerCheckbox.checked = data.hideFbMessenger || false;
     if (sleepTimerMinutesInput) sleepTimerMinutesInput.value = data.sleepTimerMinutes || 30;
     if (sleepTimerRow) sleepTimerRow.style.display = data.sleepTimerEnabled ? 'flex' : 'none';
 
     // Watched progress tags
     if (watchedProgressCheckbox) watchedProgressCheckbox.checked = data.watchedProgress || false;
 
-    // Load universalSpeed from local storage (used by video-hover.js)
-    chrome.storage.local.get(['universalSpeed'], (localData) => {
-      universalSpeedCheckbox.checked = !!localData.universalSpeed;
-    });
     updateSpeedDisplay(speed);
   });
 
@@ -1347,7 +2050,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const rememberSpeed = !!rememberSpeedCheckbox.checked;
     const cloudSync = !!cloudSyncCheckbox.checked;
     const loopVideo = !!loopVideoCheckbox.checked;
-    const universalSpeed = !!universalSpeedCheckbox.checked;
     const voiceMode = voiceModeSelect.value || 'normal';
     // Derive legacy pitchCorrection for content.js backward compat
     const pitchCorrection = (voiceMode !== 'chipmunk');
@@ -1358,11 +2060,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoSubtitles = !!autoSubtitlesCheckbox.checked;
     const focusMode = !!focusModeCheckbox.checked;
     const sponsorBlock = !!(sponsorBlockCheckbox && sponsorBlockCheckbox.checked);
-    const hideFbMessenger = !!(hideFbMessengerCheckbox && hideFbMessengerCheckbox.checked);
     const watchedProgress = !!(watchedProgressCheckbox && watchedProgressCheckbox.checked);
-
-    // Save universalSpeed to local storage so video-hover.js can read it
-    chrome.storage.local.set({ universalSpeed });
 
     chrome.storage.sync.set({
       speed: speed.toString(),
@@ -1383,7 +2081,6 @@ document.addEventListener('DOMContentLoaded', () => {
       autoSubtitles,
       focusMode,
       sponsorBlock,
-      hideFbMessenger,
       watchedProgress,
     }, () => {
       // Notify content script to apply changes and update speed immediately
@@ -1418,7 +2115,6 @@ document.addEventListener('DOMContentLoaded', () => {
   hideSuggestionsCheckbox.addEventListener('change', autoSave);
   hideDescriptionCheckbox.addEventListener('change', autoSave);
   loopVideoCheckbox.addEventListener('change', autoSave);
-  universalSpeedCheckbox.addEventListener('change', autoSave);
   voiceModeSelect.addEventListener('change', () => {
     updateVoiceModeDesc(voiceModeSelect.value);
     autoSave();
@@ -1436,7 +2132,6 @@ document.addEventListener('DOMContentLoaded', () => {
   autoSubtitlesCheckbox.addEventListener('change', autoSave);
   focusModeCheckbox.addEventListener('change', autoSave);
   if (sponsorBlockCheckbox) sponsorBlockCheckbox.addEventListener('change', autoSave);
-  if (hideFbMessengerCheckbox) hideFbMessengerCheckbox.addEventListener('change', autoSave);
   if (watchedProgressCheckbox) watchedProgressCheckbox.addEventListener('change', autoSave);
   if (sleepTimerEnabledCheckbox) sleepTimerEnabledCheckbox.addEventListener('change', () => {
     if (sleepTimerRow) sleepTimerRow.style.display = sleepTimerEnabledCheckbox.checked ? 'flex' : 'none';
@@ -1546,9 +2241,30 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.onload = (ev) => {
         try {
           const data = JSON.parse(ev.target.result);
+          const isCollectionFile = data?.format === 'cognify-collection';
+          const importedCollection = isCollectionFile
+            ? CognifyBookmarkUtils.parseBookmarkCollectionShare(data)
+            : null;
+          if (isCollectionFile && !importedCollection) {
+            showModal({ title: 'Invalid collection file', message: 'This file is not a supported Cognify collection.', variant: 'error', buttons: [{ text: 'OK', type: 'primary' }] });
+            return;
+          }
           // Accept both full export format and raw bookmark objects
-          const bookmarkData = data.bookmarks || {};
+          const bookmarkData = importedCollection?.bookmarks || data.bookmarks || {};
+          if (typeof bookmarkData !== 'object' || Array.isArray(bookmarkData)) {
+            showModal({ title: 'Invalid File', message: 'This file does not contain a valid bookmark list.', variant: 'error', buttons: [{ text: 'OK', type: 'primary' }] });
+            return;
+          }
           const keys = Object.keys(bookmarkData).filter(k => k.startsWith('yt_bm_'));
+          const importedCollections = CognifyBookmarkUtils.normalizeBookmarkCollections(data.bookmarkCollections || bookmarkData.bookmarkCollections);
+          if (importedCollection) {
+            if (!importedCollections.collections.includes(importedCollection.name)) {
+              importedCollections.collections.push(importedCollection.name);
+            }
+            keys.forEach((key) => {
+              CognifyBookmarkUtils.addVideoToCollection(importedCollections, key.slice(6), importedCollection.name);
+            });
+          }
           if (keys.length === 0) {
             showModal({ title: 'Import', message: 'No bookmarks found in this file.', buttons: [{ text: 'OK', type: 'primary' }] });
             return;
@@ -1558,17 +2274,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const storage = useCloudSync ? chrome.storage.sync : chrome.storage.local;
             const toStore = {};
             keys.forEach(k => { toStore[k] = bookmarkData[k]; });
-            storage.set(toStore, () => {
-              if (chrome.runtime.lastError) {
-                showModal({ title: 'Import Failed', message: `Import failed: ${chrome.runtime.lastError.message}`, buttons: [{ text: 'OK', type: 'primary' }] });
-              } else {
-                loadBookmarkLibrary();
-                showModal({ title: 'Import Successful', message: `✅ Imported ${keys.length} video(s) of bookmarks successfully!`, buttons: [{ text: 'OK', type: 'primary' }] });
-              }
+            storage.get(['bookmarkCollections'], (existing) => {
+              const collections = CognifyBookmarkUtils.normalizeBookmarkCollections(existing.bookmarkCollections);
+              importedCollections.collections.forEach((name) => {
+                if (!collections.collections.includes(name)) collections.collections.push(name);
+              });
+              Object.entries(importedCollections.memberships).forEach(([videoId, names]) => {
+                names.forEach((name) => CognifyBookmarkUtils.addVideoToCollection(collections, videoId, name));
+              });
+              collections.shared = [...collections.shared, ...importedCollections.shared];
+              storage.set({ ...toStore, bookmarkCollections: collections }, () => {
+                if (chrome.runtime.lastError) {
+                  showModal({ title: 'Import Failed', message: `Import failed: ${chrome.runtime.lastError.message}`, variant: 'error', buttons: [{ text: 'OK', type: 'primary' }] });
+                } else {
+                  loadBookmarkLibrary();
+                  showModal({
+                    title: 'Import Successful',
+                    message: importedCollection
+                      ? `Added ${keys.length} videos to the imported collection.`
+                      : `Imported ${keys.length} video(s) of bookmarks successfully.`,
+                    variant: 'success',
+                    buttons: [{ text: 'OK', type: 'primary' }]
+                  });
+                }
+              });
             });
           });
         } catch {
-          showModal({ title: 'Invalid File', message: 'Invalid backup file. Please select a valid Cognify backup JSON.', buttons: [{ text: 'OK', type: 'primary' }] });
+          showModal({ title: 'Invalid File', message: 'Invalid backup file. Please select a valid Cognify backup JSON.', variant: 'error', buttons: [{ text: 'OK', type: 'primary' }] });
         }
         // Reset input so the same file can be re-selected
         importBookmarksFile.value = '';
@@ -1712,7 +2445,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function runTutorial() {
     const steps = [
       ['Welcome to Cognify', 'Press P while watching YouTube to capture a timestamp bookmark.'],
-      ['Organize', 'Open the Bookmarks tab to search, filter, and move saved videos into collections.'],
+      ['Organize', 'Select video cards to add several videos to an existing or new collection at once.'],
+      ['Timestamp notes', 'Click a timestamp to open the video at that moment or add and edit a note.'],
       ['Make it yours', 'Choose a profile, customize shortcuts, and use the feature guide whenever you need a refresher.'],
     ];
     for (const [title, message] of steps) {
@@ -1918,8 +2652,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetTab === 'stats') {
         requestAnimationFrame(() => {
           updateProdGraph();
-          updateIgGraph();
-          updateFbGraph();
         });
       }
     });
@@ -1975,20 +2707,94 @@ document.addEventListener('DOMContentLoaded', () => {
     performClearData();
   });
 
+  function createBookmarkDialog(titleText, messageText, returnFocusElement) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'modal bookmark-dialog';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    const heading = document.createElement('h2');
+    heading.className = 'modal-title';
+    heading.id = `bookmarkDialogTitle-${Date.now()}`;
+    heading.textContent = titleText;
+    modal.setAttribute('aria-labelledby', heading.id);
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    header.appendChild(heading);
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    const message = document.createElement('p');
+    message.className = 'modal-text';
+    message.textContent = messageText;
+    body.appendChild(message);
+    const actions = document.createElement('div');
+    actions.className = 'modal-actions';
+    modal.append(header, body, actions);
+    overlay.appendChild(modal);
+
+    const close = () => {
+      if (!overlay.isConnected) return;
+      overlay.remove();
+      if (returnFocusElement?.isConnected && returnFocusElement.getClientRects().length) returnFocusElement.focus();
+    };
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay && modal.dataset.busy !== 'true') close();
+    });
+    overlay.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        if (modal.dataset.busy !== 'true') close();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [...modal.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')]
+        .filter((element) => element.getClientRects().length > 0);
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    document.body.appendChild(overlay);
+    return { overlay, modal, body, actions, close };
+  }
+
   // Create modal dialog
-  function showModal({ title, message, warning, buttons }) {
+  function showModal({ title, message, warning, variant, buttons }) {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay';
-      
+      const errorTitle = /failed|invalid|could not|unable|error|incomplete/i.test(String(title || ''));
+      const modalVariant = ['info', 'success', 'warning', 'error'].includes(variant)
+        ? variant
+        : warning
+          ? 'warning'
+          : errorTitle
+            ? 'error'
+            : 'info';
+      const icons = {
+        info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7h.01"></path>',
+        success: '<circle cx="12" cy="12" r="9"></circle><path d="m7.5 12 3 3 6-6"></path>',
+        warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
+        error: '<circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6"></path><path d="m15 9-6 6"></path>',
+      };
+      overlay.dataset.modalVariant = modalVariant;
       overlay.innerHTML = `
         <div class="modal">
           <div class="modal-header">
             <div class="modal-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                ${icons[modalVariant]}
               </svg>
             </div>
             <div class="modal-title">${title}</div>
@@ -2021,6 +2827,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+  }
+
+  let cognifyToastTimer;
+  function showToast(message, type = 'info') {
+    let toast = document.getElementById('cognifyToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'cognifyToast';
+      toast.className = 'cognify-toast';
+      toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+      toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+      document.body.appendChild(toast);
+    }
+    toast.dataset.type = type;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+    toast.textContent = message;
+    toast.hidden = false;
+    window.clearTimeout(cognifyToastTimer);
+    cognifyToastTimer = window.setTimeout(() => {
+      toast.hidden = true;
+    }, 6500);
   }
 
   // Create confirmation input modal
@@ -2115,6 +2943,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chrome.storage.local.get(['statistics', 'totalTimeSaved'], (localData) => {
               const exportData = {
                 bookmarks: bookmarkData,
+                bookmarkCollections: CognifyBookmarkUtils.normalizeBookmarkCollections(bookmarkStorageData.bookmarkCollections),
                 settings: syncData,
                 statistics: localData.statistics || {},
                 totalTimeSaved: localData.totalTimeSaved || 0,
@@ -2289,148 +3118,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Platform stats tab switching with PIN gate for Instagram/Facebook
-  // Platform stats tab switching
-  function switchToPlatform(platform) {
-    document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.platform-panel').forEach(p => p.classList.remove('active'));
-    const tab = document.querySelector(`.platform-tab[data-platform="${platform}"]`);
-    if (tab) tab.classList.add('active');
-    const panel = document.getElementById(`panel-${platform}`);
-    if (panel) panel.classList.add('active');
-    // Persist the chosen platform so it is restored on next popup open
-    chrome.storage.local.set({ lastStatsPlatform: platform });
-  }
-
-  document.querySelectorAll('.platform-tab').forEach(tab => {
-    tab.addEventListener('click', () => switchToPlatform(tab.dataset.platform));
-  });
-
-  // ─── Social stats (Instagram / Facebook) ────────────────────────────────
-  function loadSocialStats() {
-    if (!globalThis.chrome?.storage?.local) return;
-    const today = new Date().toDateString();
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    function sumWeek(dailyData) {
-      let videos = 0, time = 0, chat = 0;
-      Object.keys(dailyData).forEach(dateStr => {
-        if (new Date(dateStr) >= weekAgo) {
-          videos += dailyData[dateStr].videosWatched || 0;
-          time   += dailyData[dateStr].activeTime    || 0;
-          chat   += dailyData[dateStr].chatTime      || 0;
-        }
-      });
-      return { videos, time, chat };
-    }
-
-    function sumAll(dailyData) {
-      let videos = 0, time = 0;
-      Object.keys(dailyData).forEach(dateStr => {
-        videos += dailyData[dateStr].videosWatched || 0;
-        time   += dailyData[dateStr].activeTime    || 0;
-      });
-      return { videos, time };
-    }
-
-    /** Sums the 7 days immediately before the current week (days 8-14). */
-    function sumPrevWeek(dailyData) {
-      const prevWeekStart = new Date();
-      prevWeekStart.setDate(prevWeekStart.getDate() - 14);
-      let videos = 0, time = 0;
-      Object.keys(dailyData).forEach(dateStr => {
-        const d = new Date(dateStr);
-        if (d >= prevWeekStart && d < weekAgo) {
-          videos += dailyData[dateStr].videosWatched || 0;
-          time   += dailyData[dateStr].activeTime    || 0;
-        }
-      });
-      return { videos, time };
-    }
-
-    /** Renders a percentage-change delta badge into a .stat-delta element. */
-    function setSocialDelta(id, cur, prev) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (prev === 0 && cur === 0) { el.textContent = ''; el.className = 'stat-delta flat'; return; }
-      if (prev === 0) { el.textContent = 'new'; el.className = 'stat-delta up'; return; }
-      const pct = Math.round(((cur - prev) / prev) * 100);
-      el.textContent = pct >= 0 ? `+${pct}%` : `${pct}%`;
-      el.className = `stat-delta ${pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat'}`;
-    }
-
-    // Instagram
-    if (!globalThis.chrome?.storage?.local) return;
-    chrome.storage.local.get(['igStats'], (data) => {
-      const daily = (data.igStats || {}).dailyData || {};
-      const todayD = daily[today] || {};
-      const week   = sumWeek(daily);
-      const all    = sumAll(daily);
-
-      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      set('ig-total-reels',     all.videos);
-      set('ig-total-time',      formatTime(all.time / 60));
-      set('ig-today-reels',     todayD.videosWatched || 0);
-      set('ig-today-time',      formatTimeShort(todayD.activeTime / 60 || 0));
-      set('ig-chat-time-today', formatTimeShort(todayD.chatTime / 60 || 0));
-      set('ig-day-reels',       todayD.videosWatched || 0);
-      set('ig-day-time',        formatTimeShort(todayD.activeTime / 60 || 0));
-      set('ig-day-chat',        formatTimeShort(todayD.chatTime / 60 || 0));
-      set('ig-week-reels',      week.videos);
-      set('ig-week-time',       formatTimeShort(week.time / 60));
-      set('ig-week-chat',       formatTimeShort(week.chat / 60));
-      set('ig-scroll-count',    todayD.scrollCount || 0);
-      const igDate = document.getElementById('ig-today-date');
-      if (igDate) igDate.textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      igStatsData = daily;
-      setTimeout(() => drawGraph(igStatsData, igRange.value, document.getElementById('igStatsGraph'), 'videosWatched'), 50);
-      const igPrev = sumPrevWeek(daily);
-      setSocialDelta('igDeltaReels', week.videos, igPrev.videos);
-      setSocialDelta('igDeltaTime',  week.time,   igPrev.time);
-    });
-
-    // Facebook
-    chrome.storage.local.get(['fbStats'], (data) => {
-      const daily = (data.fbStats || {}).dailyData || {};
-      const todayD = daily[today] || {};
-      const week   = sumWeek(daily);
-      const all    = sumAll(daily);
-
-      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      set('fb-total-videos',    all.videos);
-      set('fb-total-time',      formatTime(all.time / 60));
-      set('fb-today-videos',    todayD.videosWatched || 0);
-      set('fb-today-time',      formatTimeShort(todayD.activeTime / 60 || 0));
-      set('fb-chat-time-today', formatTimeShort(todayD.chatTime / 60 || 0));
-      set('fb-day-videos',      todayD.videosWatched || 0);
-      set('fb-day-time',        formatTimeShort(todayD.activeTime / 60 || 0));
-      set('fb-day-chat',        formatTimeShort(todayD.chatTime / 60 || 0));
-      set('fb-week-videos',     week.videos);
-      set('fb-week-time',       formatTimeShort(week.time / 60));
-      set('fb-week-chat',       formatTimeShort(week.chat / 60));
-      set('fb-scroll-count',    todayD.scrollCount || 0);
-      const fbDate = document.getElementById('fb-today-date');
-      if (fbDate) fbDate.textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      fbStatsData = daily;
-      setTimeout(() => drawGraph(fbStatsData, fbRange.value, document.getElementById('fbStatsGraph'), 'videosWatched'), 50);
-      const fbPrev = sumPrevWeek(daily);
-      setSocialDelta('fbDeltaVideos', week.videos, fbPrev.videos);
-      setSocialDelta('fbDeltaTime',   week.time,   fbPrev.time);
-    });
-  }
-
-  // Refresh buttons for social panels
-  const refreshIgBtn = document.getElementById('refreshIgStats');
-  if (refreshIgBtn) {
-    refreshIgBtn.addEventListener('click', () => {
-      loadSocialStats();
-      refreshIgBtn.style.transition = 'transform 0.5s';
-      refreshIgBtn.style.transform = 'rotate(360deg)';
-      setTimeout(() => { refreshIgBtn.style.transform = 'rotate(0deg)'; }, 500);
-    });
-  }
-
   // Reset YouTube stats from the YouTube panel — secure 2-step flow
   const resetYtBtn = document.getElementById('resetYtStats');
   if (resetYtBtn) {
@@ -2460,85 +3147,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Reset Instagram stats — secure 2-step flow
-  const resetIgBtn = document.getElementById('resetIgStats');
-  if (resetIgBtn) {
-    resetIgBtn.addEventListener('click', async () => {
-      const confirmed = await showModal({
-        title: 'Reset Instagram Statistics',
-        message: 'This will permanently clear all your Instagram activity statistics. This action cannot be undone.',
-        warning: '⚠️ This action cannot be undone.',
-        buttons: [
-          { text: 'Cancel', type: 'secondary' },
-          { text: 'Continue', type: 'primary' }
-        ]
-      });
-      if (!confirmed) return;
-
-      const typeConfirmed = await showConfirmationInput({
-        title: 'Type to Confirm',
-        message: 'To confirm, please type <strong>RESET INSTAGRAM STATS</strong> in the box below:',
-        confirmText: 'RESET INSTAGRAM STATS',
-        placeholder: 'Type here...'
-      });
-      if (!typeConfirmed) return;
-
-      chrome.storage.local.remove(['igStats'], () => {
-        loadSocialStats();
-      });
-    });
-  }
-
-  const refreshFbBtn = document.getElementById('refreshFbStats');
-  if (refreshFbBtn) {
-    refreshFbBtn.addEventListener('click', () => {
-      loadSocialStats();
-      refreshFbBtn.style.transition = 'transform 0.5s';
-      refreshFbBtn.style.transform = 'rotate(360deg)';
-      setTimeout(() => { refreshFbBtn.style.transform = 'rotate(0deg)'; }, 500);
-    });
-  }
-
-  // Reset Facebook stats — secure 2-step flow
-  const resetFbBtn = document.getElementById('resetFbStats');
-  if (resetFbBtn) {
-    resetFbBtn.addEventListener('click', async () => {
-      const confirmed = await showModal({
-        title: 'Reset Facebook Statistics',
-        message: 'This will permanently clear all your Facebook activity statistics. This action cannot be undone.',
-        warning: '⚠️ This action cannot be undone.',
-        buttons: [
-          { text: 'Cancel', type: 'secondary' },
-          { text: 'Continue', type: 'primary' }
-        ]
-      });
-      if (!confirmed) return;
-
-      const typeConfirmed = await showConfirmationInput({
-        title: 'Type to Confirm',
-        message: 'To confirm, please type <strong>RESET FACEBOOK STATS</strong> in the box below:',
-        confirmText: 'RESET FACEBOOK STATS',
-        placeholder: 'Type here...'
-      });
-      if (!typeConfirmed) return;
-
-      chrome.storage.local.remove(['fbStats'], () => {
-        loadSocialStats();
-      });
-    });
-  }
-
   // Load statistics on page load
   loadStatistics();
-  loadSocialStats();
 
-  // Restore the last-viewed platform tab (persisted across popup opens)
-  if (globalThis.chrome?.storage?.local) chrome.storage.local.get(['lastStatsPlatform'], (d) => {
-    if (d.lastStatsPlatform) switchToPlatform(d.lastStatsPlatform);
-  });
-
-  // ── Kebab menu toggle for platform panel actions ─────────────────────────
-  ['ytKebab', 'igKebab', 'fbKebab'].forEach(id => {
+  // Kebab menu toggle for the YouTube panel actions
+  ['ytKebab'].forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
     const menu = btn.nextElementSibling; // .kebab-menu sibling
@@ -2561,37 +3174,27 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.kebab-menu.open').forEach(m => m.classList.remove('open'));
     });
   });
-  // ── Export platform stats as CSV ─────────────────────────────────────────
+  // ── Export YouTube stats as CSV ───────────────────────────────────────────
   /**
-   * Downloads the stored daily stats for a platform as a CSV file.
-   * @param {'yt'|'ig'|'fb'} platform
+   * Downloads the stored daily YouTube stats as a CSV file.
    */
-  function exportStatsCSV(platform) {
-    const key = platform === 'yt' ? 'statistics' : `${platform}Stats`;
-    chrome.storage.local.get([key], (data) => {
-      const stats = data[key];
+  function exportStatsCSV() {
+    chrome.storage.local.get(['statistics'], (data) => {
+      const stats = data.statistics;
       if (!stats) {
         showModal({ title: 'No Data', message: 'No statistics found to export.', buttons: [{ text: 'OK', type: 'primary' }] });
         return;
       }
-      let rows;
-      if (platform === 'yt') {
-        rows = [['Date', 'Videos', 'WatchTime(min)', 'AvgSpeed', 'TimeSaved(min)']];
-        Object.entries(stats.dailyStats || {}).forEach(([d, v]) => {
-          const avg = v.videos > 0 ? (v.totalSpeed / v.videos).toFixed(2) : (v.avgSpeed || 1).toFixed(2);
-          rows.push([d, v.videos || 0, (v.watchTime || 0).toFixed(1), avg, (v.timeSaved || 0).toFixed(1)]);
-        });
-      } else {
-        rows = [['Date', 'Videos/Reels', 'ActiveTime(min)', 'ChatTime(min)', 'ScrollCount']];
-        Object.entries(stats.dailyData || {}).forEach(([d, v]) => {
-          rows.push([d, v.videosWatched || 0, ((v.activeTime || 0) / 60).toFixed(1), ((v.chatTime || 0) / 60).toFixed(1), v.scrollCount || 0]);
-        });
-      }
+      const rows = [['Date', 'Videos', 'WatchTime(min)', 'AvgSpeed', 'TimeSaved(min)']];
+      Object.entries(stats.dailyStats || {}).forEach(([d, v]) => {
+        const avg = v.videos > 0 ? (v.totalSpeed / v.videos).toFixed(2) : (v.avgSpeed || 1).toFixed(2);
+        rows.push([d, v.videos || 0, (v.watchTime || 0).toFixed(1), avg, (v.timeSaved || 0).toFixed(1)]);
+      });
       // Wrap each cell in quotes and escape inner quotes for RFC 4180 compliance
       const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
       const a = document.createElement('a');
       a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-      a.download = `${platform}_stats_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `youtube_stats_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
     });
   }
@@ -2731,16 +3334,10 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.sync.set({
       ytLimitEnabled: !!el('ytLimitEnabled')?.checked,
       ytDailyLimit:    parseInt(el('ytDailyLimit')?.value,  10) || 120,
-      igLimitEnabled: !!el('igLimitEnabled')?.checked,
-      igDailyLimit:    parseInt(el('igDailyLimit')?.value,  10) || 60,
-      fbLimitEnabled: !!el('fbLimitEnabled')?.checked,
-      fbDailyLimit:    parseInt(el('fbDailyLimit')?.value,  10) || 60,
     }, () => {
-      // Reset all session state so the new limit takes effect immediately on active tabs.
+      // Reset the YouTube session state so the new limit takes effect immediately.
       chrome.storage.local.set({
         ytSessionBlocked: false, ytSessionStart: null,
-        igSessionBlocked: false, igSessionStart: null,
-        fbSessionBlocked: false, fbSessionStart: null,
       });
       const btn = el('saveLimitsBtn');
       if (!btn) return;
@@ -2754,103 +3351,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load screen time limit values on popup open
-  if (globalThis.chrome?.storage?.sync) chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit', 'igLimitEnabled', 'igDailyLimit', 'fbLimitEnabled', 'fbDailyLimit'], (d) => {
+  if (globalThis.chrome?.storage?.sync) chrome.storage.sync.get(['ytLimitEnabled', 'ytDailyLimit'], (d) => {
     const el = id => document.getElementById(id);
     if (el('ytLimitEnabled')) { el('ytLimitEnabled').checked = !!d.ytLimitEnabled; applyLimitCardState('yt'); }
     if (el('ytDailyLimit'))   el('ytDailyLimit').value    = d.ytDailyLimit  || 120;
-    if (el('igLimitEnabled')) { el('igLimitEnabled').checked = !!d.igLimitEnabled; applyLimitCardState('ig'); }
-    if (el('igDailyLimit'))   el('igDailyLimit').value    = d.igDailyLimit  || 60;
-    if (el('fbLimitEnabled')) { el('fbLimitEnabled').checked = !!d.fbLimitEnabled; applyLimitCardState('fb'); }
-    if (el('fbDailyLimit'))   el('fbDailyLimit').value    = d.fbDailyLimit  || 60;
   });
 
   // Toggle-change: update card border, enable/disable input, and auto-save.
-  ['yt', 'ig', 'fb'].forEach(prefix => {
-    document.getElementById(`${prefix}LimitEnabled`)
-      ?.addEventListener('change', () => {
-        applyLimitCardState(prefix);
-        saveScreenTimeLimits();
-      });
-  });
-
-  // ── Error Log Display (Development) ─────────────────────────────────────────
-  const errorLogBtn = document.getElementById('errorLogBtn');
-  if (errorLogBtn) {
-    errorLogBtn.addEventListener('click', () => {
-      // Request error logs from background service worker
-      chrome.runtime.sendMessage({ type: 'getErrorLogs' }, (response) => {
-        const logs = (response && response.logs) || [];
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
-        overlay.innerHTML = `
-          <div class="modal error-log-modal">
-            <div class="error-log-header">
-              <div class="error-log-title">Error Logs</div>
-              <div class="error-log-count">${logs.length}</div>
-            </div>
-            <div class="error-log-list" id="errorList">
-              ${logs.length === 0 ? `
-                <div class="error-log-empty">
-                  ✓ No errors logged<br><small>Errors will appear here</small>
-                </div>
-              ` : `
-                ${logs.map(log => `
-                  <div class="error-log-item">
-                    <div class="error-log-time">${new Date(log.timestamp).toLocaleTimeString()}</div>
-                    <div class="error-log-source">${log.source}</div>
-                    <div class="error-log-message">${escapeHtml(log.message)}</div>
-                  </div>
-                `).join('')}
-              `}
-            </div>
-            <div class="modal-actions">
-              <button class="modal-btn modal-btn-secondary" id="copyLogsBtn">Copy to Clipboard</button>
-              <button class="modal-btn modal-btn-primary" id="clearLogsBtn">Clear Logs</button>
-              <button class="modal-btn modal-btn-neutral" id="closeLogsBtn">Close</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(overlay);
-        
-        // Close button
-        overlay.querySelector('#closeLogsBtn').addEventListener('click', () => overlay.remove());
-        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-        
-        // Copy logs to clipboard
-        overlay.querySelector('#copyLogsBtn').addEventListener('click', () => {
-          const text = logs.map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] [${l.source}] ${l.message}`).join('\n');
-          navigator.clipboard.writeText(text).then(() => {
-            const btn = overlay.querySelector('#copyLogsBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
-          });
-        });
-        
-        // Clear logs
-        overlay.querySelector('#clearLogsBtn').addEventListener('click', () => {
-          chrome.runtime.sendMessage({ type: 'clearErrorLogs' }, () => {
-            overlay.remove();
-          });
-        });
-      });
+  document.getElementById('ytLimitEnabled')
+    ?.addEventListener('change', () => {
+      applyLimitCardState('yt');
+      saveScreenTimeLimits();
     });
-  }
-
-  // Helper to escape HTML
-  function escapeHtml(text) {
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, m => map[m]);
-  }
 
   // ── Additional feature event listeners ───────────────────────────────────
-  document.getElementById('exportYtCsv')?.addEventListener('click', () => exportStatsCSV('yt'));
-  document.getElementById('exportIgCsv')?.addEventListener('click', () => exportStatsCSV('ig'));
-  document.getElementById('exportFbCsv')?.addEventListener('click', () => exportStatsCSV('fb'));
+  document.getElementById('exportYtCsv')?.addEventListener('click', exportStatsCSV);
   document.getElementById('exportBackupBtn')?.addEventListener('click', exportFullBackup);
   document.getElementById('restoreBackupBtn')?.addEventListener('click', () => document.getElementById('restoreBackupFile')?.click());
   document.getElementById('restoreBackupFile')?.addEventListener('change', importFullBackup);
   document.getElementById('saveLimitsBtn')?.addEventListener('click', saveScreenTimeLimits);
 
-  setInterval(() => { loadStatistics(); loadSocialStats(); }, 30000);
+  setInterval(loadStatistics, 30000);
 });

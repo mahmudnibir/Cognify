@@ -1,8 +1,8 @@
-# Cognify – Smart Study Automation for Your Browser
+# Cognify – YouTube Focus & Playback Controls
 
-> A powerful Chrome extension that automates your study routine and brings intelligent focus tools directly to your browser.
+> A YouTube-only browser extension for playback control, bookmarks, focus, and intentional screen-time management.
 
-**Version** 3.8.0 &nbsp;·&nbsp; **Manifest** V3 &nbsp;·&nbsp; **Author** [Mahmud Nibir](https://github.com/mahmudnibir)
+**Version** 3.9.0 &nbsp;·&nbsp; **Manifest** V3 &nbsp;·&nbsp; **Author** [Mahmud Nibir](https://github.com/mahmudnibir)
 
 ![Views](https://visitor-badge.laobi.icu/badge?page_id=mahmudnibir.yt-extension-enhanced)
 
@@ -12,9 +12,7 @@
 
 | Feature | Description |
 |---|---|
-| Speed Control | Playback speed from 0.25× to 16× via slider |
-| Speed Presets | Quick-access 1.25×, 1.5×, 1.75×, 2× buttons in the Advanced tab |
-| Universal Video Speed | Hover overlay on **any** video across the entire web — toggle in settings |
+| Speed Control | YouTube playback speed from 0.25× to 16× with a labeled scale |
 | Bookmark Library | Browse bookmarked videos with thumbnails, titles, video counts, labels, and exact timestamp links; cloud sync, import & export included |
 | Ad Skip | Automatically skips YouTube advertisements |
 | SponsorBlock | Auto-skip sponsor segments via community data |
@@ -26,9 +24,7 @@
 | Auto Subtitles | Automatically enable closed captions on video load |
 | Sleep Timer | Pause playback after a set number of minutes |
 | Screen Time Limits | Daily watch-time cap with a warning and auto-pause |
-| Watch Statistics | Track total watch time and session history with a live graph (Y-axis labels, daily/weekly breakdown) across YouTube, Instagram, and Facebook; last-selected platform tab is remembered |
-| Social Download | One-click video download overlay on Instagram and Facebook posts |
-| Hide Messenger | Remove the Facebook Messenger chat bubble and chat panel with a single toggle; updates the page instantly without a reload |
+| Watch Statistics | Track YouTube watch time and session history with a live graph and daily/weekly breakdown |
 | Loop Segment (A→B) | Set A and B loop points with `[` / `]` keys; the video continuously repeats the marked section. Clear with `\` or the popup button |
 | Timestamp Share Links | Copy a shareable YouTube URL at the exact timestamp of any bookmark directly from the bookmarks panel; links open at that precise moment |
 | Watched Progress Tags | Automatic red progress bars on video thumbnails for partially-watched videos; progress is silently tracked every 5 seconds |
@@ -52,14 +48,14 @@
 | Permission | Reason |
 |---|---|
 | `storage` | Persist bookmarks, settings, and statistics |
-| `activeTab` | Interact with the active YouTube tab |
-| `scripting` | Inject controls into the YouTube player |
+| `tabs` | Detect when the active tab leaves YouTube so watch-time tracking stops accurately |
+| YouTube host access | Add playback controls and track YouTube watch time |
 
 ---
 
 ## Usage
 
-Click the **Cognify** extension icon or press **Ctrl+Shift+C** to open the control panel. If Chrome assigns that shortcut to Inspect, remap it in `chrome://extensions/shortcuts`. All settings persist across sessions via Chrome's sync storage. The **Bookmarks** tab contains your saved videos and bookmark import/export. The **Settings** tab contains keyboard shortcuts, automation toggles (theater, fullscreen, subtitles, focus mode), playback presets, and statistics management.
+Click the **Cognify** extension icon or press **Ctrl+Shift+Y** to open the control panel. You can review or remap the shortcut at `chrome://extensions/shortcuts`. Cognify runs on YouTube; it does not inject scripts into other sites. Settings persist across sessions via Chrome Sync. The **Bookmarks** tab contains your saved videos and bookmark import/export. The **Settings** tab contains keyboard shortcuts, playback and focus controls, and YouTube statistics.
 
 ---
 

@@ -77,6 +77,86 @@ function filterBookmarkVideos(videos, filters = {}) {
   });
 }
 
+function normalizeBookmarkCollections(value) {
+  const source = value && typeof value === 'object' ? value : {};
+  const collectionNames = new Set();
+  const memberships = {};
+  const addCollection = (name) => {
+    const normalized = typeof name === 'string' ? name.trim() : '';
+    if (normalized) collectionNames.add(normalized);
+    return normalized;
+  };
+  const addMembership = (videoId, names) => {
+    if (typeof videoId !== 'string' || !videoId.trim()) return;
+    const list = Array.isArray(names) ? names : [names];
+    const normalizedNames = [...new Set(list.map(addCollection).filter(Boolean))];
+    if (normalizedNames.length) memberships[videoId] = normalizedNames;
+  };
+
+  if (Array.isArray(source.collections)) source.collections.forEach(addCollection);
+  if (source.memberships && typeof source.memberships === 'object') {
+    Object.entries(source.memberships).forEach(([videoId, names]) => addMembership(videoId, names));
+  }
+  if (source.folders && typeof source.folders === 'object') {
+    Object.entries(source.folders).forEach(([key, value]) => {
+      if (typeof value === 'string' && (!value || key === value)) {
+        addCollection(key);
+        return;
+      }
+      addMembership(key, value);
+    });
+  }
+
+  return {
+    collections: [...collectionNames],
+    memberships,
+    shared: Array.isArray(source.shared) ? source.shared : [],
+  };
+}
+
+function createBookmarkCollectionShare(name, bookmarkData, collectionState) {
+  const collectionName = typeof name === 'string' ? name.trim().slice(0, 40) : '';
+  const collections = normalizeBookmarkCollections(collectionState);
+  if (!collectionName || collectionName.toLowerCase() === 'all' || !collections.collections.includes(collectionName)) return null;
+
+  const bookmarks = Object.fromEntries(Object.entries(bookmarkData || {}).filter(([key, marks]) => (
+    key.startsWith('yt_bm_')
+    && Array.isArray(marks)
+    && marks.length > 0
+    && (collections.memberships[key.slice(6)] || []).includes(collectionName)
+  )));
+  return { format: 'cognify-collection', version: 1, name: collectionName, bookmarks };
+}
+
+function parseBookmarkCollectionShare(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  if (value.format !== 'cognify-collection' || value.version !== 1) return null;
+  const name = typeof value.name === 'string' ? value.name.trim().slice(0, 40) : '';
+  if (!name || name.toLowerCase() === 'all' || !value.bookmarks || typeof value.bookmarks !== 'object' || Array.isArray(value.bookmarks)) return null;
+  const bookmarks = Object.fromEntries(Object.entries(value.bookmarks).filter(([key, marks]) => (
+    key.startsWith('yt_bm_') && Array.isArray(marks) && marks.length > 0
+  )));
+  return { name, bookmarks };
+}
+
+function addVideoToCollection(collections, videoId, collectionName) {
+  const name = typeof collectionName === 'string' ? collectionName.trim() : '';
+  if (!name || !videoId || !collections?.collections?.includes(name)) return false;
+  const current = collections.memberships[videoId] || [];
+  if (current.includes(name)) return false;
+  collections.memberships[videoId] = [...current, name];
+  return true;
+}
+
+function removeVideoFromCollection(collections, videoId, collectionName) {
+  const current = collections?.memberships?.[videoId];
+  if (!Array.isArray(current) || !current.includes(collectionName)) return false;
+  const remaining = current.filter((name) => name !== collectionName);
+  if (remaining.length) collections.memberships[videoId] = remaining;
+  else delete collections.memberships[videoId];
+  return true;
+}
+
 function findShortcutConflict(shortcuts, candidate, action) {
   const normalized = String(candidate || '').trim().toLowerCase();
   if (!normalized) return null;
@@ -91,6 +171,11 @@ const bookmarkUtils = {
   getBookmarkVideos,
   sortBookmarkVideos,
   filterBookmarkVideos,
+  normalizeBookmarkCollections,
+  createBookmarkCollectionShare,
+  parseBookmarkCollectionShare,
+  addVideoToCollection,
+  removeVideoFromCollection,
   findShortcutConflict,
 };
 
