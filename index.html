@@ -82,6 +82,23 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .glass-card { background: rgba(32, 31, 31, 0.6); backdrop-filter: blur(12px); }
         .hero-gradient { background: radial-gradient(circle at 50% 50%, rgba(255, 85, 64, 0.15) 0%, rgba(19, 19, 19, 0) 70%); }
+        @media (max-width: 767px) {
+            #siteNavigation.mobile-nav-open {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 12px 24px 20px;
+                border-top: 1px solid rgba(255, 255, 255, .1);
+                background: #131313;
+                box-shadow: 0 12px 24px rgba(0, 0, 0, .35);
+            }
+            #siteNavigation.mobile-nav-open a { padding-top: 10px; padding-bottom: 10px; }
+        }
     </style>
 <style>
     body {
@@ -93,21 +110,18 @@
 <!-- TopAppBar -->
 <header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 py-4 bg-[#131313] bg-opacity-90 backdrop-blur-xl">
 <div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-[#FF5540] text-2xl">terminal</span>
+<img src="icons/icon-48.png" alt="Cognify" class="w-8 h-8 rounded-lg object-contain">
 <span class="text-xl font-black tracking-tighter text-[#E5E2E1]">COGNIFY</span>
 </div>
-<nav class="hidden md:flex items-center gap-8">
+<nav id="siteNavigation" class="hidden md:flex items-center gap-8">
 <a class="text-[#FF5540] font-bold font-['Inter'] uppercase tracking-[0.05rem] text-sm" href="#features">Features</a>
 <a class="text-[#E5E2E1] opacity-70 hover:opacity-100 font-['Inter'] uppercase tracking-[0.05rem] text-sm transition-all duration-300" href="#overlay">Overlay</a>
 <a class="text-[#E5E2E1] opacity-70 hover:opacity-100 font-['Inter'] uppercase tracking-[0.05rem] text-sm transition-all duration-300" href="#voices">Voice Modes</a>
 <a class="text-[#E5E2E1] opacity-70 hover:opacity-100 font-['Inter'] uppercase tracking-[0.05rem] text-sm transition-all duration-300" href="#install">Install</a>
-<a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="bg-primary-container text-on-primary-container px-6 py-2 rounded-xl font-bold hover:scale-95 duration-200 transition-all">Install Extension</a>
+<a href="#install" class="bg-primary-container text-on-primary-container px-6 py-2 rounded-xl font-bold hover:scale-95 duration-200 transition-all">Store Release Soon</a>
 </nav>
-<button id="profileButton" type="button" aria-label="Open profile" title="Profile login coming soon" class="text-[#E5E2E1] opacity-80 hover:opacity-100 transition-all duration-300 flex items-center justify-center">
-<span class="material-symbols-outlined text-2xl">account_circle</span>
-</button>
-<button class="md:hidden text-on-surface">
-<span class="material-symbols-outlined">menu</span>
+<button id="mobileMenuToggle" type="button" aria-label="Open navigation menu" aria-controls="siteNavigation" aria-expanded="false" class="md:hidden text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined" aria-hidden="true">menu</span>
 </button>
 </header>
 <main class="pt-24">
@@ -122,11 +136,11 @@
                         Make YouTube sessions more intentional with playback controls, bookmarks, focus tools, and watch-time limits.
                     </p>
 <div class="flex flex-col sm:flex-row gap-4">
-<a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="bg-primary-container text-on-primary-container px-10 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-2xl shadow-primary-container/20">
-                            Download Extension <span class="material-symbols-outlined">download</span>
+<a href="#install" class="bg-primary-container text-on-primary-container px-10 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-2xl shadow-primary-container/20">
+                            Chrome Web Store — Coming Soon <span class="material-symbols-outlined">storefront</span>
 </a>
-<a href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank" class="bg-surface-container-highest text-on-surface px-10 py-4 rounded-xl font-bold text-lg hover:bg-surface-bright transition-all">
-                            View Demo
+<a href="#features" class="bg-surface-container-highest text-on-surface px-10 py-4 rounded-xl font-bold text-lg hover:bg-surface-bright transition-all">
+                            Explore Features
                         </a>
 </div>
 </div>
@@ -431,39 +445,13 @@
 <section class="py-32 px-8 bg-surface-container-low" id="install">
 <div class="max-w-4xl mx-auto">
 <div class="text-center mb-20">
-<h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase">TAKE COMMAND</h2>
-<p class="text-on-surface-variant">Setup finalized in under 30 seconds.</p>
+<h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase">COMING SOON</h2>
+<p class="text-on-surface-variant">Cognify is preparing for its Chrome Web Store release.</p>
 </div>
-<div class="space-y-12">
-<div class="flex gap-8 group">
-<div class="flex flex-col items-center">
-<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-black text-xl shrink-0">1</div>
-<div class="w-px flex-1 bg-outline-variant/30 my-4"></div>
-</div>
-<div class="pt-2">
-<h4 class="text-xl font-bold mb-2">INITIALIZE CONNECTION</h4>
-<p class="text-on-surface-variant max-w-lg">Download the project ZIP from GitHub, load the extracted folder as an unpacked extension, and look for the Cognify icon in your toolbar.</p>
-</div>
-</div>
-<div class="flex gap-8 group">
-<div class="flex flex-col items-center">
-<div class="w-12 h-12 rounded-full border-2 border-primary-container text-primary-container flex items-center justify-center font-black text-xl shrink-0">2</div>
-<div class="w-px flex-1 bg-outline-variant/30 my-4"></div>
-</div>
-<div class="pt-2">
-<h4 class="text-xl font-bold mb-2">CONFIGURE PROTOCOLS</h4>
-<p class="text-on-surface-variant max-w-lg">Open a YouTube video and click Cognify in the toolbar, or press Ctrl+Shift+Y to open its control panel. Configure the player from there.</p>
-</div>
-</div>
-<div class="flex gap-8 group">
-<div class="flex flex-col items-center">
-<div class="w-12 h-12 rounded-full border-2 border-primary-container text-primary-container flex items-center justify-center font-black text-xl shrink-0">3</div>
-</div>
-<div class="pt-2">
-<h4 class="text-xl font-bold mb-2">EXECUTE CONTROL</h4>
-<p class="text-on-surface-variant max-w-lg">Cognify activates on YouTube and stays out of the way on other websites.</p>
-</div>
-</div>
+<div class="mx-auto max-w-2xl rounded-2xl border border-outline-variant/20 bg-surface-container p-8 text-center">
+<span class="material-symbols-outlined mb-4 block text-4xl text-primary-container" aria-hidden="true">storefront</span>
+<h3 class="mb-3 text-2xl font-bold">Chrome Web Store listing in progress</h3>
+<p class="text-on-surface-variant leading-relaxed">There is no public download link yet. Once Cognify is published, this page will link directly to the official listing.</p>
 </div>
 </div>
 </section>
@@ -471,12 +459,12 @@
 <section class="py-32 px-8 text-center relative overflow-hidden">
 <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&amp;fit=crop&amp;q=80&amp;w=2000')] opacity-5 scale-110" data-alt="high-tech computer hardware with glowing red internal lighting and glass panels"></div>
 <div class="max-w-3xl mx-auto relative z-10">
-<h2 class="text-4xl md:text-6xl font-black mb-8 leading-tight">READY TO UPGRADE YOUR BRAIN'S BANDWIDTH?</h2>
-<a href="https://github.com/mahmudnibir/yt-extension-enhanced/archive/refs/heads/main.zip" class="inline-flex items-center bg-primary-container text-on-primary-container px-12 py-6 rounded-2xl font-black text-2xl hover:scale-105 transition-transform duration-300 shadow-xl shadow-primary-container/40 group">
-                    INSTALL COGNIFY NOW
-                    <span class="material-symbols-outlined align-middle ml-2 group-hover:translate-x-2 transition-transform">east</span>
+<h2 class="text-4xl md:text-6xl font-black mb-8 leading-tight">MAKE YOUR YOUTUBE TIME MORE INTENTIONAL</h2>
+<a href="#install" class="inline-flex items-center gap-3 rounded-2xl bg-primary-container px-10 py-5 text-lg font-black text-on-primary-container shadow-xl shadow-primary-container/30 transition-transform duration-300 hover:scale-105">
+                    CHROME WEB STORE RELEASE COMING SOON
+                    <span class="material-symbols-outlined" aria-hidden="true">storefront</span>
 </a>
-<p class="mt-8 text-on-surface-variant text-sm font-bold uppercase tracking-widest opacity-60">Compatible with Chrome, Edge, and Brave.</p>
+<p class="mt-8 text-on-surface-variant text-sm font-bold uppercase tracking-widest opacity-60">A public download link will be added after publication.</p>
 </div>
 </section>
 </main>
@@ -490,30 +478,35 @@
 <a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#features">Features</a>
 <a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#overlay">Overlay</a>
 <a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#voices">Voice Modes</a>
-<a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="https://github.com/mahmudnibir/yt-extension-enhanced" target="_blank">GitHub</a>
+<a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#install">Availability</a>
 </div>
 <p class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] opacity-80">
             MIT © 2026 MAHMUD NIBIR. ALL RIGHTS RESERVED.
         </p>
 </footer>
-<dialog id="profileDialog" class="bg-[#201f1f] text-[#E5E2E1] border border-[#603e39] rounded-xl p-0 backdrop:bg-black/60">
-<div class="w-[min(22rem,calc(100vw-2rem))] p-6">
-<div class="flex items-center gap-3 mb-4">
-<span class="material-symbols-outlined text-[#FF5540] text-3xl">account_circle</span>
-<h2 class="text-xl font-bold">Profile login</h2>
-</div>
-<p class="text-[#EBBBB4] leading-relaxed mb-6">Profile login and account syncing are coming soon.</p>
-<form method="dialog" class="flex justify-end">
-<button class="bg-[#FF5540] text-[#5C0000] px-5 py-2 rounded-lg font-bold hover:brightness-110 transition-all">Close</button>
-</form>
-</div>
-</dialog>
 <script>
-    const profileButton = document.getElementById('profileButton');
-    const profileDialog = document.getElementById('profileDialog');
-    profileButton.addEventListener('click', () => profileDialog.showModal());
-    profileDialog.addEventListener('click', (event) => {
-        if (event.target === profileDialog) profileDialog.close();
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const siteNavigation = document.getElementById('siteNavigation');
+    const setMobileMenuOpen = (open) => {
+        siteNavigation.classList.toggle('mobile-nav-open', open);
+        mobileMenuToggle.setAttribute('aria-expanded', String(open));
+        mobileMenuToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+        mobileMenuToggle.querySelector('.material-symbols-outlined').textContent = open ? 'close' : 'menu';
+    };
+    mobileMenuToggle.addEventListener('click', () => {
+        setMobileMenuOpen(mobileMenuToggle.getAttribute('aria-expanded') !== 'true');
+    });
+    siteNavigation.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', () => setMobileMenuOpen(false));
+    });
+    document.addEventListener('click', (event) => {
+        if (!siteNavigation.contains(event.target) && !mobileMenuToggle.contains(event.target)) setMobileMenuOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') setMobileMenuOpen(false);
+    });
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) setMobileMenuOpen(false);
     });
 </script>
 </body></html>
