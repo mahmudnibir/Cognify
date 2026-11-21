@@ -199,6 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
+    if (document.querySelector('.bookmark-manage-menu:not([hidden])')) {
+      const manageButton = document.querySelector('.bookmark-manage-button[aria-expanded="true"]');
+      closeBookmarkManageMenus();
+      manageButton?.focus();
+      return;
+    }
     if (!bookmarkManageMenu.hidden) {
       closeBookmarkManageMenu();
       bookmarkManageToggle.focus();
@@ -595,6 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let bookmarkLibraryData = {};
   let bookmarkSelectionMode = false;
   const selectedBookmarkVideos = new Set();
+  const expandedBookmarkVideos = new Set();
   let bookmarkCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let bookmarkCalendarFocusDate = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
 
@@ -935,8 +942,39 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.bookmark-manage-menu').forEach((menu) => {
       menu.hidden = true;
       menu.style.display = 'none';
+      menu.style.visibility = '';
+    });
+    document.querySelectorAll('.bookmark-manage-button').forEach((button) => {
+      button.setAttribute('aria-expanded', 'false');
     });
   }
+
+  function positionBookmarkManageMenu(menu, button) {
+    const buttonBounds = button.getBoundingClientRect();
+    const margin = 8;
+    const availableBelow = Math.max(0, window.innerHeight - buttonBounds.bottom - margin);
+    const availableAbove = Math.max(0, buttonBounds.top - margin);
+    menu.style.maxHeight = '200px';
+    const naturalHeight = menu.getBoundingClientRect().height;
+    const openAbove = availableBelow < naturalHeight && availableAbove > availableBelow;
+    const availableHeight = openAbove ? availableAbove : availableBelow;
+    menu.style.maxHeight = `${Math.min(200, availableHeight)}px`;
+
+    const menuBounds = menu.getBoundingClientRect();
+    const left = Math.max(margin, Math.min(
+      buttonBounds.right - menuBounds.width,
+      window.innerWidth - menuBounds.width - margin
+    ));
+    const top = openAbove
+      ? Math.max(margin, buttonBounds.top - menuBounds.height - 4)
+      : Math.min(buttonBounds.bottom + 4, window.innerHeight - menuBounds.height - margin);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.visibility = '';
+  }
+
+  bookmarkLibrary.addEventListener('scroll', closeBookmarkManageMenus);
+  window.addEventListener('resize', closeBookmarkManageMenus);
 
   document.addEventListener('click', (event) => {
     if (!event.target.closest('.bookmark-manage-menu, .bookmark-manage-button')) {
@@ -1113,6 +1151,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderBookmarkLibrary(data) {
     if (!bookmarkLibrary) return;
     bookmarkLibraryData = data || {};
+    closeBookmarkManageMenus();
+    document.querySelectorAll('.bookmark-manage-menu').forEach((menu) => menu.remove());
     bookmarkLibrary.textContent = '';
     showBookmarkUndoNotice();
     renderBookmarkFilterChips();
@@ -1127,6 +1167,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const availableVideoIds = new Set(allVideos.map((video) => video.videoId));
     selectedBookmarkVideos.forEach((videoId) => {
       if (!availableVideoIds.has(videoId)) selectedBookmarkVideos.delete(videoId);
+    });
+    expandedBookmarkVideos.forEach((videoId) => {
+      if (!availableVideoIds.has(videoId)) expandedBookmarkVideos.delete(videoId);
     });
     updateBookmarkSelectionUI();
     let videos = allVideos
@@ -1162,6 +1205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const videoTitle = bookmarks.find((mark) => mark.title)?.title || `YouTube video (${videoId})`;
       card.dataset.videoId = videoId;
       card.dataset.videoTitle = videoTitle;
+      const isExpanded = expandedBookmarkVideos.has(videoId);
       const videoUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
       const openVideo = () => chrome.tabs.create({ url: videoUrl });
       card.addEventListener('click', (event) => {
@@ -1169,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!event.target.closest('button, input, select, textarea')) toggleBookmarkVideoSelection(videoId, card);
           return;
         }
-        if (!event.target.closest('.bookmark-time-actions, .bookmark-video-select, .bookmark-manage-button, .bookmark-manage-menu')) openVideo();
+        if (!event.target.closest('.bookmark-time-actions, .bookmark-video-select, .bookmark-manage-button, .bookmark-manage-menu, .bookmark-expand-toggle')) openVideo();
       });
       const selectionButton = document.createElement('button');
       selectionButton.className = 'bookmark-video-select';
@@ -1186,28 +1230,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const manageButton = document.createElement('button');
       manageButton.className = 'bookmark-manage-button';
       manageButton.type = 'button';
-      manageButton.title = 'Manage bookmarks for this video';
-      manageButton.setAttribute('aria-label', 'Manage bookmarks for this video');
-      manageButton.innerHTML = '<span aria-hidden="true">&#8942;</span>';
-      Object.assign(manageButton.style, {
-        background: 'var(--icon-bg)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '4px',
-        color: 'var(--text-primary)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '16px',
-        lineHeight: '1',
-        padding: '0',
-        position: 'absolute',
-        right: '7px',
-        top: '7px',
-        width: '26px',
-        height: '26px',
-        zIndex: '1'
-      });
+      manageButton.title = `More options for ${videoTitle}`;
+      manageButton.setAttribute('aria-label', `More options for ${videoTitle}`);
+      manageButton.setAttribute('aria-expanded', 'false');
+      manageButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>';
       manageButton.addEventListener('click', (event) => {
         event.stopPropagation();
         const wasOpen = !menu.hidden;
@@ -1215,45 +1241,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!wasOpen) {
           menu.hidden = false;
           menu.style.display = 'grid';
+          menu.style.visibility = 'hidden';
+          positionBookmarkManageMenu(menu, manageButton);
+          manageButton.setAttribute('aria-expanded', 'true');
           menu.scrollTop = 0;
         }
       });
       card.appendChild(manageButton);
       const menu = document.createElement('div');
       menu.className = 'bookmark-manage-menu';
+      menu.id = `bookmark-manage-menu-${videoId}`;
       menu.hidden = true;
-      Object.assign(menu.style, {
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-color-hover)',
-        borderRadius: '5px',
-        display: 'none',
-        gap: '3px',
-        maxHeight: '200px',
-        overflowY: 'auto',
-        overscrollBehavior: 'contain',
-        padding: '4px',
-        position: 'absolute',
-        right: '8px',
-        top: '36px',
-        zIndex: '2'
-      });
+      manageButton.setAttribute('aria-haspopup', 'true');
+      manageButton.setAttribute('aria-controls', menu.id);
       const addManageAction = (label, action, isDestructive = false) => {
         const actionButton = document.createElement('button');
+        actionButton.className = `bookmark-manage-action${isDestructive ? ' is-destructive' : ''}`;
         actionButton.type = 'button';
         actionButton.textContent = label;
-        Object.assign(actionButton.style, {
-          background: 'transparent',
-          border: 'none',
-          color: isDestructive ? 'var(--accent-color)' : 'var(--text-primary)',
-          cursor: 'pointer',
-          fontSize: '10px',
-          padding: '6px 8px',
-          textAlign: 'left',
-          whiteSpace: 'nowrap'
-        });
         actionButton.onclick = (event) => {
           event.stopPropagation();
-          menu.hidden = true;
+          closeBookmarkManageMenus();
           action();
         };
         menu.appendChild(actionButton);
@@ -1320,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       addManageAction('Delete all for this video', () => deleteBookmarkLibraryItems(videoId, bookmarks.map(bookmark => Number(bookmark.time))), true);
       menu.addEventListener('click', (event) => event.stopPropagation());
-      card.appendChild(menu);
+      document.body.appendChild(menu);
       card.addEventListener('keydown', (event) => {
         if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button, input, select, textarea')) {
           event.preventDefault();
@@ -1348,18 +1356,28 @@ document.addEventListener('DOMContentLoaded', () => {
       count.textContent = `${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}`;
       const times = document.createElement('div');
       times.className = 'bookmark-times';
+      times.id = `bookmark-times-${videoId}`;
       bookmarks.forEach((mark, index) => {
         const timeActions = document.createElement('div');
         timeActions.className = 'bookmark-time-actions';
+        timeActions.hidden = index >= 3 && !isExpanded;
         const button = document.createElement('button');
         button.className = 'bookmark-time';
         button.type = 'button';
         const timeValue = document.createElement('span');
         timeValue.className = 'bookmark-time-value';
-        timeValue.textContent = formatBookmarkTime(mark.time);
+        const timeLabel = formatBookmarkTime(mark.time);
+        const noteText = typeof mark.label === 'string' ? mark.label.trim() : '';
+        timeValue.textContent = timeLabel;
         button.appendChild(timeValue);
-        button.title = `Actions for bookmark at ${formatBookmarkTime(mark.time)}`;
-        button.setAttribute('aria-label', `Show actions for bookmark at ${formatBookmarkTime(mark.time)}`);
+        if (noteText) {
+          const notePreview = document.createElement('span');
+          notePreview.className = 'bookmark-time-note';
+          notePreview.textContent = noteText;
+          button.appendChild(notePreview);
+        }
+        button.title = `Actions for bookmark at ${timeLabel}${noteText ? `: ${noteText}` : ''}`;
+        button.setAttribute('aria-label', `Show actions for bookmark at ${timeLabel}${noteText ? `, note: ${noteText}` : ''}`);
         button.setAttribute('aria-expanded', 'false');
         const timeMenu = document.createElement('div');
         timeMenu.className = 'bookmark-time-menu';
@@ -1396,6 +1414,26 @@ document.addEventListener('DOMContentLoaded', () => {
         times.appendChild(timeActions);
       });
       body.append(title, count, times);
+      if (bookmarks.length > 3) {
+        const expandButton = document.createElement('button');
+        expandButton.className = 'bookmark-expand-toggle';
+        expandButton.type = 'button';
+        expandButton.setAttribute('aria-controls', times.id);
+        expandButton.setAttribute('aria-expanded', String(isExpanded));
+        expandButton.textContent = isExpanded ? 'Show fewer' : `Show all ${bookmarks.length} bookmarks`;
+        expandButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const shouldExpand = !expandedBookmarkVideos.has(videoId);
+          if (shouldExpand) expandedBookmarkVideos.add(videoId);
+          else expandedBookmarkVideos.delete(videoId);
+          times.querySelectorAll('.bookmark-time-actions').forEach((timeActions, index) => {
+            timeActions.hidden = index >= 3 && !shouldExpand;
+          });
+          expandButton.setAttribute('aria-expanded', String(shouldExpand));
+          expandButton.textContent = shouldExpand ? 'Show fewer' : `Show all ${bookmarks.length} bookmarks`;
+        });
+        body.appendChild(expandButton);
+      }
       card.append(thumbnailColumn, body);
       bookmarkLibrary.appendChild(card);
     });
@@ -1448,7 +1486,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bookmarkFilterToggle.addEventListener('click', () => {
     bookmarkFilters.hidden = !bookmarkFilters.hidden;
-    bookmarkFilterToggle.setAttribute('aria-expanded', String(!bookmarkFilters.hidden));
+    const isExpanded = !bookmarkFilters.hidden;
+    bookmarkFilterToggle.setAttribute('aria-expanded', String(isExpanded));
+    bookmarkFilterToggle.setAttribute('aria-label', `${isExpanded ? 'Hide' : 'Show'} bookmark filters`);
+    bookmarkFilterToggle.title = `${isExpanded ? 'Hide' : 'Show'} bookmark filters`;
   });
   [bookmarkSearch, bookmarkLabelFilter, bookmarkChannelFilter, bookmarkDurationFilter, bookmarkDateFilter, bookmarkFolderSelect]
     .filter(Boolean)
@@ -1779,11 +1820,39 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     const label = document.createElement('label');
     label.className = 'modal-label';
-    label.htmlFor = 'bookmarkShareCollectionSelect';
+    label.id = 'bookmarkShareCollectionFieldLabel';
+    label.htmlFor = 'bookmarkShareCollectionTrigger';
     label.textContent = 'Collection';
+    const picker = document.createElement('div');
+    picker.className = 'cognify-select bookmark-share-collection-select';
+    picker.id = 'bookmarkShareCollectionPicker';
+    const trigger = document.createElement('button');
+    trigger.className = 'cognify-select-trigger';
+    trigger.type = 'button';
+    trigger.id = 'bookmarkShareCollectionTrigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-controls', 'bookmarkShareCollectionOptions');
+    const selectedLabel = document.createElement('span');
+    selectedLabel.id = 'bookmarkShareCollectionLabel';
+    trigger.setAttribute('aria-labelledby', `${label.id} ${selectedLabel.id}`);
+    const arrow = document.createElement('span');
+    arrow.className = 'cognify-select-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    trigger.append(selectedLabel, arrow);
+    const options = document.createElement('div');
+    options.className = 'cognify-select-options';
+    options.id = 'bookmarkShareCollectionOptions';
+    options.hidden = true;
+    options.setAttribute('role', 'listbox');
+    options.setAttribute('aria-labelledby', label.id);
+    picker.append(trigger, options);
     const select = document.createElement('select');
     select.className = 'modal-input bookmark-dialog-select';
-    select.id = 'bookmarkShareCollectionSelect';
+    select.id = 'bookmarkShareCollectionValue';
+    select.hidden = true;
+    select.tabIndex = -1;
+    select.setAttribute('aria-hidden', 'true');
     const placeholder = document.createElement('option');
     placeholder.value = '';
     placeholder.textContent = 'Choose a collection';
@@ -1803,6 +1872,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const activeCollection = bookmarkFolderSelect?.value;
     if (bookmarkCollections.collections.includes(activeCollection)) select.value = activeCollection;
+    dialog.body.append(label, picker, select);
+    setupCustomSelect(
+      select,
+      picker.id,
+      trigger.id,
+      selectedLabel.id,
+      options.id
+    );
+    const closePicker = () => {
+      options.hidden = true;
+      picker.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+    dialog.overlay.addEventListener('click', (event) => {
+      if (!picker.contains(event.target)) closePicker();
+    });
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowDown') return;
+      event.preventDefault();
+      if (options.hidden) trigger.click();
+      options.querySelector('.cognify-select-option')?.focus();
+    });
+    options.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closePicker();
+        trigger.focus();
+        return;
+      }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      const optionButtons = [...options.querySelectorAll('.cognify-select-option')];
+      const currentIndex = optionButtons.indexOf(document.activeElement);
+      const nextIndex = event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? optionButtons.length - 1
+          : (currentIndex + (event.key === 'ArrowDown' ? 1 : -1) + optionButtons.length) % optionButtons.length;
+      if (!optionButtons.length) return;
+      event.preventDefault();
+      optionButtons[nextIndex].focus();
+    });
     const feedback = document.createElement('div');
     feedback.className = 'bookmark-dialog-feedback';
     const cancelButton = document.createElement('button');
@@ -1811,7 +1922,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelButton.textContent = 'Cancel';
     cancelButton.addEventListener('click', dialog.close);
     const downloadButton = document.createElement('button');
-    downloadButton.className = 'modal-btn modal-btn-primary';
+    downloadButton.className = 'modal-btn modal-btn-primary bookmark-share-download';
     downloadButton.type = 'button';
     downloadButton.textContent = 'Download file';
     downloadButton.disabled = true;
@@ -1855,10 +1966,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     select.addEventListener('change', updateShareFeedback);
-    dialog.body.append(label, select, feedback);
+    dialog.body.appendChild(feedback);
     dialog.actions.append(cancelButton, downloadButton);
     updateShareFeedback();
-    select.focus();
+    trigger.focus();
   }
 
   bookmarkBulkAddToCollection?.addEventListener('click', openBookmarkCollectionAssignmentDialog);

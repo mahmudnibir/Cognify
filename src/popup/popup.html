@@ -2054,7 +2054,8 @@
     .bookmark-library { display: flex; flex-direction: column; gap: 8px; max-height: 265px; overflow-y: auto; padding-right: 2px; }
     .bookmark-library-empty { border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; padding: 14px 12px; text-align: center; }
     .bookmark-library-header { align-items: center; color: var(--text-secondary); display: flex; font-size: 10px; font-weight: 700; justify-content: space-between; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .bookmark-video-total { align-items: center; background: var(--icon-bg); border: 1px solid var(--border-color); border-radius: 999px; color: var(--text-primary); display: inline-flex; min-height: 28px; padding: 0 8px; }
+    .bookmark-video-total { color: var(--text-secondary); font-size: 10px; font-weight: 500; }
+    .bookmark-video-count-row { display: flex; justify-content: flex-end; margin-bottom: 6px; }
     .bookmark-bulk-actions { align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 7px; display: flex; gap: 6px; justify-content: space-between; padding: 7px 8px; }
     .bookmark-bulk-actions[hidden] { display: none; }
     .bookmark-bulk-count { color: var(--text-secondary); font-size: 10px; font-weight: 600; }
@@ -2068,18 +2069,31 @@
     .bookmark-video-select:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
     .bookmark-video-select[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); }
     .bookmark-video-select[aria-pressed="true"] svg { opacity: 1; transform: scale(1); }
-    .bookmark-video { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; gap: 10px; min-width: 0; padding: 8px; transition: background 0.2s, border-color 0.2s; }
+    .bookmark-video { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; cursor: pointer; display: flex; gap: 10px; min-width: 0; padding: 8px; transition: background 0.2s, border-color 0.2s; width: 100%; }
     .bookmark-video:hover, .bookmark-video:focus-visible { background: var(--bg-card-hover); border-color: var(--border-color-hover); outline: none; }
+    .bookmark-manage-button { align-items: center; background: transparent; border: 0; border-radius: 50%; color: var(--text-secondary); cursor: pointer; display: inline-flex; height: 30px; justify-content: center; padding: 0; position: absolute; right: 6px; top: 6px; transition: background .15s, color .15s; width: 30px; z-index: 3; }
+    .bookmark-manage-button svg { height: 18px; width: 18px; }
+    .bookmark-manage-button:hover, .bookmark-manage-button[aria-expanded="true"] { background: var(--bg-card); color: var(--text-primary); }
+    .bookmark-manage-button:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    .bookmark-manage-menu { background: var(--bg-card); border: 1px solid var(--border-color-hover); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); display: none; gap: 3px; max-height: 200px; max-width: calc(100vw - 16px); min-width: 180px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 4px; position: fixed; z-index: 500; }
+    .bookmark-manage-menu[hidden] { display: none !important; }
+    .bookmark-manage-action { background: transparent; border: 0; border-radius: 5px; color: var(--text-primary); cursor: pointer; font: inherit; font-size: 10px; padding: 7px 8px; text-align: left; white-space: nowrap; }
+    .bookmark-manage-action:hover, .bookmark-manage-action:focus-visible { background: var(--bg-card-hover); outline: none; }
+    .bookmark-manage-action.is-destructive { color: var(--accent-color); }
     .bookmark-thumbnail-column { display: flex; flex: 0 0 92px; flex-direction: column; gap: 4px; min-width: 0; }
     .bookmark-thumbnail { background: var(--bg-card); border-radius: 5px; flex: 0 0 92px; height: 52px; object-fit: cover; width: 92px; }
-    .bookmark-video-body { min-width: 0; flex: 1; padding-right: 30px; }
+    .bookmark-video-body { min-width: 0; flex: 1; padding-right: 40px; }
     .bookmark-video-title { color: var(--text-primary); display: block; font-size: 11px; font-weight: 700; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bookmark-video-count { color: var(--text-secondary); font-size: 9px; margin-top: 2px; }
     .bookmark-times { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .bookmark-expand-toggle { background: transparent; border: 0; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 9px; margin-top: 6px; padding: 2px 0; }
+    .bookmark-expand-toggle:hover, .bookmark-expand-toggle:focus-visible { color: var(--text-primary); text-decoration: underline; }
+    .bookmark-expand-toggle:focus-visible { outline: 2px solid var(--speed-accent); outline-offset: 2px; }
     .bookmark-time-actions { position: relative; }
-    .bookmark-time { align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); cursor: pointer; display: inline-flex; font-size: 9px; gap: 5px; max-width: 100%; padding: 4px 6px; transition: background 0.15s, border-color 0.15s; }
-    .bookmark-time-value { color: var(--bookmark-time-color); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; font-weight: 700; }
-    .bookmark-time:hover, .bookmark-time:focus-visible { background: var(--bg-card-hover); border-color: var(--border-color-hover); outline: none; }
+    .bookmark-time { align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); cursor: pointer; display: inline-flex; font-size: 9px; gap: 5px; max-width: 100%; min-width: 0; padding: 4px 6px; transition: background 0.15s, border-color 0.15s; }
+    .bookmark-time-value { color: var(--text-primary); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .bookmark-time-note { color: var(--text-secondary); font-size: 9px; font-weight: 400; max-width: 110px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bookmark-time:hover, .bookmark-time:focus-visible { background: var(--bg-card-hover); border-color: var(--border-color); outline: none; }
     .bookmark-time-menu { background: var(--bg-card); border: 1px solid var(--border-color-hover); border-radius: 6px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); display: grid; left: 0; min-width: 136px; padding: 4px; position: absolute; top: calc(100% + 4px); z-index: 20; }
     .bookmark-time-menu[hidden] { display: none !important; }
     .bookmark-time-action { background: transparent; border: 0; border-radius: 4px; color: var(--text-primary); cursor: pointer; font: inherit; font-size: 10px; padding: 6px 8px; text-align: left; white-space: nowrap; }
@@ -2087,6 +2101,16 @@
     .bookmark-dialog .modal-title { margin: 0; }
     .bookmark-dialog-input, .bookmark-dialog-select { font-family: inherit; }
     .bookmark-dialog-select { cursor: pointer; }
+    .bookmark-dialog-select:hover, .bookmark-dialog-select:focus { background: var(--bg-card-hover); border-color: var(--border-color); box-shadow: none; }
+    .bookmark-dialog-select:focus-visible { outline: 2px solid var(--text-secondary); outline-offset: 2px; }
+    .bookmark-dialog-select option { background: var(--bg-card); color: var(--text-primary); }
+    .bookmark-share-collection-select { margin-top: 8px; }
+    .bookmark-share-collection-select .cognify-select-trigger:hover,
+    .bookmark-share-collection-select.open .cognify-select-trigger { background: var(--bg-card-hover); border-color: var(--border-color); }
+    .bookmark-share-collection-select .cognify-select-option:hover,
+    .bookmark-share-collection-select .cognify-select-option[aria-selected="true"] { background: var(--bg-card-hover); color: var(--text-primary); }
+    .bookmark-dialog .bookmark-share-download { background: var(--bg-card-hover); border-color: var(--border-color-hover); color: var(--text-primary); }
+    .bookmark-dialog .bookmark-share-download:hover:not(:disabled) { background: var(--bg-tertiary); border-color: var(--border-color); }
     .bookmark-dialog-textarea { font-family: inherit; min-height: 90px; resize: vertical; }
     .bookmark-dialog-feedback { color: var(--text-secondary); font-size: 11px; line-height: 1.4; margin-top: 8px; min-height: 15px; }
   </style>
@@ -2954,14 +2978,12 @@
           <div class="bookmark-library-header">
             <span>Saved videos</span>
             <div class="bookmark-library-header-actions">
-              <span id="bookmarkVideoCount" class="bookmark-video-total">0 videos</span>
               <div class="bookmark-library-manage">
-                <button class="bookmark-manage-toggle" id="bookmarkManageToggle" type="button" aria-label="Manage bookmarks" title="Manage bookmarks" aria-controls="bookmarkManageMenu" aria-expanded="false">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M4 6h5m4 0h7M4 12h9m4 0h3M4 18h2m4 0h10"></path>
-                    <circle cx="11" cy="6" r="2"></circle>
-                    <circle cx="15" cy="12" r="2"></circle>
-                    <circle cx="8" cy="18" r="2"></circle>
+                <button class="bookmark-manage-toggle" id="bookmarkManageToggle" type="button" aria-label="More bookmark options" title="More bookmark options" aria-controls="bookmarkManageMenu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <circle cx="12" cy="5" r="1.7"></circle>
+                    <circle cx="12" cy="12" r="1.7"></circle>
+                    <circle cx="12" cy="19" r="1.7"></circle>
                   </svg>
                 </button>
                 <div class="bookmark-library-manage-menu" id="bookmarkManageMenu" hidden>
@@ -2979,8 +3001,11 @@
           </div>
           <div class="bookmark-library-search-row">
             <input id="bookmarkSearch" class="bookmark-library-search" type="search" placeholder="Search titles, notes, channels" aria-label="Search bookmarks">
-            <button id="bookmarkFilterToggle" class="bookmark-filter-toggle" type="button" aria-controls="bookmarkFilters" aria-expanded="false">
-              Filters <span id="bookmarkFilterCount" class="bookmark-filter-count" hidden></span>
+            <button id="bookmarkFilterToggle" class="bookmark-filter-toggle" type="button" aria-label="Show bookmark filters" title="Show bookmark filters" aria-controls="bookmarkFilters" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5h16l-6.2 7.1v5.1l-3.6 1.8v-6.9L4 5z"></path>
+              </svg>
+              <span id="bookmarkFilterCount" class="bookmark-filter-count" hidden></span>
             </button>
           </div>
           <div class="bookmark-library-toolbar">
@@ -3033,6 +3058,9 @@
             </div>
           </div>
           <div id="bookmarkActiveFilters" class="bookmark-active-filters" aria-label="Active bookmark filters" aria-live="polite" hidden></div>
+          <div class="bookmark-video-count-row">
+            <span id="bookmarkVideoCount" class="bookmark-video-total">0 videos</span>
+          </div>
           <div id="bookmarkLibrary" class="bookmark-library" aria-live="polite">
             <div class="bookmark-library-empty">Loading saved videos...</div>
           </div>

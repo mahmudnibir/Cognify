@@ -4,9 +4,9 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>COGNIFY | YouTube Focus &amp; Playback Controls</title>
-<meta name="description" content="Cognify helps make YouTube more intentional with playback controls, bookmarks, focus mode, screen-time limits, and watch statistics." />
+<meta name="description" content="Cognify adds YouTube playback controls, timestamp bookmarks with notes and collections, focus tools, screen-time limits, and watch statistics." />
 <meta property="og:title" content="COGNIFY | YouTube Focus &amp; Playback Controls" />
-<meta property="og:description" content="YouTube playback controls, bookmarks, focus mode, screen-time limits, and watch statistics." />
+<meta property="og:description" content="YouTube playback controls, timestamp bookmarks with notes and collections, focus tools, screen-time limits, and watch statistics." />
 <meta property="og:type" content="website" />
 <meta name="theme-color" content="#131313" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c0392b'/><polygon points='11,8 25,16 11,24' fill='white'/></svg>" />
@@ -147,10 +147,10 @@
         </header>
         <!-- Popup Tabs -->
         <div class="flex bg-[#181818] border-b border-white/10">
-            <button class="flex-1 py-3.5 px-2 text-center text-white text-xs font-semibold relative border-b-2 border-primary-container">CONTROL</button>
-            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">ANALYTICS</button>
-            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">FOCUS</button>
+            <button class="flex-1 py-3.5 px-2 text-center text-white text-xs font-semibold relative border-b-2 border-primary-container">GENERAL</button>
+            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">STATS</button>
             <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">BOOKMARKS</button>
+            <button class="flex-1 py-3.5 px-2 text-center text-white/60 text-xs font-semibold border-b-2 border-transparent">SETTINGS</button>
         </div>
         <!-- Popup Content -->
         <main class="flex-1 p-4 overflow-y-auto bg-[#0f0f0f] space-y-4">
@@ -200,8 +200,8 @@
 <section class="py-24 px-8 bg-surface-container-lowest">
 <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
 <div class="flex flex-col items-center md:items-start">
-<span class="text-4xl md:text-5xl font-black text-primary-container mb-2">21+</span>
-<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Core Features</span>
+<span class="text-4xl md:text-5xl font-black text-primary-container mb-2">19</span>
+<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Listed Core Features</span>
 </div>
 <div class="flex flex-col items-center md:items-start">
 <span class="text-4xl md:text-5xl font-black text-primary-container mb-2">8</span>
@@ -259,7 +259,7 @@
 <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
 <div class="flex-1">
 <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block" style="font-variation-settings: 'FILL' 1;">mic_external_on</span>
-<h3 class="text-2xl font-bold mb-4">AI Voice Modes</h3>
+<h3 class="text-2xl font-bold mb-4">Voice Modes</h3>
 <p class="text-on-surface-variant leading-relaxed">Eight audio-processing modes for customizing YouTube playback to your listening preference.</p>
 </div>
 <div class="w-full md:w-64 aspect-video rounded-xl bg-surface-container-lowest flex items-center justify-center p-4 border border-outline-variant/10">
@@ -275,9 +275,9 @@
 </div>
 <!-- Feature Card 5 -->
 <div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
-    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">cloud_upload</span>
+    <span class="material-symbols-outlined text-4xl text-primary-container mb-6 block">collections_bookmark</span>
     <h3 class="text-2xl font-bold mb-4">Bookmark Library</h3>
-    <p class="text-on-surface-variant leading-relaxed">See every bookmarked video in one place with thumbnails, titles, bookmark counts, and exact timestamp links. Open a video or jump straight to a saved moment.</p>
+    <p class="text-on-surface-variant leading-relaxed">Search, filter, and sort saved videos; add notes to timestamps; and organize bookmarks into collections. Keep cards compact with expandable timestamp lists, then share collections or import and export bookmark data.</p>
 </div>
 <!-- Feature Card 6 -->
 <div class="p-8 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-primary-container/30 transition-all group">
@@ -442,7 +442,7 @@
 </div>
 <div class="pt-2">
 <h4 class="text-xl font-bold mb-2">INITIALIZE CONNECTION</h4>
-<p class="text-on-surface-variant max-w-lg">Install the extension from your browser store. Look for the COGNIFY terminal icon in your toolbar.</p>
+<p class="text-on-surface-variant max-w-lg">Download the project ZIP from GitHub, load the extracted folder as an unpacked extension, and look for the Cognify icon in your toolbar.</p>
 </div>
 </div>
 <div class="flex gap-8 group">
@@ -484,7 +484,7 @@
 <footer class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-[#131313] border-t-0">
 <div class="flex items-center gap-2">
 <span class="text-lg font-black text-[#E5E2E1]">COGNIFY</span>
-<span class="text-[#FF5540] font-bold text-xs">v3.8.0</span>
+<span class="text-[#FF5540] font-bold text-xs">v3.9.0</span>
 </div>
 <div class="flex flex-wrap justify-center gap-6">
 <a class="font-['Inter'] text-[0.6875rem] uppercase tracking-widest text-[#EBBBB4] hover:text-[#FF5540] transition-colors duration-200" href="#features">Features</a>

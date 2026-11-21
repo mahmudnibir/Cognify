@@ -256,26 +256,35 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 }
 
 .bookmark-filter-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
     min-height: 34px;
-    padding: 0 10px;
+    padding: 0;
     border: 1px solid var(--border-color);
     border-radius: 7px;
     background: var(--bg-tertiary);
     color: var(--text-primary);
     cursor: pointer;
-    font: inherit;
-    font-size: 11px;
+    transition: background .18s ease, border-color .18s ease;
+}
+
+.bookmark-filter-toggle svg {
+    width: 16px;
+    height: 16px;
 }
 
 .bookmark-filter-toggle:hover {
     background: var(--bg-card-hover);
-    border-color: var(--border-color-hover);
+    border-color: var(--border-color);
 }
 
 .bookmark-filter-toggle:focus-visible {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(255, 0, 0, .12);
-    outline: none;
+    border-color: var(--border-color);
+    outline: 2px solid var(--text-secondary);
+    outline-offset: 2px;
 }
 
 .bookmark-more {
@@ -364,12 +373,14 @@ body[data-theme="light"] .theme-toggle:focus-visible {
     justify-content: center;
     min-width: 16px;
     height: 16px;
-    margin-left: 4px;
-    padding: 0 4px;
+    padding: 0 3px;
     border-radius: 999px;
     background: var(--accent-color);
     color: white;
     font-size: 9px;
+    position: absolute;
+    top: -5px;
+    right: -5px;
 }
 
 .bookmark-filters[hidden] {
@@ -468,6 +479,11 @@ body[data-theme="light"] .theme-toggle:focus-visible {
 .cognify-select.open .cognify-select-trigger {
     border-color: var(--accent-color);
     background: var(--bg-card-hover);
+}
+
+.bookmark-library-toolbar .cognify-select-trigger:hover,
+.bookmark-library-toolbar .cognify-select.open .cognify-select-trigger {
+    border-color: var(--border-color);
 }
 
 .cognify-select-arrow {

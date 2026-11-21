@@ -13,7 +13,7 @@
 | Feature | Description |
 |---|---|
 | Speed Control | YouTube playback speed from 0.25× to 16× with a labeled scale |
-| Bookmark Library | Browse bookmarked videos with thumbnails, titles, video counts, labels, and exact timestamp links; cloud sync, import & export included |
+| Bookmark Library | Save timestamp bookmarks with notes; search, filter, sort, and organize videos into collections. Expand timestamp lists on demand, sync with Chrome, and share, import, or export bookmark data |
 | Ad Skip | Automatically skips YouTube advertisements |
 | SponsorBlock | Auto-skip sponsor segments via community data |
 | Content Filters | Hide comments, shorts, description, or suggested videos |
@@ -55,7 +55,9 @@
 
 ## Usage
 
-Click the **Cognify** extension icon or press **Ctrl+Shift+Y** to open the control panel. You can review or remap the shortcut at `chrome://extensions/shortcuts`. Cognify runs on YouTube; it does not inject scripts into other sites. Settings persist across sessions via Chrome Sync. The **Bookmarks** tab contains your saved videos and bookmark import/export. The **Settings** tab contains keyboard shortcuts, playback and focus controls, and YouTube statistics.
+Click the **Cognify** extension icon or press **Ctrl+Shift+Y** to open the control panel. You can review or remap the shortcut at `chrome://extensions/shortcuts`. Cognify runs on YouTube; it does not inject scripts into other sites. Settings persist across sessions via Chrome Sync.
+
+In the **Bookmarks** tab, search, filter, and sort saved videos; add notes to timestamps; and organize videos into collections. Long timestamp lists stay compact until expanded. Use the collection options to share a collection as a JSON file, or import and export bookmark data. The **Stats** tab contains watch-time statistics. The **Settings** tab contains keyboard shortcuts and playback and focus controls.
 
 ---
 
